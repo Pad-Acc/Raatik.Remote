@@ -151,10 +151,12 @@ Derived from `build-for-windows-flutter` ([flutter-build.yml:80](../../../.githu
 ```yaml
 name: raatik-windows
 
+# Manual only. This job takes 40-60 minutes because vcpkg compiles ffmpeg, aom,
+# libvpx, libyuv, opus and mfx-dispatch from source. Triggering it on every push
+# would burn hours of wall-clock on commits that raatik-check already validates.
+# Run it deliberately: gh workflow run raatik-windows --ref raatik/1.4.9
 on:
   workflow_dispatch:
-  push:
-    branches: [raatik/1.4.9]
 
 env:
   RUST_VERSION: "1.75"
@@ -236,7 +238,7 @@ jobs:
 
 `vcpkgDirectory: C:\vcpkg` is on the **runner's** C:, not your machine — the "nothing on C:" constraint applies to your local machine only.
 
-- [ ] **Step 2: Commit and push to trigger the run**
+- [ ] **Step 2: Commit and push the workflow**
 
 ```bash
 git add .github/workflows/raatik-windows.yml
@@ -244,9 +246,13 @@ git commit -m "ci: add Windows x64 release workflow"
 git push raatik raatik/1.4.9
 ```
 
-- [ ] **Step 3: Watch the run**
+- [ ] **Step 3: Trigger the run manually and watch it**
+
+The workflow is `workflow_dispatch` only, so pushing does not start it.
 
 ```bash
+gh workflow run raatik-windows --repo Pad-Acc/Raatik.Remote --ref raatik/1.4.9
+sleep 10
 gh run watch --repo Pad-Acc/Raatik.Remote
 ```
 
@@ -331,9 +337,14 @@ jobs:
         env:
           VCPKG_DEFAULT_HOST_TRIPLET: x64-windows-static
         run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"
-      - name: Check
-        run: cargo check --features flutter --lib
+      - name: Test root crate
+        run: cargo test --features flutter --lib
 ```
+
+`cargo test` rather than `cargo check`: it compiles the same code *and* executes the
+`#[cfg(test)]` tests that Tasks 7, 8, 9 and 10 add to `src/common.rs` and `src/lang.rs`.
+With `cargo check` those tests would never run, making every "verify they pass" step in
+this plan unverifiable.
 
 - [ ] **Step 2: Push and confirm both jobs pass**
 
@@ -1150,6 +1161,8 @@ Note `libs/portable/src/main.rs:219,235` reference `RuntimeBroker_rustdesk.exe`,
 git add build.py libs/portable/src/main.rs
 git commit -m "build: produce RaatikDesk-1.4.9-install.exe"
 git push raatik raatik/1.4.9
+gh workflow run raatik-windows --repo Pad-Acc/Raatik.Remote --ref raatik/1.4.9
+sleep 10
 gh run watch --repo Pad-Acc/Raatik.Remote
 ```
 
@@ -1331,6 +1344,8 @@ Add before the upload step in `.github/workflows/raatik-windows.yml`:
 git add raatik/no_leak_gate.py .github/workflows/raatik-windows.yml
 git commit -m "ci: fail the build on user-visible RustDesk brand leaks"
 git push raatik raatik/1.4.9
+gh workflow run raatik-windows --repo Pad-Acc/Raatik.Remote --ref raatik/1.4.9
+sleep 10
 gh run watch --repo Pad-Acc/Raatik.Remote
 ```
 
