@@ -1,107 +1,10 @@
 use hbb_common::regex::Regex;
 use std::ops::Deref;
 
-mod ar;
-mod be;
-mod bg;
-mod ca;
-mod cn;
-mod cs;
-mod da;
-mod de;
-mod el;
 mod en;
-mod eo;
-mod es;
-mod et;
-mod eu;
 mod fa;
-mod gu;
-mod fr;
-mod he;
-mod hi;
-mod hr;
-mod hu;
-mod id;
-mod it;
-mod ja;
-mod ko;
-mod kz;
-mod lt;
-mod lv;
-mod nb;
-mod nl;
-mod pl;
-mod ptbr;
-mod ro;
-mod ru;
-mod sc;
-mod sk;
-mod sl;
-mod sq;
-mod sr;
-mod sv;
-mod th;
-mod tr;
-mod tw;
-mod uk;
-mod vi;
-mod ta;
-mod ge;
-mod fi;
-mod ml;
 
-pub const LANGS: &[(&str, &str)] = &[
-    ("en", "English"),
-    ("it", "Italiano"),
-    ("fr", "Français"),
-    ("de", "Deutsch"),
-    ("nl", "Nederlands"),
-    ("nb", "Norsk bokmål"),
-    ("zh-cn", "简体中文"),
-    ("zh-tw", "繁體中文"),
-    ("pt", "Português"),
-    ("es", "Español"),
-    ("et", "Eesti keel"),
-    ("eu", "Euskara"),
-    ("hu", "Magyar"),
-    ("bg", "Български"),
-    ("be", "Беларуская"),
-    ("ru", "Русский"),
-    ("sk", "Slovenčina"),
-    ("id", "Indonesia"),
-    ("cs", "Čeština"),
-    ("da", "Dansk"),
-    ("eo", "Esperanto"),
-    ("tr", "Türkçe"),
-    ("vi", "Tiếng Việt"),
-    ("pl", "Polski"),
-    ("ja", "日本語"),
-    ("ko", "한국어"),
-    ("kz", "Қазақ"),
-    ("uk", "Українська"),
-    ("fa", "فارسی"),
-    ("ca", "Català"),
-    ("el", "Ελληνικά"),
-    ("sv", "Svenska"),
-    ("sq", "Shqip"),
-    ("sr", "Srpski"),
-    ("th", "ภาษาไทย"),
-    ("sl", "Slovenščina"),
-    ("ro", "Română"),
-    ("lt", "Lietuvių"),
-    ("lv", "Latviešu"),
-    ("ar", "العربية"),
-    ("he", "עברית"),
-    ("hr", "Hrvatski"),
-    ("sc", "Sardu"),
-    ("ta", "தமிழ்"),
-    ("ge", "ქართული"),
-    ("fi", "Suomi"),
-    ("ml", "മലയാളം"),
-    ("hi", "हिंदी"),
-    ("gu", "ગુજરાતી"),
-];
+pub const LANGS: &[(&str, &str)] = &[("en", "English"), ("fa", "فارسی")];
 
 pub(crate) fn cjk_ui_unavailable() -> bool {
     cfg!(all(
@@ -120,30 +23,18 @@ pub(crate) fn is_cjk_lang(lang_or_locale: &str) -> bool {
     matches!(lang.as_str(), "zh" | "ja" | "ko")
 }
 
-fn resolve_lang(saved_lang: &str, locale: &str, cjk_fallback: bool) -> String {
-    let locale = locale.to_lowercase();
+fn resolve_lang(saved_lang: &str, _locale: &str, cjk_fallback: bool) -> String {
+    // RAATIK: default to Farsi when no language preference has been saved,
+    // instead of following the host OS/browser locale (`_locale`). A saved
+    // preference (e.g. the user explicitly picking "en" via the language
+    // selector) always takes priority and is handled above/below unchanged,
+    // so switching back to English continues to work.
     let mut lang = saved_lang.to_lowercase();
     if cjk_fallback && is_cjk_lang(&lang) {
         return "en".to_owned();
     }
     if lang.is_empty() {
-        // zh_CN on Linux, zh-Hans-CN on mac, zh_CN_#Hans on Android
-        if locale.starts_with("zh") {
-            lang = (if locale.contains("tw") {
-                "zh-tw"
-            } else {
-                "zh-cn"
-            })
-            .to_owned();
-        }
-    }
-    if lang.is_empty() {
-        lang = locale
-            .split("-")
-            .next()
-            .map(|x| x.split("_").next().unwrap_or_default())
-            .unwrap_or_default()
-            .to_owned();
+        lang = "fa".to_owned();
     }
     if cjk_fallback && is_cjk_lang(&lang) {
         "en".to_owned()
@@ -165,55 +56,7 @@ pub fn translate_locale(name: String, locale: &str) -> String {
         cjk_ui_unavailable(),
     );
     let m = match lang.as_str() {
-        "fr" => fr::T.deref(),
-        "zh-cn" => cn::T.deref(),
-        "it" => it::T.deref(),
-        "zh-tw" => tw::T.deref(),
-        "de" => de::T.deref(),
-        "nb" => nb::T.deref(),
-        "nl" => nl::T.deref(),
-        "es" => es::T.deref(),
-        "et" => et::T.deref(),
-        "eu" => eu::T.deref(),
-        "hu" => hu::T.deref(),
-        "ru" => ru::T.deref(),
-        "eo" => eo::T.deref(),
-        "id" => id::T.deref(),
-        "br" => ptbr::T.deref(),
-        "pt" => ptbr::T.deref(),
-        "tr" => tr::T.deref(),
-        "cs" => cs::T.deref(),
-        "da" => da::T.deref(),
-        "sk" => sk::T.deref(),
-        "vi" => vi::T.deref(),
-        "pl" => pl::T.deref(),
-        "ja" => ja::T.deref(),
-        "ko" => ko::T.deref(),
-        "kz" => kz::T.deref(),
-        "uk" => uk::T.deref(),
         "fa" => fa::T.deref(),
-        "fi" => fi::T.deref(),
-        "ca" => ca::T.deref(),
-        "el" => el::T.deref(),
-        "sv" => sv::T.deref(),
-        "sq" => sq::T.deref(),
-        "sr" => sr::T.deref(),
-        "th" => th::T.deref(),
-        "sl" => sl::T.deref(),
-        "ro" => ro::T.deref(),
-        "lt" => lt::T.deref(),
-        "lv" => lv::T.deref(),
-        "ar" => ar::T.deref(),
-        "bg" => bg::T.deref(),
-        "be" => be::T.deref(),
-        "he" => he::T.deref(),
-        "hr" => hr::T.deref(),
-        "sc" => sc::T.deref(),
-        "ta" => ta::T.deref(),
-        "ge" => ge::T.deref(),
-        "ml" => ml::T.deref(),
-        "hi" => hi::T.deref(),
-        "gu" => gu::T.deref(),
         _ => en::T.deref(),
     };
     let (name, placeholder_value) = extract_placeholder(&name);
@@ -319,20 +162,68 @@ mod test {
     }
 
     #[test]
-    fn test_resolve_lang_forces_english_for_cjk_locale_when_target_disables_cjk() {
+    fn test_resolve_lang_defaults_to_farsi_regardless_of_host_locale() {
+        // RAATIK: this fork ships only English and Farsi, and the app must
+        // default to Farsi rather than sniffing the host OS/browser locale.
+        // The `locale` argument (formerly used to detect e.g. zh/ja/ko) is
+        // now ignored entirely when no preference has been saved.
         use super::resolve_lang as f;
 
-        assert_eq!(f("", "zh_CN", true), "en");
-        assert_eq!(f("", "ja-JP", true), "en");
-        assert_eq!(f("", "ko_KR", true), "en");
+        assert_eq!(f("", "zh_CN", true), "fa");
+        assert_eq!(f("", "ja-JP", true), "fa");
+        assert_eq!(f("", "ko_KR", true), "fa");
+        assert_eq!(f("", "zh_TW", false), "fa");
+        assert_eq!(f("", "en-US", false), "fa");
+        assert_eq!(f("", "", false), "fa");
     }
 
     #[test]
-    fn test_resolve_lang_preserves_cjk_when_target_allows_cjk() {
+    fn test_resolve_lang_preserves_saved_choice() {
+        // A saved preference always wins over the Farsi default, so users
+        // can still switch to (and stay on) English via the language
+        // selector.
         use super::resolve_lang as f;
 
         assert_eq!(f("zh-cn", "en-US", false), "zh-cn");
-        assert_eq!(f("", "zh_TW", false), "zh-tw");
-        assert_eq!(f("", "ja-JP", false), "ja");
+        assert_eq!(f("en", "fa-IR", false), "en");
+        assert_eq!(f("fa", "en-US", false), "fa");
+    }
+
+    #[test]
+    fn test_only_english_and_farsi() {
+        assert_eq!(super::LANGS.len(), 2);
+        assert_eq!(super::LANGS[0].0, "en");
+        assert_eq!(super::LANGS[1].0, "fa");
+    }
+
+    #[test]
+    fn test_brand_substituted() {
+        // "Show RustDesk" is not overridden in en.rs (key == English text)
+        // and fa.rs keeps the "RustDesk" brand token untranslated per
+        // AGENTS.md, so this assertion holds regardless of which of the two
+        // shipped languages the default resolves to.
+        let s = super::translate_locale("Show RustDesk".to_owned(), "en");
+        assert!(s.contains(&crate::get_app_name()), "not substituted: {s}");
+        assert!(!s.contains("RustDesk"), "brand leaked: {s}");
+    }
+
+    #[test]
+    fn test_farsi_has_no_empty_values() {
+        for (k, v) in super::fa::T.iter() {
+            assert!(!v.is_empty(), "untranslated Farsi key: {k}");
+        }
+    }
+
+    #[test]
+    fn test_deleted_lang_code_does_not_panic() {
+        // "de" was one of the 48 non-en/fa language files removed in this
+        // fork. Even if a legacy config still has "de" saved as a
+        // preference, `resolve_lang` must pass it through unchanged (it no
+        // longer maps to a `mod`/match arm), and `translate_locale` must
+        // fall back to English rather than panicking on the lookup.
+        assert_eq!(super::resolve_lang("de", "en-US", false), "de");
+
+        let s = super::translate_locale("Settings".to_owned(), "de");
+        assert!(!s.is_empty());
     }
 }
