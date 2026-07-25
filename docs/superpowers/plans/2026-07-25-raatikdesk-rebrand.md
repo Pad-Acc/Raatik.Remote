@@ -331,7 +331,9 @@ Restores an inner feedback loop, since there is no local toolchain (§10.1). Bui
 
 - [ ] **Step 1: Write the check workflow**
 
-`cargo check` on the root crate needs vcpkg because [build.rs:62](../../../build.rs) does `std::env::var("VCPKG_ROOT").unwrap()`. `hbb_common` needs none — its `build.rs` only runs pure-Rust protobuf codegen — so its tests run first and fail fast.
+The root crate needs vcpkg **transitively**, via the `scrap` workspace member: [libs/scrap/build.rs:82](../../../libs/scrap/build.rs) panics without `VCPKG_ROOT`. `hbb_common` needs none — it does not depend on `scrap`, and its own `build.rs` only runs pure-Rust protobuf codegen — so its tests run first as a seconds-level fail-fast gate.
+
+> **Correction (2026-07-25):** this line previously blamed [build.rs:62](../../../build.rs)'s `std::env::var("VCPKG_ROOT").unwrap()`. That call is inside `install_android_deps()`, which returns early when `CARGO_CFG_TARGET_OS != "android"` (`build.rs:46-50`), so it never runs on a `windows-msvc` build. The conclusion (the root-crate job needs vcpkg) is unchanged; the cited cause was wrong.
 
 ```yaml
 name: raatik-check

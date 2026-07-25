@@ -429,9 +429,20 @@ Without a local toolchain there is no fast compile feedback; a stale `mod` line 
 lightweight check workflow** running `cargo check` only, which with warm `rust-cache` and
 vcpkg binary caching completes in minutes rather than the ~40-60 minutes of a full build.
 
-That workflow still requires vcpkg, because [build.rs:62](../../../build.rs) calls
-`std::env::var("VCPKG_ROOT").unwrap()` and panics when it is unset — `cargo check` cannot
-be run standalone even for pure string edits.
+That workflow still requires vcpkg, so `cargo check` cannot be run standalone even for pure
+string edits.
+
+**Correction (found during Task 3).** An earlier revision of this section attributed that to
+[build.rs:62](../../../build.rs) calling `std::env::var("VCPKG_ROOT").unwrap()`. That is
+**wrong**: the call sits inside `install_android_deps()`, which returns early when
+`CARGO_CFG_TARGET_OS != "android"` (`build.rs:46-50`), so it never executes on a
+`windows-msvc` target. The real requirement is transitive — the `scrap` workspace member's
+[libs/scrap/build.rs:82](../../../libs/scrap/build.rs) panics outright without `VCPKG_ROOT`.
+
+This matters beyond pedantry: because the dependency comes from `scrap` rather than the root
+crate itself, a package that does not depend on `scrap` can be tested with **no vcpkg at all**.
+`hbb_common` is exactly such a package, which is why `cargo test -p hbb_common` can run as a
+seconds-level fail-fast gate ahead of the vcpkg-dependent jobs.
 
 ### 10.2 Release build workflow
 
