@@ -172,6 +172,29 @@ flutter:
     - family: More
       fonts:
         - asset: assets/more.ttf
+    - family: IRANSansXFaNum
+      fonts:
+        - asset: assets/IRANSansXFaNum-Thin.ttf
+          weight: 100
+        - asset: assets/IRANSansXFaNum-UltraLight.ttf
+          weight: 200
+        - asset: assets/IRANSansXFaNum-Light.ttf
+          weight: 300
+        - asset: assets/IRANSansXFaNum-Regular.ttf
+        - asset: assets/IRANSansXFaNum-Medium.ttf
+          weight: 500
+        - asset: assets/IRANSansXFaNum-DemiBold.ttf
+          weight: 600
+        - asset: assets/IRANSansXFaNum-Bold.ttf
+          weight: 700
+        - asset: assets/IRANSansXFaNum-ExtraBold.ttf
+          weight: 800
+        - asset: assets/IRANSansXFaNum-Heavy.ttf
+          weight: 800
+        - asset: assets/IRANSansXFaNum-Black.ttf
+          weight: 900
+        - asset: assets/IRANSansXFaNum-ExtraBlack.ttf
+          weight: 900
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

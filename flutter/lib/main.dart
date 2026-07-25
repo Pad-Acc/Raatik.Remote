@@ -370,6 +370,7 @@ void _runApp(
       darkTheme: MyTheme.darkTheme,
       themeMode: themeMode,
       home: home,
+      locale: const Locale('fa'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -383,7 +384,10 @@ void _runApp(
       builder: (context, child) {
         child = _keepScaleBuilder(context, child);
         child = botToastBuilder(context, child);
-        return child;
+        final lang = Localizations.localeOf(context).languageCode;
+        final dir = lang == 'fa' ? TextDirection.rtl : TextDirection.ltr;
+        return Directionality(
+            textDirection: dir, child: child ?? const SizedBox.shrink());
       },
     ),
   ));
@@ -511,6 +515,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
               : isWeb
                   ? WebHomePage()
                   : HomePage(),
+          locale: const Locale('fa'),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -522,14 +527,22 @@ class _AppState extends State<App> with WidgetsBindingObserver {
             BotToastNavigatorObserver(),
           ],
           builder: isAndroid
-              ? (context, child) => AccessibilityListener(
-                    child: MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        textScaler: TextScaler.linear(1.0),
+              ? (context, child) {
+                  final lang = Localizations.localeOf(context).languageCode;
+                  final dir =
+                      lang == 'fa' ? TextDirection.rtl : TextDirection.ltr;
+                  return Directionality(
+                    textDirection: dir,
+                    child: AccessibilityListener(
+                      child: MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          textScaler: TextScaler.linear(1.0),
+                        ),
+                        child: child ?? Container(),
                       ),
-                      child: child ?? Container(),
                     ),
-                  )
+                  );
+                }
               : (context, child) {
                   child = _keepScaleBuilder(context, child);
                   child = botToastBuilder(context, child);
@@ -538,10 +551,16 @@ class _AppState extends State<App> with WidgetsBindingObserver {
                     child = keyListenerBuilder(context, child);
                   }
                   if (isLinux) {
-                    return buildVirtualWindowFrame(context, child);
+                    child = buildVirtualWindowFrame(context, child);
                   } else {
-                    return workaroundWindowBorder(context, child);
+                    child = workaroundWindowBorder(context, child);
                   }
+                  final lang = Localizations.localeOf(context).languageCode;
+                  final dir =
+                      lang == 'fa' ? TextDirection.rtl : TextDirection.ltr;
+                  return Directionality(
+                      textDirection: dir,
+                      child: child ?? const SizedBox.shrink());
                 },
         ),
       );
