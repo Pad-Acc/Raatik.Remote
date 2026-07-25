@@ -66,10 +66,7 @@ pub fn translate_locale(name: String, locale: &str) -> String {
             s = s.replace("{}", &value);
         }
         if !crate::is_rustdesk() {
-            if s.contains("RustDesk")
-                && !name.starts_with("upgrade_rustdesk_server_pro")
-                && name != "powered_by_me"
-            {
+            if s.contains("RustDesk") {
                 let app_name = crate::get_app_name();
                 if !app_name.contains("RustDesk") {
                     s = s.replace("RustDesk", &app_name);
@@ -225,5 +222,32 @@ mod test {
 
         let s = super::translate_locale("Settings".to_owned(), "de");
         assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn test_no_brand_leak_in_translated_output() {
+        // fa.rs carries the full key set (template.rs is a reference file
+        // only and is not a compiled module), so iterating its keys covers
+        // every translatable string in the app. This used to fail for
+        // "powered_by_me" and "upgrade_rustdesk_server_pro_to_{}_tip",
+        // which were exempted from the "RustDesk" -> app-name substitution
+        // above; now that both raw values are branded directly (see en.rs
+        // / fa.rs), the exemption is gone and no value should ever surface
+        // the literal "RustDesk" in translated output.
+        for (k, _) in super::fa::T.iter() {
+            for locale in ["en", "fa"] {
+                let out = super::translate_locale(k.to_string(), locale);
+                assert!(
+                    !out.contains("RustDesk"),
+                    "brand leaked for key {k} in {locale}: {out}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_powered_by_is_branded() {
+        let s = super::translate_locale("powered_by_me".to_owned(), "en");
+        assert_eq!(s, "Powered by RaatikDesk");
     }
 }
