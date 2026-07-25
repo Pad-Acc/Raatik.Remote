@@ -14,6 +14,7 @@ import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../desktop/widgets/popup_menu.dart';
+import '../../raatik/flags.dart';
 import 'dart:math' as math;
 
 typedef PopupMenuEntryBuilder = Future<List<mod_menu.PopupMenuEntry<String>>>
@@ -1006,7 +1007,7 @@ class RecentPeerCard extends BasePeerCard {
       menuItems.add(_rmFavAction(peer.id, () async {}));
     }
 
-    if (gFFI.userModel.userName.isNotEmpty) {
+    if (kRaatikApiEnabled && gFFI.userModel.userName.isNotEmpty) {
       menuItems.add(_addToAb(peer));
     }
 
@@ -1066,7 +1067,7 @@ class FavoritePeerCard extends BasePeerCard {
       await bind.mainLoadFavPeers();
     }));
 
-    if (gFFI.userModel.userName.isNotEmpty) {
+    if (kRaatikApiEnabled && gFFI.userModel.userName.isNotEmpty) {
       menuItems.add(_addToAb(peer));
     }
 
@@ -1125,7 +1126,7 @@ class DiscoveredPeerCard extends BasePeerCard {
       menuItems.add(_rmFavAction(peer.id, () async {}));
     }
 
-    if (gFFI.userModel.userName.isNotEmpty) {
+    if (kRaatikApiEnabled && gFFI.userModel.userName.isNotEmpty) {
       menuItems.add(_addToAb(peer));
     }
 
@@ -1194,7 +1195,7 @@ class AddressBookPeerCard extends BasePeerCard {
     if (gFFI.peerTabModel.currentTab == PeerTabIndex.ab.index) {
       addressbooks.remove(gFFI.abModel.currentName.value);
     }
-    if (addressbooks.isNotEmpty) {
+    if (kRaatikApiEnabled && addressbooks.isNotEmpty) {
       menuItems.add(_addToAb(peer));
     }
     menuItems.add(_existIn());
@@ -1336,7 +1337,7 @@ class MyGroupPeerCard extends BasePeerCard {
     // if (await bind.mainPeerHasPassword(id: peer.id)) {
     //   menuItems.add(_unrememberPasswordAction(peer.id));
     // }
-    if (gFFI.userModel.userName.isNotEmpty) {
+    if (kRaatikApiEnabled && gFFI.userModel.userName.isNotEmpty) {
       menuItems.add(_addToAb(peer));
     }
     return menuItems;

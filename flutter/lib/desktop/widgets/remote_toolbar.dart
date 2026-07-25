@@ -836,6 +836,8 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
           child: Row(
             children: [
               const SizedBox(width: 8),
+              _buildBrandLabel(),
+              const SizedBox(width: 8),
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -853,6 +855,50 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
         ),
       ),
     );
+  }
+
+  /// Compact leading brand chrome for the T1 primary top bar.
+  Widget _buildBrandLabel() {
+    final peer = _sessionPeerLabel();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'RaatikDesk',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (peer.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 160),
+            child: Text(
+              peer,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _sessionPeerLabel() {
+    final username = pi.username.trim();
+    final hostname = pi.hostname.trim();
+    if (username.isNotEmpty && hostname.isNotEmpty) {
+      return '$username@$hostname';
+    }
+    if (hostname.isNotEmpty) return hostname;
+    return widget.id;
   }
 
   ThemeData themeData() {
