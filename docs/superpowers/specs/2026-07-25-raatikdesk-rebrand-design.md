@@ -27,6 +27,7 @@ language.
 | Official website | `raatik.com` (all brand links; docs links flattened to root — §8.3) |
 | Fork strategy | Hybrid (see §4) |
 | Fork remote | `https://github.com/Pad-Acc/Raatik.Remote.git` |
+| `hbb_common` | Forked to `github.com/Pad-Acc/hbb_common`, `.gitmodules` repointed (§4.1) |
 | Baseline | The `1.4.9` tag, not `master` |
 
 ## 3. Starting state (verified 2026-07-25)
@@ -34,9 +35,12 @@ language.
 - Source tree at `D:\Projects\RAATIK\RaatikRemote\rustdesk`, RustDesk **1.4.9**.
 - `.git` present; on `master`, **29 commits ahead** of the `1.4.9` tag; working tree clean.
 - `origin` → `https://github.com/rustdesk/rustdesk.git`.
-- **`libs/hbb_common` is empty** — submodule pinned at `559176122bdd5c8afa4e8fd5b706c3d901fb0c15`,
-  never initialized. Nothing compiles until it is fetched. Remote
-  `github.com/rustdesk/hbb_common` is reachable from this machine.
+- **`libs/hbb_common` is a submodule** whose pin differs per branch: `master` pins
+  `559176122bdd5c8afa4e8fd5b706c3d901fb0c15`, while the **`1.4.9` tag — our baseline —
+  pins `7e1c392c62d39c364127307cd408421dd5f8cfb0`** (`driver-298-g7e1c392`). It was
+  initially unpopulated; it has since been fetched successfully, confirming
+  `github.com/rustdesk/hbb_common` is reachable from this machine. Nothing compiles
+  without it.
 - **No build toolchain installed:** no Rust, no Flutter, no vcpkg, no LLVM.
   MSVC 2022 and Python 3.14.4 are present.
 - Rebranding surface: 659 occurrences of `rustdesk` across 147 code files,
@@ -78,7 +82,27 @@ Work is split by *kind*, not by file:
 This keeps the human-authored diff small enough to review while making the bulk
 work reproducible, and leaves upstream upgrades as an ordinary `git merge`.
 
-### 4.1 Implementation ordering — build vanilla first
+### 4.1 The `hbb_common` submodule must be forked too
+
+Every high-leverage branding symbol — `APP_NAME`, `ORG`, `RENDEZVOUS_SERVERS`,
+`RS_PUB_KEY`, `HELPER_URL` — lives in `libs/hbb_common`, which is a **separate git
+repository** (`github.com/rustdesk/hbb_common`), not part of the main tree.
+
+Changes there cannot be committed to `Raatik.Remote`: a submodule records only a pointer
+to a commit in *its own* repository. Left unaddressed, CI would clone upstream
+`hbb_common` and silently produce a binary with RustDesk's name, RustDesk's rendezvous
+server and RustDesk's public key — while every local edit appeared to work.
+
+Therefore `hbb_common` is forked to **`github.com/Pad-Acc/hbb_common`**, `.gitmodules` is
+repointed at that fork, and the branding commits land there. The submodule pointer in
+`Raatik.Remote` is then updated to the fork's commit.
+
+Both repositories keep `origin` on their respective upstreams, so each remains
+independently mergeable when RustDesk releases a new version. The cost is a second
+repository to push and keep in sync — accepted as the price of a CI build that is
+correct by construction rather than by remembering a patch step.
+
+### 4.2 Implementation ordering — build vanilla first
 
 The implementation proceeds in two phases, in this order:
 
@@ -162,21 +186,28 @@ is in scope.
 The following `hbb_common::config` symbols are consumed by `src/` and are the
 injection points for RAATIK's server (names verified against their call sites):
 
-- `RENDEZVOUS_SERVERS` — a slice, indexed `[0]` and sliced `[1..]` at
-  [src/client.rs:299-300](../../../src/client.rs). Reduced to a single entry
-  `remote.raatik.ir`. A one-element slice keeps `[0]` valid and makes `[1..]` empty,
-  which is safe.
-- `RS_PUB_KEY` — a `&str` const consumed at [src/client.rs:767,1806](../../../src/client.rs)
-  and [src/common.rs:1821](../../../src/common.rs). Set to
-  `Hl+uz02ouYRm03N9u9z9blRdHY0B9NYDPvqp7kYfcRs=`.
-- `PROD_RENDEZVOUS_SERVER` — an `RwLock<String>` checked first by
-  `get_rendezvous_server()` at [src/common.rs:1040](../../../src/common.rs). It is only
-  ever *read* in `src/`; its writer lives inside `hbb_common`.
+All live in `libs/hbb_common/src/config.rs` (verified after fetching the submodule):
 
-**Confirm-on-fetch:** `build.rs` performs no environment-variable injection, so the exact
-definition sites and the writer of `PROD_RENDEZVOUS_SERVER` must be located by reading
-`libs/hbb_common/src/config.rs` after the submodule is initialized. The design commits to
-patching the compiled-in defaults; the precise lines are determined then.
+| Symbol | Line | Current value | Becomes |
+|---|---|---|---|
+| `RENDEZVOUS_SERVERS` | 120 | `&["rs-ny.rustdesk.com"]` | `&["remote.raatik.ir"]` |
+| `RS_PUB_KEY` | 121 | `"OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw="` | `"Hl+uz02ouYRm03N9u9z9blRdHY0B9NYDPvqp7kYfcRs="` |
+| `APP_NAME` | 72 | `RwLock::new("RustDesk")` | `RwLock::new("RaatikDesk")` |
+| `ORG` | 57 | `RwLock::new("com.carriez")` | `RwLock::new("ir.raatik")` |
+
+`RENDEZVOUS_SERVERS` is **already a single-element slice** upstream, so the `[0]` index and
+`[1..]` empty-slice behaviour at [src/client.rs:299-300](../../../src/client.rs) are
+unchanged by this edit. `RS_PUB_KEY` is consumed at
+[src/client.rs:767,1806](../../../src/client.rs) and
+[src/common.rs:1821](../../../src/common.rs).
+
+`PROD_RENDEZVOUS_SERVER` (`config.rs:70`) is **not** an injection point. It is declared
+`RwLock::new("")` and has **no writer anywhere** in either repository — only reads, at
+`config.rs:919,945` and [src/common.rs:1040](../../../src/common.rs). The early-return
+branch in `get_rendezvous_server()` is therefore dead code and is left untouched.
+
+`build.rs` performs no environment-variable injection, so editing these constants is the
+only mechanism available.
 
 The relay field is deliberately left empty, matching current server behaviour. The
 Network settings pane stays visible and editable so support staff can talk a customer
@@ -277,6 +308,14 @@ The occurrences fall into three categories with different treatments.
 | `https://rustdesk.com/download`, `https://rustdesk.com/pricing` | `https://raatik.com` |
 | `https://rustdesk.com/privacy.html`, `http://rustdesk.com/privacy` | `https://raatik.com/privacy` |
 | the 8 `doc_*` deep links and `rustdesk.com/blog/id-relay-set/` | `https://raatik.com` |
+| `hbb_common` `LINK_DOCS_HOME` (`config.rs:100`), `LINK_DOCS_X11_REQUIRED` (`:101`), `LINK_HEADLESS_LINUX_SUPPORT` (`:103`, a `github.com/rustdesk` wiki link) | `https://raatik.com` |
+
+The `HELPER_URL` HashMap (`hbb_common/src/config.rs:106-109`) has **keys** containing the
+literal string `rustdesk` (`"rustdesk docs home"`, etc.). These are internal lookup
+identifiers passed from `src/`, never rendered, so they are left unchanged per the
+functional-logic rule below; only the URL *values* they map to are rewritten. All three
+are Linux-specific and unreachable in a Windows build, but are rewritten anyway so no
+`rustdesk.com` string survives outside the §12 allowlist.
 
 Documentation links are flattened to the site root rather than mirrored as
 `raatik.com/docs/en/...`. Fabricating deep paths would produce guaranteed 404s until
@@ -405,12 +444,13 @@ compile alone.
 
 ## 13. Open items carried into implementation
 
-- Exact definition sites in `libs/hbb_common/src/config.rs` for `APP_NAME`,
-  `RENDEZVOUS_SERVERS`, `RS_PUB_KEY` and the writer of `PROD_RENDEZVOUS_SERVER`
-  (§6, confirm-on-fetch).
+The `hbb_common` symbol locations, the `PROD_RENDEZVOUS_SERVER` question and the
+`HELPER_URL` contents were all resolved by fetching the submodule; see §6 and §8.3.
+What remains:
+
 - The mechanism for defaulting the language to Farsi rather than the OS locale (§7).
 - The exact location in the Flutter About dialog where the Farsi company name is
   surfaced (§8.2).
-- The value and use of `hbb_common::config::HELPER_URL`, which is referenced from `src/`
-  but defined inside the unfetched submodule; if it points at `rustdesk.com` it falls
-  under §8.3's rewrite category.
+
+Both are answerable by reading code in the populated tree and neither affects the
+design; they are resolved during implementation.
