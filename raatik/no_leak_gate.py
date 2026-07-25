@@ -22,15 +22,18 @@ ALLOWLIST = (
     b"RustDeskIddDriver",             # Task 7: virtual display IDD device string
     b"DeleteRustDeskTestCertsW",      # Task 7: exported DLL symbol name
     b"rustdesk_idd",                  # Task 7: IDD impl selector string
+    b"org.rustdesk.rustdesk",         # section 8.1: Flutter MethodChannel (Dart + C++ IPC)
+    b"rustdesk_core_main",            # section 8.1: FFI export loaded from librustdesk.dll
+    b"get_rustdesk_app_name",         # section 8.1: FFI export loaded from librustdesk.dll
 )
 
-# The portable packer's data.bin container uses the bare literal b"rustdesk" as a
-# start/end sentinel, written by libs/portable/generate.py and validated by
-# libs/portable/src/bin_reader.rs. It is never rendered, and changing it requires
-# editing both sides in lockstep or the installer is corrupt. Because the sentinel
-# has no surrounding context to match on, installer files are checked with a count
-# threshold rather than a context window -- see check_installer() below.
-SENTINEL_ALLOWANCE = 2
+# Installer-only residue (count threshold in check_installer). Four measured hits in CI
+# run 30170937072; all packer-internal, never customer-visible:
+#   1. data.bin start sentinel (generate.py:42) adjacent to first packed path entry
+#   2. data.bin end sentinel (generate.py:57) adjacent to .\raatikdesk.exe path
+#   3-4. bin_reader.rs identifier comparisons compiled into the packer exe
+# Changing the sentinel requires editing generate.py and bin_reader.rs in lockstep.
+SENTINEL_ALLOWANCE = 4
 
 PATTERN = re.compile(rb"[Rr]ust[Dd]esk")
 
@@ -59,11 +62,12 @@ def check_strict(path: Path) -> bool:
 
 
 def check_installer(path: Path) -> bool:
-    """For the installer: tolerate exactly the container-format sentinels.
+    """For the installer: tolerate packer-internal residue up to SENTINEL_ALLOWANCE.
 
-    The packed payload is deflate-compressed, so brand strings inside the bundled
-    executable are not present as plaintext here. Only the two bare b"rustdesk"
-    sentinels should remain. More than that means a genuine plaintext leak.
+    The packed payload is brotli-compressed, so brand strings inside bundled DLLs
+    are not present as plaintext. Expected hits are the two data.bin sentinels plus
+    the bin_reader.rs comparison literals embedded in the packer binary. More than
+    SENTINEL_ALLOWANCE means a genuine plaintext leak.
     """
     found = unallowlisted(path)
     if len(found) > SENTINEL_ALLOWANCE:
