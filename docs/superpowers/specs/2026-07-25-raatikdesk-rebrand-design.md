@@ -24,6 +24,7 @@ language.
 | RTL | Not implemented — Farsi text in the existing LTR layout |
 | Server config | Compiled in as defaults, Network settings pane left visible and editable |
 | Artifact | Unsigned self-extracting installer `.exe` |
+| Official website | `raatik.com` (all brand links; docs links flattened to root — §8.3) |
 | Fork strategy | Hybrid (see §4) |
 | Fork remote | `https://github.com/Pad-Acc/Raatik.Remote.git` |
 | Baseline | The `1.4.9` tag, not `master` |
@@ -230,6 +231,16 @@ Executable metadata in [flutter/windows/runner/Runner.rc:92-98](../../../flutter
 `Cargo.toml`'s `description` and `authors` are updated to RAATIK's.
 `hbb_common::config::ORG` is set to **`ir.raatik`**, matching the `raatik.ir` domain.
 
+### 8.1 Deliberate exception: internal crate names are not renamed
+
+The Cargo package name `rustdesk` and library name `librustdesk` are **kept unchanged**.
+
+Renaming them ripples into the Flutter CMake configuration, the `flutter_rust_bridge`
+glue, and `build.py`'s hardcoded output paths, for zero customer-visible benefit — no
+one installing the product can observe a crate name. The *shipped artifact* is renamed;
+the build internals are not. This preserves the white-label guarantee everywhere it is
+actually observable while avoiding a large class of build breakage.
+
 ### 8.2 Company name: Latin in resources, Farsi in the UI
 
 The company's legal name has two forms:
@@ -250,15 +261,66 @@ The Farsi form is used where Flutter renders Unicode natively and customers actu
 read it — the About dialog and any in-app company attribution. Both forms are therefore
 present in the product; they are simply placed according to what each layer can encode.
 
-### 8.1 Deliberate exception: internal crate names are not renamed
+### 8.3 Outbound URLs and web references
 
-The Cargo package name `rustdesk` and library name `librustdesk` are **kept unchanged**.
+The official website is **`raatik.com`** — deliberately distinct from the server domain
+`remote.raatik.ir`.
 
-Renaming them ripples into the Flutter CMake configuration, the `flutter_rust_bridge`
-glue, and `build.py`'s hardcoded output paths, for zero customer-visible benefit — no
-one installing the product can observe a crate name. The *shipped artifact* is renamed;
-the build internals are not. This preserves the white-label guarantee everywhere it is
-actually observable while avoiding a large class of build breakage.
+A blanket find-and-replace of `rustdesk.com` is **incorrect and must not be performed**.
+The occurrences fall into three categories with different treatments.
+
+#### Rewritten to `raatik.com` (customer-visible brand links)
+
+| Original | Becomes |
+|---|---|
+| `https://rustdesk.com`, `https://rustdesk.com/`, `http://www.rustdesk.com`, `https://www.rustdesk.com/` | `https://raatik.com` |
+| `https://rustdesk.com/download`, `https://rustdesk.com/pricing` | `https://raatik.com` |
+| `https://rustdesk.com/privacy.html`, `http://rustdesk.com/privacy` | `https://raatik.com/privacy` |
+| the 8 `doc_*` deep links and `rustdesk.com/blog/id-relay-set/` | `https://raatik.com` |
+
+Documentation links are flattened to the site root rather than mirrored as
+`raatik.com/docs/en/...`. Fabricating deep paths would produce guaranteed 404s until
+RAATIK writes and hosts an equivalent documentation tree, and a dead link is worse than
+a landing page. Most of these links are macOS/Linux-specific and unreachable in a
+Windows-only build; the whitelist link is the one that can surface.
+
+**RAATIK must host `raatik.com/privacy`.** A reachable privacy policy linked from the
+About dialog is a reasonable legal expectation for distributed software, and it is the
+one rewritten path that is not the site root.
+
+#### Left unchanged (functional logic, never rendered to users)
+
+- **`is_public()`** ([src/common.rs:1088](../../../src/common.rs)) and its unit tests
+  ([src/common.rs:2768-2808](../../../src/common.rs)). Despite its name, this predicate
+  means *"is this URL RustDesk Ltd's own hosted infrastructure?"* It gates self-hosted-only
+  behaviour: audit posting ([common.rs:1120](../../../src/common.rs)), heartbeat
+  ([sync.rs:281](../../../src/hbbs_http/sync.rs)), sysinfo hashing
+  ([sync.rs:181](../../../src/hbbs_http/sync.rs)), UDP/IPv6 punch defaults
+  ([common.rs:1110](../../../src/common.rs)), and raw-TCP API proxying
+  ([common.rs:1144](../../../src/common.rs)).
+
+  Rewriting it to `raatik.com` would create a latent footgun: the moment RAATIK hosts an
+  API under `raatik.com`, audit and heartbeat would silently disable themselves. The test
+  fixtures `rustdesk.com/path` and `rustdesk.computer.com` assert the lookalike-domain
+  defense and must survive verbatim. None of these strings reach the UI.
+
+- **`https://api.rustdesk.com/version/latest`** — unreachable, see below.
+
+- **`https://admin.rustdesk.com`** ([src/common.rs:1083](../../../src/common.rs)) — a
+  fallback returned only when no rendezvous server is configured. Unreachable because
+  RAATIK's server is compiled in (§6). Verified unreachable rather than edited, to avoid
+  altering the non-empty-string contract its callers rely on.
+
+#### Automatic consequence: the update check disables itself
+
+`check_software_update()` ([src/common.rs:943](../../../src/common.rs)) returns early when
+`is_custom_client()` is true — which the `APP_NAME` change makes true (§5.3). RaatikDesk
+therefore **never contacts `api.rustdesk.com`**. This is accepted deliberately: no
+phone-home to RustDesk and no third-party telemetry about RAATIK's customers.
+
+The trade-off is that **the product has no in-app update notification**; new versions are
+distributed to customers manually. Repointing the version endpoint at RAATIK-hosted
+infrastructure is out of scope for this iteration (§11).
 
 ## 9. Packaging
 
@@ -310,6 +372,8 @@ uploads the installer as a build artifact.
 - RustDesk Pro features: API server, web console, signed custom-client configuration.
 - Migrating existing customers' device IDs (see §5.4).
 - Locking or hiding any settings pane.
+- A RAATIK-hosted software-update endpoint, and any in-app update notification (§8.3).
+- Authoring or hosting a documentation tree at `raatik.com/docs` (§8.3).
 
 ## 12. Verification
 
@@ -319,19 +383,24 @@ compile alone.
 1. **Submodule** — `libs/hbb_common` populated at the pinned commit.
 2. **Compile** — `cargo check`, then a release build with the `flutter` feature.
 3. **No-leak gate** — scan the built binary's strings and the packaged installer for
-   user-visible `RustDesk`. Known-acceptable residue (internal crate/library names per
-   §8.1) is enumerated explicitly so the gate is meaningful rather than a blanket pass.
-4. **Guard audit** — each of the seven `is_custom_client()` call sites in §5.3 reviewed
+   user-visible `RustDesk` and `rustdesk.com`. The gate operates against an **explicit
+   allowlist** of known-acceptable residue, so it is meaningful rather than a blanket pass:
+   internal crate and library names (§8.1), the `is_public()` predicate and its test
+   fixtures, the unreachable `admin.rustdesk.com` fallback, and the dead version endpoint
+   (all §8.3). Any occurrence outside the allowlist fails the gate.
+4. **URL audit** — confirm no reachable code path opens a `rustdesk.com` URL, and that
+   `https://raatik.com/privacy` resolves before release.
+5. **Guard audit** — each of the seven `is_custom_client()` call sites in §5.3 reviewed
    and its post-flip behaviour recorded.
-5. **Runtime, on a real install:**
+6. **Runtime, on a real install:**
    - Farsi is the language on first launch, with English selectable.
    - About/window title/tray/Start Menu all read RaatikDesk.
    - Config directory is `%APPDATA%\RaatikDesk`.
    - The client registers with `remote.raatik.ir` without manual configuration.
    - The Network settings pane is present and editable.
-6. **End-to-end** — a successful remote-control session between two Windows machines
+7. **End-to-end** — a successful remote-control session between two Windows machines
    through `remote.raatik.ir`, confirming connection, input and screen capture.
-7. **CI parity** — the GitHub Actions workflow produces an installer equivalent to the
+8. **CI parity** — the GitHub Actions workflow produces an installer equivalent to the
    local build.
 
 ## 13. Open items carried into implementation
@@ -342,3 +411,6 @@ compile alone.
 - The mechanism for defaulting the language to Farsi rather than the OS locale (§7).
 - The exact location in the Flutter About dialog where the Farsi company name is
   surfaced (§8.2).
+- The value and use of `hbb_common::config::HELPER_URL`, which is referenced from `src/`
+  but defined inside the unfetched submodule; if it points at `rustdesk.com` it falls
+  under §8.3's rewrite category.
