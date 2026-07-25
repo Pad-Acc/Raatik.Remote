@@ -16,12 +16,34 @@ env:
   FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
 
 jobs:
+  # hbb_common has no dependency on libs/scrap (the crate whose build.rs requires
+  # VCPKG_ROOT) and its own build.rs only runs pure-Rust protobuf codegen — no vcpkg, no
+  # LLVM, no bridge artifact. `-p hbb_common` builds only that package and its own
+  # dependency graph, so this job gives seconds-level feedback for Tasks 4-6's tests in
+  # libs/hbb_common/src/config.rs. It gates the two more expensive jobs below via `needs`
+  # so a broken commit fails fast instead of also paying for bridge codegen + vcpkg.
+  hbb-common-tests:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.75
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Test hbb_common (no vcpkg needed)
+        run: cargo test -p hbb_common --lib
+
   # The root crate only compiles with --features flutter if src/bridge_generated.rs
   # exists (src/lib.rs gates `mod bridge_generated` on cfg(feature = "flutter")), but
   # that file is gitignored and generated at build time. Mirrors raatik-windows.yml's
   # generate-bridge job exactly (same Flutter 3.22.3 pin used there for codegen) so both
   # workflows produce identical bridge output from a single source of truth.
   generate-bridge:
+    needs: [hbb-common-tests]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +114,7 @@ jobs:
 
   check:
     name: cargo test (root crate)
-    needs: [generate-bridge]
+    needs: [hbb-common-tests, generate-bridge]
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
