@@ -64,6 +64,7 @@ enum SettingsTabKey {
 
 class DesktopSettingPage extends StatefulWidget {
   final SettingsTabKey initialTabkey;
+  // Customer-first IA (spec §7): عمومی → امنیت → نمایش → شبکه → پیشرفته → درباره
   static final List<SettingsTabKey> tabKeys = [
     SettingsTabKey.general,
     if (!isWeb &&
@@ -71,10 +72,10 @@ class DesktopSettingPage extends StatefulWidget {
         !bind.isDisableSettings() &&
         bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) != 'Y')
       SettingsTabKey.safety,
+    if (!bind.isIncomingOnly()) SettingsTabKey.display,
     if (!bind.isDisableSettings() &&
         bind.mainGetBuildinOption(key: kOptionHideNetworkSetting) != 'Y')
       SettingsTabKey.network,
-    if (!bind.isIncomingOnly()) SettingsTabKey.display,
     if (!isWeb && !bind.isIncomingOnly() && bind.pluginFeatureIsEnabled())
       SettingsTabKey.plugin,
     if (kRaatikApiEnabled && !bind.isDisableAccount()) SettingsTabKey.account,
@@ -182,24 +183,29 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     for (final tab in DesktopSettingPage.tabKeys) {
       switch (tab) {
         case SettingsTabKey.general:
+          // fa: عمومی و ظاهر
           settingTabs.add(_TabInfo(
               tab, 'General', Icons.settings_outlined, Icons.settings));
           break;
         case SettingsTabKey.safety:
+          // fa: امنیت و دسترسی
           settingTabs.add(_TabInfo(tab, 'Security',
               Icons.enhanced_encryption_outlined, Icons.enhanced_encryption));
           break;
-        case SettingsTabKey.network:
-          settingTabs
-              .add(_TabInfo(tab, 'Network', Icons.link_outlined, Icons.link));
-          break;
         case SettingsTabKey.display:
+          // fa: نمایش و کیفیت تصویر
           settingTabs.add(_TabInfo(tab, 'Display',
               Icons.desktop_windows_outlined, Icons.desktop_windows));
           break;
+        case SettingsTabKey.network:
+          // fa: شبکه و سرور راتیک
+          settingTabs
+              .add(_TabInfo(tab, 'Network', Icons.link_outlined, Icons.link));
+          break;
         case SettingsTabKey.plugin:
+          // fa: پیشرفته (Plugins key — matches lang map)
           settingTabs.add(_TabInfo(
-              tab, 'Plugin', Icons.extension_outlined, Icons.extension));
+              tab, 'Plugins', Icons.extension_outlined, Icons.extension));
           break;
         case SettingsTabKey.account:
           settingTabs.add(
@@ -210,6 +216,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
               .add(_TabInfo(tab, 'Printer', Icons.print_outlined, Icons.print));
           break;
         case SettingsTabKey.about:
+          // fa: درباره RaatikDesk
           settingTabs
               .add(_TabInfo(tab, 'About', Icons.info_outline, Icons.info));
           break;
@@ -228,11 +235,11 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
         case SettingsTabKey.safety:
           children.add(const _Safety());
           break;
-        case SettingsTabKey.network:
-          children.add(const _Network());
-          break;
         case SettingsTabKey.display:
           children.add(const _Display());
+          break;
+        case SettingsTabKey.network:
+          children.add(const _Network());
           break;
         case SettingsTabKey.plugin:
           children.add(const _Plugin());
