@@ -234,8 +234,10 @@ mod test {
         // above; now that both raw values are branded directly (see en.rs
         // / fa.rs), the exemption is gone and no value should ever surface
         // the literal "RustDesk" in translated output.
+        let prev = hbb_common::config::LocalConfig::get_option("lang");
         for (k, _) in super::fa::T.iter() {
             for locale in ["en", "fa"] {
+                hbb_common::config::LocalConfig::set_option("lang".to_owned(), locale.to_owned());
                 let out = super::translate_locale(k.to_string(), locale);
                 assert!(
                     !out.contains("RustDesk"),
@@ -243,11 +245,15 @@ mod test {
                 );
             }
         }
+        hbb_common::config::LocalConfig::set_option("lang".to_owned(), prev);
     }
 
     #[test]
     fn test_powered_by_is_branded() {
+        let prev = hbb_common::config::LocalConfig::get_option("lang");
+        hbb_common::config::LocalConfig::set_option("lang".to_owned(), "en".to_owned());
         let s = super::translate_locale("powered_by_me".to_owned(), "en");
         assert_eq!(s, "Powered by RaatikDesk");
+        hbb_common::config::LocalConfig::set_option("lang".to_owned(), prev);
     }
 }
