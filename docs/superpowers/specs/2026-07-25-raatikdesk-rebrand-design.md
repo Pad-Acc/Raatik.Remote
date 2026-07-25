@@ -19,7 +19,8 @@ language.
 | Decision | Choice |
 |---|---|
 | Rebrand depth | True white-label — no visible "RustDesk" anywhere |
-| Build environments | Both local and GitHub Actions |
+| Build environment | **GitHub Actions only** — no local toolchain (§10) |
+| Repo visibility | Public — free Actions minutes, satisfies AGPL source offer |
 | Languages | Farsi (default) and English only; all others removed |
 | RTL | Not implemented — Farsi text in the existing LTR layout |
 | Server config | Compiled in as defaults, Network settings pane left visible and editable |
@@ -42,7 +43,20 @@ language.
   `github.com/rustdesk/hbb_common` is reachable from this machine. Nothing compiles
   without it.
 - **No build toolchain installed:** no Rust, no Flutter, no vcpkg, no LLVM.
-  MSVC 2022 and Python 3.14.4 are present.
+- **No Visual Studio 2022.** `C:\Program Files\Microsoft Visual Studio\2022\` exists but is
+  **empty**. What is installed is **Visual Studio 18 BuildTools** (Insiders/preview) at
+  `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools`; `vswhere` confirms the
+  C++ x86/x64 toolset is present, alongside Windows SDK `10.0.26100.0`.
+- Python is the **Microsoft Store stub** at
+  `C:\Users\Milad\AppData\Local\Microsoft\WindowsApps\python.exe` (reports 3.14.4).
+  `build.py` shells out to `python3` and `pip3`; the Store build has restricted filesystem
+  access and is an unreliable host for it.
+- Disk: **C: has 41 GB free**, D: has 409 GB. The user requires that nothing new be
+  installed on C:.
+
+Together these are why the build is performed **exclusively in CI** (§10): vcpkg is pinned
+to an early-2025 commit that predates VS 18 and must compile ffmpeg, aom, libvpx, libyuv,
+opus and mfx-dispatch from source against it, which is an avoidable class of failure.
 - Rebranding surface: 659 occurrences of `rustdesk` across 147 code files,
   plus 52 files in `src/lang/`.
 - Farsi translation `src/lang/fa.rs` is 764/764 keys with **1** empty value.
@@ -378,27 +392,57 @@ Signing is not performed. The `signtool` invocation at
 so that dropping in a certificate later is a one-line change. Customers will see a
 Windows SmartScreen "unknown publisher" warning; this is accepted.
 
-## 10. Build environments
+## 10. Build environment — GitHub Actions only
 
-Both are set up. Local for iteration, CI for reproducible release artifacts.
+**All compilation happens in CI. No toolchain is installed on the local machine.**
 
-### 10.1 Local
+This supersedes an earlier decision to build both locally and in CI. The local machine has
+no Rust, Flutter, LLVM or vcpkg, and — decisively — no VS 2022, only VS 18 Insiders (§3).
+The pinned vcpkg commit predates VS 18 entirely and must build ffmpeg, aom, libvpx, libyuv,
+opus and mfx-dispatch from source; `windows-2022` runners provide exactly the VS 2022
+toolchain that pin was tested against. Building only in CI also avoids multi-GB downloads
+over the local connection and makes the C:/D: installation constraint moot.
 
-Required and currently absent: Rust ≥ 1.75 (MSVC toolchain), the Flutter SDK pinned to
-the version used by CI, LLVM, and vcpkg. MSVC 2022 and Python are already present.
+The local machine is used to **edit** source and to **install and test** the finished
+artifact — running the built installer requires no toolchain.
 
-vcpkg supplies `libvpx`, `libyuv`, `opus` and `aom` per [vcpkg.json](../../../vcpkg.json),
-using the static triplet definitions in [res/vcpkg-triplets/](../../../res/vcpkg-triplets)
-with `VCPKG_ROOT` exported. This step is the most common point of failure and is
-validated before any rebranding work is judged complete.
+### 10.1 Accepted cost: no local `cargo check`
 
-### 10.2 GitHub Actions
+Without a local toolchain there is no fast compile feedback; a stale `mod` line in
+`lang.rs` or a mismatched brace costs a CI round-trip. This is mitigated by a **separate
+lightweight check workflow** running `cargo check` only, which with warm `rust-cache` and
+vcpkg binary caching completes in minutes rather than the ~40-60 minutes of a full build.
+
+That workflow still requires vcpkg, because [build.rs:62](../../../build.rs) calls
+`std::env::var("VCPKG_ROOT").unwrap()` and panics when it is unset — `cargo check` cannot
+be run standalone even for pure string edits.
+
+### 10.2 Release build workflow
 
 A `raatik-windows.yml` derived from the `build-for-windows-flutter` job at
 [.github/workflows/flutter-build.yml:80](../../../.github/workflows/flutter-build.yml),
 reduced to the `x86_64-pc-windows-msvc` target with the `x64-windows-static` triplet.
 All non-Windows jobs and the `windows-11-arm` matrix entry are removed. The workflow
 uploads the installer as a build artifact.
+
+Values pinned by the upstream workflow and preserved verbatim:
+
+| Setting | Value |
+|---|---|
+| Runner | `windows-2022` |
+| Rust | `1.75` (`SCITER_RUST_VERSION`), target `x86_64-pc-windows-msvc`, component `rustfmt` |
+| Flutter | `3.24.5`, plus the custom RustDesk engine `windows-x64-release.zip` and the `flutter_3.24.4_dropdown_menu_enableFilter.diff` patch |
+| LLVM | `15.0.6` |
+| vcpkg | commit `120deac3062162151622ca4860575a33844ba10b`, triplet `x64-windows-static`, overlay ports `./res/vcpkg` |
+| Build command | `python3 .\build.py --portable --flutter --hwcodec --vram` |
+
+The upstream job passes `--skip-portable-pack` and packs the self-extracting installer in a
+later step. Because RAATIK ships unsigned (§9), `--skip-portable-pack` is **dropped** so
+`build_flutter_windows()` ([build.py:440](../../../build.py)) produces the installer
+directly, and the upstream signing step is omitted.
+
+The repository is **public**, which makes Actions minutes free and simultaneously satisfies
+the AGPL source-offer obligation (§3).
 
 ## 11. Out of scope
 
@@ -413,14 +457,20 @@ uploads the installer as a build artifact.
 - Locking or hiding any settings pane.
 - A RAATIK-hosted software-update endpoint, and any in-app update notification (§8.3).
 - Authoring or hosting a documentation tree at `raatik.com/docs` (§8.3).
+- A local build environment: installing Rust, Flutter, LLVM, vcpkg or Visual Studio 2022
+  on this machine (§10). No compilation is performed locally.
 
 ## 12. Verification
 
 No step below is treated as optional, and none of it is inferred from a successful
 compile alone.
 
-1. **Submodule** — `libs/hbb_common` populated at the pinned commit.
-2. **Compile** — `cargo check`, then a release build with the `flutter` feature.
+1. **Submodule** — `libs/hbb_common` populated at the fork's commit, with `.gitmodules`
+   pointing at `Pad-Acc/hbb_common` (§4.1). Verified by confirming a fresh clone of
+   `Raatik.Remote` yields branded values in `config.rs` — this is the check that catches
+   the failure mode where local edits work but CI silently builds vanilla RustDesk.
+2. **Compile** — the `cargo check` workflow green, then the full release build workflow
+   green. Both run in CI; nothing is compiled locally (§10).
 3. **No-leak gate** — scan the built binary's strings and the packaged installer for
    user-visible `RustDesk` and `rustdesk.com`. The gate operates against an **explicit
    allowlist** of known-acceptable residue, so it is meaningful rather than a blanket pass:
@@ -431,7 +481,10 @@ compile alone.
    `https://raatik.com/privacy` resolves before release.
 5. **Guard audit** — each of the seven `is_custom_client()` call sites in §5.3 reviewed
    and its post-flip behaviour recorded.
-6. **Runtime, on a real install:**
+6. **Runtime, on a real install.** The artifact under test is the installer **downloaded
+   from the CI run**, installed on a Windows machine exactly as a customer would. Since
+   nothing is built locally, there is no local binary to confuse it with — and no "CI
+   parity" question, because CI is the only build.
    - Farsi is the language on first launch, with English selectable.
    - About/window title/tray/Start Menu all read RaatikDesk.
    - Config directory is `%APPDATA%\RaatikDesk`.
@@ -439,8 +492,6 @@ compile alone.
    - The Network settings pane is present and editable.
 7. **End-to-end** — a successful remote-control session between two Windows machines
    through `remote.raatik.ir`, confirming connection, input and screen capture.
-8. **CI parity** — the GitHub Actions workflow produces an installer equivalent to the
-   local build.
 
 ## 13. Open items carried into implementation
 
