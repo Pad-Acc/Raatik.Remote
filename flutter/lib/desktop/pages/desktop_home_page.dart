@@ -60,13 +60,16 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    // B1: RTL two-column — first child (receive, flex 14) is dominant at start.
     return _buildBlock(
         child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        buildLeftPane(context),
-        if (!isIncomingOnly) const VerticalDivider(width: 1),
-        if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
+        Expanded(flex: 14, child: buildReceiveSupportPanel(context)),
+        if (!isIncomingOnly) ...[
+          const SizedBox(width: 12),
+          Expanded(flex: 10, child: buildConnectToPeerPanel(context)),
+        ],
       ],
     ));
   }
@@ -76,7 +79,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         block: _block, mask: true, use: canBeBlocked, child: child);
   }
 
-  Widget buildLeftPane(BuildContext context) {
+  /// Dominant receive panel (customer path): logo, ID, one-time password, copy CTA.
+  Widget buildReceiveSupportPanel(BuildContext context) {
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
     final children = <Widget>[
@@ -93,6 +97,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
+      if (!isOutgoingOnly) buildCopyIdPasswordCta(context),
       FutureBuilder<Widget>(
         future: Future.value(
             Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
@@ -128,23 +133,30 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       ]);
     }
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
+    final panelBorder =
+        Theme.of(context).dividerColor.withOpacity(0.45);
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 200.0,
-        color: Theme.of(context).colorScheme.background,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: panelBorder),
+        ),
         child: Stack(
           children: [
             Column(
               children: [
-                SingleChildScrollView(
-                  controller: _leftPaneScrollController,
-                  child: Column(
-                    key: _childKey,
-                    children: children,
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _leftPaneScrollController,
+                    child: Column(
+                      key: _childKey,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: children,
+                    ),
                   ),
                 ),
-                Expanded(child: Container())
               ],
             ),
             if (isOutgoingOnly)
@@ -180,10 +192,40 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
-  buildRightPane(BuildContext context) {
+  /// Secondary connect panel (support path): peer ID + connect + recent list.
+  Widget buildConnectToPeerPanel(BuildContext context) {
+    final panelBorder =
+        Theme.of(context).dividerColor.withOpacity(0.45);
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: panelBorder),
+      ),
       child: ConnectionPage(),
+    );
+  }
+
+  Widget buildCopyIdPasswordCta(BuildContext context) {
+    final model = gFFI.serverModel;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+      child: SizedBox(
+        height: 44,
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            final id = model.serverId.text.trim();
+            final pwd = model.serverPasswd.text.trim();
+            final text = pwd.isEmpty ? id : '$id\n$pwd';
+            if (text.isEmpty) return;
+            Clipboard.setData(ClipboardData(text: text));
+            showToast(translate("Copied"));
+          },
+          icon: const Icon(Icons.copy_rounded, size: 18),
+          label: Text(translate("Copy ID and password")),
+        ),
+      ),
     );
   }
 
@@ -213,7 +255,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          translate("ID"),
+                          translate("My ID"),
                           style: TextStyle(
                               fontSize: 14,
                               color: Theme.of(context)
