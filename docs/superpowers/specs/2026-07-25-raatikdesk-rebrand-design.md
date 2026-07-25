@@ -220,14 +220,35 @@ Executable metadata in [flutter/windows/runner/Runner.rc:92-98](../../../flutter
 
 | Field | From | To |
 |---|---|---|
-| `CompanyName` | `Purslane Tech Pte. Ltd.` | RAATIK |
+| `CompanyName` | `Purslane Tech Pte. Ltd.` | `Rayan Etemad Tosee Yekta (RAATIK)` |
 | `FileDescription` | `RustDesk Remote Desktop` | `RaatikDesk Remote Desktop` |
 | `InternalName` | `rustdesk` | `raatikdesk` |
-| `LegalCopyright` | `Copyright © 2026 Purslane Tech Pte. Ltd.` | RAATIK copyright |
+| `LegalCopyright` | `Copyright © 2026 Purslane Tech Pte. Ltd. All rights reserved.` | `Copyright © 2026 Rayan Etemad Tosee Yekta (RAATIK). All rights reserved.` |
 | `OriginalFilename` | `rustdesk.exe` | `raatikdesk.exe` |
 | `ProductName` | `RustDesk` | `RaatikDesk` |
 
 `Cargo.toml`'s `description` and `authors` are updated to RAATIK's.
+`hbb_common::config::ORG` is set to **`ir.raatik`**, matching the `raatik.ir` domain.
+
+### 8.2 Company name: Latin in resources, Farsi in the UI
+
+The company's legal name has two forms:
+
+- Latin: **Rayan Etemad Tosee Yekta (RAATIK)**
+- Farsi: **رایان اعتماد توسعه یکتا (راتیک)**
+
+Only the Latin form goes into `Runner.rc`. The version resource declares
+`BLOCK "040904e4"` with `VALUE "Translation", 0x409, 1252` — US English with **codepage
+1252 (Windows Latin-1)**, which has no representation for Farsi characters. Emitting
+Farsi there would require switching the block to a Unicode codepage (`04b0` / 1200) and
+re-encoding the `.rc`, which risks `rc.exe` mangling the file for no functional gain:
+the version resource is surfaced only in the executable's Properties dialog, not in the
+product UI. The existing `©` in `LegalCopyright` is retained because it is representable
+in cp1252.
+
+The Farsi form is used where Flutter renders Unicode natively and customers actually
+read it — the About dialog and any in-app company attribution. Both forms are therefore
+present in the product; they are simply placed according to what each layer can encode.
 
 ### 8.1 Deliberate exception: internal crate names are not renamed
 
@@ -319,5 +340,5 @@ compile alone.
   `RENDEZVOUS_SERVERS`, `RS_PUB_KEY` and the writer of `PROD_RENDEZVOUS_SERVER`
   (§6, confirm-on-fetch).
 - The mechanism for defaulting the language to Farsi rather than the OS locale (§7).
-- RAATIK's exact legal name, copyright string and reverse-DNS organization identifier
-  for `Runner.rc`, `Cargo.toml` and `config::ORG`.
+- The exact location in the Flutter About dialog where the Farsi company name is
+  surfaced (§8.2).
