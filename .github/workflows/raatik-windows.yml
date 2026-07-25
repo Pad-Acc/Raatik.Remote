@@ -12,7 +12,7 @@ env:
   LLVM_VERSION: "15.0.6"
   FLUTTER_VERSION: "3.24.5"
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
-  VERSION: "1.4.9"
+  VERSION: "2026.07.01"
   # flutter_rust_bridge codegen inputs (see .github/workflows/bridge.yml) — the Windows
   # build consumes src/bridge_generated.rs and flutter/lib/generated_bridge.dart, which are
   # gitignored and must be generated in CI, not shipped in the tree.

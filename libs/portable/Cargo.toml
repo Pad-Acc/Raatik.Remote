@@ -1,6 +1,6 @@
 [package]
 name = "rustdesk-portable-packer"
-version = "1.4.9"
+version = "2026.7.1"
 edition = "2021"
 description = "RaatikDesk Remote Desktop"
 

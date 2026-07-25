@@ -1,6 +1,6 @@
 [package]
 name = "rustdesk"
-version = "1.4.9"
+version = "2026.7.1"
 authors = ["Rayan Etemad Tosee Yekta (RAATIK)"]
 edition = "2021"
 build= "build.rs"
