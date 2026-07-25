@@ -653,6 +653,16 @@ List<Locale> supportedLocales = const [
   Locale('fa'),
 ];
 
+/// Flutter Material/Get locale from saved language preference.
+/// Mirrors Rust `resolve_lang`: empty / default -> `fa`; `en` stays LTR.
+Locale getPreferredAppLocale() {
+  final lang = bind.mainGetLocalOption(key: kCommConfKeyLang).toLowerCase();
+  if (lang == 'en' || lang.startsWith('en-') || lang.startsWith('en_')) {
+    return const Locale('en');
+  }
+  return const Locale('fa');
+}
+
 String formatDurationToTime(Duration duration) {
   var totalTime = duration.inSeconds;
   final secs = totalTime % 60;

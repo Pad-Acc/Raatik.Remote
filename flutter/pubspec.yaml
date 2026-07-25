@@ -189,11 +189,7 @@ flutter:
           weight: 700
         - asset: assets/IRANSansXFaNum-ExtraBold.ttf
           weight: 800
-        - asset: assets/IRANSansXFaNum-Heavy.ttf
-          weight: 800
         - asset: assets/IRANSansXFaNum-Black.ttf
-          weight: 900
-        - asset: assets/IRANSansXFaNum-ExtraBlack.ttf
           weight: 900
 
   # An image asset can refer to one or more resolution-specific "variants", see

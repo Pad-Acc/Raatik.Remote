@@ -370,7 +370,7 @@ void _runApp(
       darkTheme: MyTheme.darkTheme,
       themeMode: themeMode,
       home: home,
-      locale: const Locale('fa'),
+      locale: getPreferredAppLocale(),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -515,7 +515,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
               : isWeb
                   ? WebHomePage()
                   : HomePage(),
-          locale: const Locale('fa'),
+          locale: getPreferredAppLocale(),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
