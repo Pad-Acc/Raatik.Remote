@@ -8,6 +8,7 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
 
 import '../common.dart';
+import '../raatik/flags.dart';
 import 'model.dart';
 
 enum PeerTabIndex {
@@ -41,8 +42,9 @@ class PeerTabModel with ChangeNotifier {
     true,
     true,
     !isWeb && bind.mainGetLocalOption(key: "disable-discovery-panel") != "Y",
-    !(bind.isDisableAb() || bind.isDisableAccount()),
-    !(bind.isDisableGroupPanel() || bind.isDisableAccount()),
+    kRaatikApiEnabled && !(bind.isDisableAb() || bind.isDisableAccount()),
+    kRaatikApiEnabled &&
+        !(bind.isDisableGroupPanel() || bind.isDisableAccount()),
   ]);
   final List<bool> _isVisible = List.filled(maxTabCount, true, growable: false);
   List<bool> get isVisibleEnabled => () {
