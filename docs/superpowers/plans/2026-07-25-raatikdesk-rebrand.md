@@ -54,6 +54,25 @@ These apply to every task. Values are copied verbatim from the spec.
 
 Establishes the two forks and proves the submodule wiring works before any code changes. Nothing is rebranded yet — this task's deliverable is a public repo whose fresh clone reproduces the vanilla 1.4.9 tree.
 
+> **Executed 2026-07-25. Two corrections learned the hard way — read before re-running.**
+>
+> 1. **Both repos must be created with `gh repo fork`, never as empty repos.** The first
+>    attempt created `Raatik.Remote` empty and pushed 11,239 commits / 76 MB from the local
+>    machine. It died with `RPC failed; HTTP 408` after 20 MB, and `http.postBuffer=500MB` +
+>    `http.lowSpeedLimit=0` did not help. `gh repo fork` copies server-side on GitHub's
+>    infrastructure, after which the branch push is only the ~9 RAATIK commits (51 objects)
+>    and completes instantly. The empty repo was renamed to `Raatik.Remote.placeholder` to
+>    free the name; it can be deleted once the token has `delete_repo` scope.
+> 2. **The fork's default branch must be set to `raatik/1.4.9`.** A fork inherits upstream's
+>    `master`, and GitHub only allows `workflow_dispatch` on workflows present on the
+>    **default** branch — so Task 2's manual trigger would fail with "workflow does not
+>    exist". This supersedes the original "do not change the default branch" instruction,
+>    which assumed a fresh empty repo.
+>
+> Verification was done via the GitHub API rather than a 75 MB clone, which is both cheaper
+> and stricter — it confirms the exact refs CI resolves: `.gitmodules` → `Pad-Acc/hbb_common`,
+> gitlink `7e1c392c`, that commit present in the fork, and `APP_NAME` still `"RustDesk"`.
+
 **Files:**
 - Modify: `.gitmodules`
 
