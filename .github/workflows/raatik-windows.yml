@@ -132,7 +132,10 @@ jobs:
           $engineDir = Join-Path $flutterRoot "bin\cache\artifacts\engine\windows-x64-release"
           Write-Host "flutterRoot: $flutterRoot"
           Write-Host "engineDir: $engineDir"
-          New-Item -ItemType Directory -Force -Path $engineDir | Out-Null
+          if (-not (Test-Path $engineDir)) {
+            Write-Error "Expected windows-x64-release engine artifacts at $engineDir but they are missing (flutter precache did not populate this path, or 'flutter' on PATH resolved to an unexpected install)."
+            exit 1
+          }
           Move-Item -Force windows-x64-release\* $engineDir\
           Get-ChildItem $engineDir
 
