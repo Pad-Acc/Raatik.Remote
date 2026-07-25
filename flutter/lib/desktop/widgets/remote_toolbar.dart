@@ -330,10 +330,13 @@ class _ToolbarTheme {
   /// T1 persistent top bar fill (Raatik Primary `#0284C7`).
   static const Color barColor = MyTheme.button;
   /// Icon chip on primary bar (translucent white so chips read on `#0284C7`).
-  static const Color blueColor = Color(0x33FFFFFF);
-  static const Color hoverBlueColor = Color(0x55FFFFFF);
-  static Color inactiveColor = const Color(0x22FFFFFF);
-  static Color hoverInactiveColor = const Color(0x44FFFFFF);
+  static const Color chipColor = Color(0x33FFFFFF);
+  static const Color chipHoverColor = Color(0x55FFFFFF);
+  /// Saturated accent for monitor selection / in-menu chips / number labels.
+  static const Color blueColor = MyTheme.button;
+  static const Color hoverBlueColor = MyTheme.accent;
+  static Color inactiveColor = Colors.grey[800]!;
+  static Color hoverInactiveColor = Colors.grey[850]!;
 
   /// Danger / end-session (Raatik Danger `#DC2626`).
   static const Color redColor = Color(0xFFDC2626);
@@ -892,9 +895,9 @@ class _PinMenu extends StatelessWidget {
         tooltip: state.pin ? 'Unpin Toolbar' : 'Pin Toolbar',
         onPressed: state.switchPin,
         color:
-            state.pin ? _ToolbarTheme.blueColor : _ToolbarTheme.inactiveColor,
+            state.pin ? _ToolbarTheme.chipColor : _ToolbarTheme.inactiveColor,
         hoverColor: state.pin
-            ? _ToolbarTheme.hoverBlueColor
+            ? _ToolbarTheme.chipHoverColor
             : _ToolbarTheme.hoverInactiveColor,
       ),
     );
@@ -981,7 +984,7 @@ class _MoreMenu extends StatelessWidget {
           return items;
         },
         child: Material(
-          color: _ToolbarTheme.blueColor,
+          color: _ToolbarTheme.chipColor,
           borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1016,10 +1019,10 @@ class _MobileActionMenu extends StatelessWidget {
           onPressed: () => ffi.dialogManager.setMobileActionsOverlayVisible(
               !ffi.dialogManager.mobileActionsOverlayVisible.value),
           color: ffi.dialogManager.mobileActionsOverlayVisible.isTrue
-              ? _ToolbarTheme.blueColor
+              ? _ToolbarTheme.chipColor
               : _ToolbarTheme.inactiveColor,
           hoverColor: ffi.dialogManager.mobileActionsOverlayVisible.isTrue
-              ? _ToolbarTheme.hoverBlueColor
+              ? _ToolbarTheme.chipHoverColor
               : _ToolbarTheme.hoverInactiveColor,
         ));
   }
@@ -1362,8 +1365,8 @@ class _ControlMenu extends StatelessWidget {
     return _IconSubmenuButton(
         tooltip: 'Control Actions',
         svg: "assets/actions.svg",
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.chipColor,
+        hoverColor: _ToolbarTheme.chipHoverColor,
         ffi: ffi,
         menuChildrenGetter: (_) => toolbarControls(context, id, ffi).map((e) {
               if (e.divider) {
@@ -1640,8 +1643,8 @@ class _DisplayMenuState extends State<_DisplayMenu> {
       tooltip: 'Display Settings',
       svg: "assets/display.svg",
       ffi: widget.ffi,
-      color: _ToolbarTheme.blueColor,
-      hoverColor: _ToolbarTheme.hoverBlueColor,
+      color: _ToolbarTheme.chipColor,
+      hoverColor: _ToolbarTheme.chipHoverColor,
       menuChildrenGetter: menuChildrenGetter,
     );
   }
@@ -2389,8 +2392,8 @@ class _KeyboardMenu extends StatelessWidget {
         tooltip: 'Keyboard Settings',
         svg: "assets/keyboard_mouse.svg",
         ffi: ffi,
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.chipColor,
+        hoverColor: _ToolbarTheme.chipHoverColor,
         menuChildrenGetter: (_) => [
               keyboardMode(),
               localKeyboardType(),
@@ -2654,8 +2657,8 @@ class _ChatMenuState extends State<_ChatMenu> {
           key: chatButtonKey,
           svg: 'assets/chat.svg',
           ffi: widget.ffi,
-          color: _ToolbarTheme.blueColor,
-          hoverColor: _ToolbarTheme.hoverBlueColor,
+          color: _ToolbarTheme.chipColor,
+          hoverColor: _ToolbarTheme.chipHoverColor,
           menuChildrenGetter: (_) => [textChat(), voiceCall()]);
     }
   }
@@ -2666,8 +2669,8 @@ class _ChatMenuState extends State<_ChatMenu> {
       tooltip: 'Text chat',
       key: chatButtonKey,
       onPressed: _textChatOnPressed,
-      color: _ToolbarTheme.blueColor,
-      hoverColor: _ToolbarTheme.hoverBlueColor,
+      color: _ToolbarTheme.chipColor,
+      hoverColor: _ToolbarTheme.chipHoverColor,
     );
   }
 
@@ -2758,8 +2761,8 @@ class _VoiceCallMenu extends StatelessWidget {
             return _IconSubmenuButton(
               tooltip: 'Voice call',
               svg: 'assets/voice_call.svg',
-              color: _ToolbarTheme.blueColor,
-              hoverColor: _ToolbarTheme.hoverBlueColor,
+              color: _ToolbarTheme.chipColor,
+              hoverColor: _ToolbarTheme.chipHoverColor,
               menuChildrenGetter: menuChildrenGetter,
               ffi: ffi,
             );
@@ -2799,10 +2802,10 @@ class _RecordMenu extends StatelessWidget {
       onPressed: () => recordingModel.toggle(),
       color: recordingModel.start
           ? _ToolbarTheme.redColor
-          : _ToolbarTheme.blueColor,
+          : _ToolbarTheme.chipColor,
       hoverColor: recordingModel.start
           ? _ToolbarTheme.hoverRedColor
-          : _ToolbarTheme.hoverBlueColor,
+          : _ToolbarTheme.chipHoverColor,
     );
   }
 }
