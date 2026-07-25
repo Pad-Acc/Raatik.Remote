@@ -327,13 +327,17 @@ class ToolbarState {
 }
 
 class _ToolbarTheme {
-  static const Color blueColor = MyTheme.button;
-  static const Color hoverBlueColor = MyTheme.accent;
-  static Color inactiveColor = Colors.grey[800]!;
-  static Color hoverInactiveColor = Colors.grey[850]!;
+  /// T1 persistent top bar fill (Raatik Primary `#0284C7`).
+  static const Color barColor = MyTheme.button;
+  /// Icon chip on primary bar (translucent white so chips read on `#0284C7`).
+  static const Color blueColor = Color(0x33FFFFFF);
+  static const Color hoverBlueColor = Color(0x55FFFFFF);
+  static Color inactiveColor = const Color(0x22FFFFFF);
+  static Color hoverInactiveColor = const Color(0x44FFFFFF);
 
-  static const Color redColor = Colors.redAccent;
-  static const Color hoverRedColor = Colors.red;
+  /// Danger / end-session (Raatik Danger `#DC2626`).
+  static const Color redColor = Color(0xFFDC2626);
+  static const Color hoverRedColor = Color(0xFFB91C1C);
   // kMinInteractiveDimension
   static const double height = 20.0;
   static const double dividerHeight = 12.0;
@@ -342,7 +346,8 @@ class _ToolbarTheme {
   static const double buttonHMargin = 2;
   static const double buttonVMargin = 6;
   static const double iconRadius = 8;
-  static const double elevation = 3;
+  static const double elevation = 1;
+  static const double barHeight = 48;
 
   static double dividerSpaceToAction = isWindows ? 8 : 14;
 
@@ -644,7 +649,10 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _syncDockingOptions(force: cached == null || shouldResetToTop);
       // Initialize toolbar states (collapse, hide) from session options
-      widget.state.init(widget.ffi.sessionId);
+      await widget.state.init(widget.ffi.sessionId);
+      // T1: keep bar persistent (pinned, expanded).
+      await widget.state.setPin(true);
+      widget.state.collapse.value = false;
     });
 
     _debouncerHide = Debouncer<int>(
@@ -672,9 +680,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
   }
 
   _debouncerHideProc(int v) {
-    if (!pin && collapse.isFalse && _isCursorOverImage && _dragging.isFalse) {
-      collapse.value = true;
-    }
+    // T1: persistent top bar — never auto-collapse.
   }
 
   @override
@@ -696,48 +702,13 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       if (hide.value) {
         return const SizedBox.shrink();
       }
-      final edge = _edge.value;
-      final isHorizontal = _isHorizontalEdge(edge);
-
-      // Measure the live toolbar after every layout so the preview ghost can
-      // match its actual footprint (collapsed handle vs expanded toolbar).
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_dragging.isTrue) return;
-        final ro = _toolbarKey.currentContext?.findRenderObject();
-        if (ro is RenderBox && ro.hasSize) {
-          final s = ro.size;
-          if (_toolbarSize.value != s) _toolbarSize.value = s;
-        }
-      });
-
-      final toolbar = Align(
-        alignment: _alignmentForEdge(edge, _fraction.value),
+      // T1: persistent full-width top bar (no floating pin / multi-edge chrome).
+      return Align(
+        alignment: Alignment.topCenter,
         child: KeyedSubtree(
           key: _toolbarKey,
-          child: collapse.isFalse
-              ? _buildToolbar(context, edge, isHorizontal)
-              : _buildDraggableCollapse(context, edge, isHorizontal),
+          child: _buildToolbar(context, _ToolbarEdge.top, true),
         ),
-      );
-
-      // Always return the Stack — even when not dragging — so the toolbar's
-      // position in the Element tree stays stable. Wrapping/unwrapping it
-      // mid-drag was killing the Draggable's gesture state.
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          IgnorePointer(
-            child: Obx(() {
-              final pe = _previewEdge.value;
-              final pf = _previewFraction.value;
-              if (!_dragging.isTrue || pe == null || pf == null) {
-                return const SizedBox.shrink();
-              }
-              return _buildDragPreview(context, pe, pf, _toolbarSize.value);
-            }),
-          ),
-          toolbar,
-        ],
       );
     });
   }
@@ -804,9 +775,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
 
   Widget _buildToolbar(
       BuildContext context, _ToolbarEdge edge, bool isHorizontal) {
-    final List<Widget> toolbarItems = [];
-    toolbarItems.add(_PinMenu(state: widget.state));
-    toolbarItems.add(Obx(() {
+    // Primary actions stay visible; less-used tools go under overflow «بیشتر».
+    final List<Widget> primaryItems = [];
+    primaryItems.add(Obx(() {
       final privacyModeState = PrivacyModeState.find(widget.id);
       if ((privacyModeState.isEmpty ||
               allowDisplaySwitchInPrivacyMode(pi, privacyModeState.value)) &&
@@ -817,11 +788,8 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
         return const Offstage();
       }
     }));
-    if (!isWebDesktop) {
-      toolbarItems.add(_MobileActionMenu(ffi: widget.ffi));
-    }
 
-    toolbarItems.add(Obx(() {
+    primaryItems.add(Obx(() {
       final privacyModeState = PrivacyModeState.find(widget.id);
       if ((privacyModeState.isEmpty ||
               allowDisplaySwitchInPrivacyMode(pi, privacyModeState.value)) &&
@@ -836,9 +804,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       }
     }));
 
-    toolbarItems
+    primaryItems
         .add(_ControlMenu(id: widget.id, ffi: widget.ffi, state: widget.state));
-    toolbarItems.add(_DisplayMenu(
+    primaryItems.add(_DisplayMenu(
       id: widget.id,
       ffi: widget.ffi,
       state: widget.state,
@@ -846,62 +814,41 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     ));
     // Do not show keyboard for camera connection type.
     if (widget.ffi.connType == ConnType.defaultConn) {
-      toolbarItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
+      primaryItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
     }
-    toolbarItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
+    primaryItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
+    // Active voice-call chrome stays visible (session-critical).
     if (!isWeb) {
-      toolbarItems.add(_VoiceCallMenu(id: widget.id, ffi: widget.ffi));
+      primaryItems.add(_VoiceCallMenu(id: widget.id, ffi: widget.ffi));
     }
-    if (!isWeb) toolbarItems.add(_RecordMenu());
-    toolbarItems.add(_CloseMenu(id: widget.id, ffi: widget.ffi));
-    final toolbarBorderRadius = BorderRadius.all(Radius.circular(4.0));
-    // innerAxis: how the toolbar icons themselves flow.
-    // outerAxis: how the toolbar block and the handle stack against each other
-    // (perpendicular to the dock edge, so the handle hangs off the interior face).
-    final innerAxis = isHorizontal ? Axis.horizontal : Axis.vertical;
-    final outerAxis = isHorizontal ? Axis.vertical : Axis.horizontal;
-    final spacer = isHorizontal
-        ? SizedBox(width: _ToolbarTheme.buttonHMargin * 2)
-        : SizedBox(height: _ToolbarTheme.buttonHMargin * 2);
-    final toolbarMaterial = Material(
+
+    return Material(
       elevation: _ToolbarTheme.elevation,
-      shadowColor: MyTheme.color(context).shadow,
-      borderRadius: toolbarBorderRadius,
-      color: Theme.of(context)
-          .menuBarTheme
-          .style
-          ?.backgroundColor
-          ?.resolve(MaterialState.values.toSet()),
-      child: SingleChildScrollView(
-        scrollDirection: innerAxis,
+      color: _ToolbarTheme.barColor,
+      child: SizedBox(
+        width: double.infinity,
+        height: _ToolbarTheme.barHeight,
         child: Theme(
           data: themeData(),
-          child: _ToolbarTheme.borderWrapper(
-              context,
-              Flex(
-                direction: innerAxis,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  spacer,
-                  ...toolbarItems,
-                  spacer,
-                ],
+          child: Row(
+            children: [
+              const SizedBox(width: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: primaryItems,
+                  ),
+                ),
               ),
-              toolbarBorderRadius),
+              _MoreMenu(id: widget.id, ffi: widget.ffi),
+              _CloseMenu(id: widget.id, ffi: widget.ffi),
+              const SizedBox(width: 8),
+            ],
+          ),
         ),
       ),
-    );
-    final handle = _buildDraggableCollapse(context, edge, isHorizontal);
-    // The handle hangs off the interior face of the toolbar (away from the
-    // docked edge), centered along that face by the Flex's default cross-axis
-    // alignment, so the icons themselves sit flush against the docked edge.
-    final children = (edge == _ToolbarEdge.top || edge == _ToolbarEdge.left)
-        ? [toolbarMaterial, handle]
-        : [handle, toolbarMaterial];
-    return Flex(
-      direction: outerAxis,
-      mainAxisSize: MainAxisSize.min,
-      children: children,
     );
   }
 
@@ -926,10 +873,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
           style: MenuStyle(
         padding: MaterialStatePropertyAll(EdgeInsets.zero),
         elevation: MaterialStatePropertyAll(0),
+        backgroundColor: MaterialStatePropertyAll(Colors.transparent),
         shape: MaterialStatePropertyAll(BeveledRectangleBorder()),
-      ).copyWith(
-              backgroundColor:
-                  Theme.of(context).menuBarTheme.style?.backgroundColor)),
+      )),
     );
   }
 }
@@ -950,6 +896,108 @@ class _PinMenu extends StatelessWidget {
         hoverColor: state.pin
             ? _ToolbarTheme.hoverBlueColor
             : _ToolbarTheme.hoverInactiveColor,
+      ),
+    );
+  }
+}
+
+/// Overflow menu for less-used remote-session tools (T1 «بیشتر»).
+class _MoreMenu extends StatelessWidget {
+  final String id;
+  final FFI ffi;
+  const _MoreMenu({Key? key, required this.id, required this.ffi})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final recordingModel = Provider.of<RecordingModel>(context);
+    final ffiModel = Provider.of<FfiModel>(context);
+    final showMobile = !isWebDesktop && ffi.ffiModel.isPeerAndroid;
+    final showRecord = !isWeb &&
+        (recordingModel.start || ffiModel.permissions['recording'] != false);
+    final showCad = ffi.connType == ConnType.defaultConn &&
+        ffiModel.keyboard &&
+        ffi.ffiModel.pi.platform == kPeerPlatformWindows;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: _ToolbarTheme.buttonHMargin,
+        vertical: _ToolbarTheme.buttonVMargin,
+      ),
+      child: PopupMenuButton<String>(
+        tooltip: translate('More'),
+        offset: const Offset(0, 8),
+        onSelected: (value) {
+          switch (value) {
+            case 'mobile':
+              ffi.dialogManager.setMobileActionsOverlayVisible(
+                  !ffi.dialogManager.mobileActionsOverlayVisible.value);
+              break;
+            case 'record':
+              recordingModel.toggle();
+              break;
+            case 'cad':
+              bind.sessionCtrlAltDel(sessionId: ffi.sessionId);
+              break;
+            case 'lock':
+              bind.sessionLockScreen(sessionId: ffi.sessionId);
+              break;
+          }
+        },
+        itemBuilder: (context) {
+          final items = <PopupMenuEntry<String>>[];
+          if (showMobile) {
+            items.add(PopupMenuItem(
+              value: 'mobile',
+              child: Text(translate('Mobile Actions')),
+            ));
+          }
+          if (showRecord) {
+            items.add(PopupMenuItem(
+              value: 'record',
+              child: Text(translate(recordingModel.start
+                  ? 'Stop session recording'
+                  : 'Start session recording')),
+            ));
+          }
+          if (showCad) {
+            items.add(PopupMenuItem(
+              value: 'cad',
+              child: Text(translate('Insert Ctrl + Alt + Del')),
+            ));
+          }
+          if (ffi.connType == ConnType.defaultConn && ffiModel.keyboard) {
+            items.add(PopupMenuItem(
+              value: 'lock',
+              child: Text(translate('Insert Lock')),
+            ));
+          }
+          if (items.isEmpty) {
+            items.add(PopupMenuItem(
+              enabled: false,
+              child: Text(translate('More')),
+            ));
+          }
+          return items;
+        },
+        child: Material(
+          color: _ToolbarTheme.blueColor,
+          borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.more_horiz, color: Colors.white, size: 22),
+                const SizedBox(width: 4),
+                Text(
+                  translate('More'),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2767,17 +2815,53 @@ class _CloseMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _IconMenuButton(
-      assetName: 'assets/close.svg',
-      tooltip: 'Close',
-      onPressed: () async {
-        if (await showConnEndAuditDialogCloseCanceled(ffi: ffi)) {
-          return;
-        }
-        closeConnection(id: id);
-      },
-      color: _ToolbarTheme.redColor,
-      hoverColor: _ToolbarTheme.hoverRedColor,
+    Future<void> onEndSession() async {
+      if (await showConnEndAuditDialogCloseCanceled(ffi: ffi)) {
+        return;
+      }
+      closeConnection(id: id);
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: _ToolbarTheme.buttonHMargin,
+        vertical: _ToolbarTheme.buttonVMargin,
+      ),
+      child: Tooltip(
+        message: translate('Disconnect'),
+        child: Material(
+          color: _ToolbarTheme.redColor,
+          borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+          child: InkWell(
+            onTap: onEndSession,
+            borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/close.svg',
+                    colorFilter:
+                        const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    width: 20,
+                    height: 20,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    translate('Disconnect'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
