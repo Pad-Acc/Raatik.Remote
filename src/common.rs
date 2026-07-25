@@ -3007,4 +3007,24 @@ mod tests {
         assert_eq!(combined_mask & MOUSE_TYPE_MASK, MOUSE_TYPE_DOWN);
         assert_eq!(combined_mask >> 3, MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT);
     }
+
+    #[test]
+    fn test_uri_prefix_is_raatikdesk() {
+        assert_eq!(get_uri_prefix(), "raatikdesk://");
+    }
+
+    #[test]
+    fn test_is_rustdesk_is_false() {
+        assert!(!is_rustdesk());
+    }
+
+    #[test]
+    fn test_is_custom_client_is_true() {
+        assert!(is_custom_client());
+    }
+
+    #[test]
+    fn test_2fa_issuer_is_branded() {
+        assert_eq!(crate::auth_2fa::ISSUER, "RaatikDesk");
+    }
 }

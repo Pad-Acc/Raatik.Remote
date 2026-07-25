@@ -1988,9 +1988,10 @@ fn get_public_base_dir() -> PathBuf {
 
 #[inline]
 pub fn get_custom_client_staging_dir() -> PathBuf {
+    let app_name = crate::get_app_name();
     get_public_base_dir()
-        .join("RustDesk")
-        .join("RustDeskCustomClientStaging")
+        .join(&app_name)
+        .join(format!("{app_name}CustomClientStaging"))
 }
 
 /// Removes the custom client staging directory.
