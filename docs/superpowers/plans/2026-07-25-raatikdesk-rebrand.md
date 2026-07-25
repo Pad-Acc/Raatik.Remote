@@ -156,6 +156,29 @@ Expected: the line is present and still reads `"RustDesk"` — vanilla, because 
 
 Per §4.2 this must pass **before** any rebranding, so that a later failure is unambiguously ours rather than the toolchain's. Deliverable: a downloadable installer built from RAATIK's repo, still branded RustDesk.
 
+> **Executed 2026-07-25 — green on the second attempt. Two gaps in this task's original text.**
+>
+> 1. **A `generate-bridge` job is required and was missing entirely.** This task specified a
+>    single Windows job, but the build cannot compile without the `flutter_rust_bridge`
+>    generated bindings. The working workflow has two jobs: `generate-bridge` on
+>    `ubuntu-22.04`, which runs the bridge codegen and uploads a `bridge-artifact`, and
+>    `build-windows` on `windows-2022`, which declares `needs: [generate-bridge]` and restores
+>    that artifact before building. Bridge codegen takes ~2 minutes; the Windows job ~43.
+> 2. **The custom-engine step must resolve the Flutter root dynamically.** Copying upstream's
+>    hardcoded `C:/hostedtoolcache/windows/flutter/stable-<ver>-x64/...` path fails with
+>    `Move-Item: Could not find a part of the path`, because `subosito/flutter-action` does not
+>    install to that location. The fix derives it at runtime:
+>    `$flutterRoot = Split-Path (Split-Path (Get-Command flutter).Source)`, then
+>    `New-Item -ItemType Directory -Force` on
+>    `$flutterRoot\bin\cache\artifacts\engine\windows-x64-release` before the move.
+>
+> Final build command: `python3 .\build.py --portable --flutter --hwcodec --vram`. Note
+> `--skip-portable-pack` is deliberately absent — CI uses it because it packs separately, but
+> here the self-extracting installer is the deliverable.
+>
+> Result: run 30159818309 succeeded, artifact `raatikdesk-windows-x86_64`, 23,345,692 bytes,
+> with `if-no-files-found: error` guarding the `./*install.exe` glob.
+
 **Files:**
 - Create: `.github/workflows/raatik-windows.yml`
 
