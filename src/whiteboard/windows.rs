@@ -15,6 +15,11 @@ use tao::{
 };
 use tiny_skia::{Color, FillRule, Paint, PathBuilder, PixmapMut, Stroke, Transform};
 
+#[inline]
+fn whiteboard_title() -> String {
+    format!("{} whiteboard", crate::get_app_name())
+}
+
 pub(super) fn create_event_loop() -> ResultType<()> {
     let face = match create_font_face() {
         Ok(face) => Some(face),
@@ -26,7 +31,7 @@ pub(super) fn create_event_loop() -> ResultType<()> {
 
     let event_loop = EventLoopBuilder::<(String, CustomEvent)>::with_user_event().build();
     let mut window_builder = WindowBuilder::new()
-        .with_title("RustDesk whiteboard")
+        .with_title(whiteboard_title())
         .with_transparent(true)
         .with_always_on_top(true)
         .with_skip_taskbar(true)
@@ -227,4 +232,14 @@ pub(super) fn create_event_loop() -> ResultType<()> {
             _ => (),
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_whiteboard_title_is_branded() {
+        assert_eq!(whiteboard_title(), "RaatikDesk whiteboard");
+    }
 }

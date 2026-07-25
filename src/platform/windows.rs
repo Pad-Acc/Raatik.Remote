@@ -3784,6 +3784,11 @@ pub fn try_kill_broker() {
         .spawn());
 }
 
+#[inline]
+fn console_output_caption() -> String {
+    format!("{} Output", crate::get_app_name())
+}
+
 pub fn message_box(text: &str) {
     let mut text = text.to_owned();
     let nodialog = std::env::var("NO_DIALOG").unwrap_or_default() == "Y";
@@ -3814,7 +3819,7 @@ pub fn message_box(text: &str) {
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<u16>>();
-    let caption = "RustDesk Output"
+    let caption = console_output_caption()
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<u16>>();
@@ -4542,6 +4547,11 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_console_output_caption_is_branded() {
+        assert_eq!(console_output_caption(), "RaatikDesk Output");
     }
 
     #[test]

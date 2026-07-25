@@ -19,6 +19,18 @@ const RUSTDESK_CLIPBOARD_OWNER_FORMAT: &'static str = "dyn.com.rustdesk.owner";
 // Add special format for Excel XML Spreadsheet
 const CLIPBOARD_FORMAT_EXCEL_XML_SPREADSHEET: &'static str = "XML Spreadsheet";
 
+// Text written to the file clipboard to work around KDE Plasma not clearing it on `clear()`.
+// This text can end up visible to the user if they paste after the clear, so it must be branded.
+// Not `cfg`-gated to the `unix-file-copy-paste` feature (unlike its only caller) so it stays
+// compiled — and testable — under the default CI feature set.
+#[allow(dead_code)]
+fn clipboard_clear_placeholder_text() -> String {
+    format!(
+        "{} placeholder to clear the file clipboard",
+        crate::get_app_name()
+    )
+}
+
 #[cfg(not(target_os = "android"))]
 lazy_static::lazy_static! {
     static ref ARBOARD_MTX: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
@@ -501,11 +513,10 @@ impl ClipboardContext {
                 #[cfg(target_os = "macos")]
                 let is_kde_x11 = false;
                 let clear_holder_text = if is_kde_x11 {
-                    "RustDesk placeholder to clear the file clipboard"
+                    clipboard_clear_placeholder_text()
                 } else {
-                    ""
-                }
-                .to_string();
+                    String::new()
+                };
                 self.inner
                     .set_formats(&[
                         ClipboardData::Text(clear_holder_text),
@@ -969,5 +980,18 @@ pub mod clipboard_listener {
             }
         });
         h
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clipboard_clear_placeholder_text_is_branded() {
+        assert_eq!(
+            clipboard_clear_placeholder_text(),
+            "RaatikDesk placeholder to clear the file clipboard"
+        );
     }
 }
