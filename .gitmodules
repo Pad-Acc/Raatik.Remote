@@ -1,3 +1,4 @@
 [submodule "libs/hbb_common"]
 	path = libs/hbb_common
-	url = https://github.com/rustdesk/hbb_common
+	url = https://github.com/Pad-Acc/hbb_common
+	branch = raatik/1.4.9
