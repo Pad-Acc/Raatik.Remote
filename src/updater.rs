@@ -118,6 +118,17 @@ fn start_auto_update_check_(rx_msg: Receiver<UpdateMsg>) {
 }
 
 fn check_update(manually: bool) -> ResultType<()> {
+    // Custom (white-label) clients such as RaatikDesk must never contact RustDesk's own
+    // update endpoint (https://api.rustdesk.com/version/latest) — see
+    // `common::check_software_update()`, which already early-returns for this reason.
+    // This background auto-update path is a separate entry point into
+    // `do_check_software_update()` that bypassed that gate: with `allow-auto-update`
+    // enabled (exposed in Desktop Settings regardless of branding), it would silently
+    // download and self-install an unbranded upstream `rustdesk-*.exe`, de-branding the
+    // installation and pointing it at RustDesk's own default servers.
+    if crate::is_custom_client() {
+        return Ok(());
+    }
     #[cfg(target_os = "windows")]
     let update_msi = crate::platform::is_msi_installed()? && !crate::is_custom_client();
     if !(manually || config::Config::get_bool_option(config::keys::OPTION_ALLOW_AUTO_UPDATE)) {
@@ -294,4 +305,21 @@ fn update_new_version(update_msi: bool, version: &str, file_path: &PathBuf) {
 pub fn get_download_file_from_url(url: &str) -> Option<PathBuf> {
     let filename = url.split('/').last()?;
     Some(std::env::temp_dir().join(filename))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_check_update_disabled_for_custom_client() {
+        // For custom clients (RaatikDesk), `check_update()` must return immediately and
+        // never reach `do_check_software_update()`, which POSTs to
+        // https://api.rustdesk.com/version/latest. This is what keeps the background
+        // "Auto update" path from silently phoning home and self-installing an unbranded
+        // upstream RustDesk build.
+        assert!(crate::is_custom_client());
+        assert!(check_update(true).is_ok());
+        assert!(check_update(false).is_ok());
+    }
 }

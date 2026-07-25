@@ -485,7 +485,12 @@ class _GeneralState extends State<_General> {
   Widget other() {
     final incomingOnly = bind.isIncomingOnly();
     final outgoingOnly = bind.isOutgoingOnly();
-    final showAutoUpdate = isWindows && bind.mainIsInstalled();
+    // Auto-update relies on RustDesk's own update endpoint (api.rustdesk.com), which
+    // custom (white-label) clients like RaatikDesk never contact (see
+    // `check_update()` in src/updater.rs). Hide the toggle for them so it doesn't
+    // advertise a feature that is now a guaranteed no-op.
+    final showAutoUpdate =
+        isWindows && bind.mainIsInstalled() && !bind.isCustomClient();
     final children = <Widget>[
       if (!isWeb && !incomingOnly)
         _OptionCheckBox(context, 'Confirm before closing multiple tabs',
