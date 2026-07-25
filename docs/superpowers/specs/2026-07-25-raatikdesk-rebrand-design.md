@@ -143,8 +143,24 @@ Changing that default to `"RaatikDesk"` cascades automatically to:
 - `get_app_name()` ([src/common.rs:1003](../../../src/common.rs)) — the bulk of UI text.
 - `get_uri_prefix()` ([src/common.rs:1013](../../../src/common.rs)) — becomes `raatikdesk://`.
 - The runtime brand substitution at [src/lang.rs:225-243](../../../src/lang.rs), which
-  rewrites `RustDesk` → `RaatikDesk` inside **every translated string at lookup time**.
-  This is why the language files need no hand-editing for the brand name.
+  rewrites `RustDesk` → `RaatikDesk` inside translated strings at lookup time. This is why
+  the language files need almost no hand-editing for the brand name.
+
+**The substitution has two deliberate exclusions** ([lang.rs:227-228](../../../src/lang.rs))
+which must be handled explicitly, or "RustDesk" reaches the user interface:
+
+| Key | English value | Treatment |
+|---|---|---|
+| `powered_by_me` | `Powered by RustDesk` | Becomes **`Powered by RaatikDesk`**. Rendered at [flutter/lib/common.dart:3752](../../../flutter/lib/common.dart). Also hardcoded untranslated in [fa.rs:583](../../../src/lang/fa.rs), which must be updated too. |
+| `upgrade_rustdesk_server_pro_*` | `Please upgrade RustDesk Server Pro to version {} or newer!` | Rewritten for string-table cleanliness. Unreachable for RAATIK — thrown only via RustDesk Server Pro at [group_model.dart:189](../../../flutter/lib/models/group_model.dart). |
+
+Upstream exempts `powered_by_me` so that rebranded clients continue to credit RustDesk.
+Changing it is permitted: RustDesk ships **plain AGPL-3.0** with no added §7(b) attribution
+term, and no UI attribution string is legally required.
+
+**Non-negotiable regardless:** the `LICENCE` file, all existing copyright headers, and the
+offer of corresponding source (§3) are preserved. Rebranding removes RustDesk's *trademark*,
+not its copyright notices.
 - The config/data directory, derived from `APP_NAME` — becomes `%APPDATA%\RaatikDesk`.
 
 Upstream's own custom-client path writes `APP_NAME` from a **signed** Pro
