@@ -175,6 +175,13 @@ jobs:
       - name: Build
         run: python3 .\build.py --portable --flutter --hwcodec --vram
 
+      - name: Brand-leak gate
+        shell: bash
+        run: |
+          python3 raatik/no_leak_gate.py \
+            ./flutter/build/windows/x64/runner/Release/raatikdesk.exe \
+            ./RaatikDesk-${{ env.VERSION }}-install.exe
+
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
