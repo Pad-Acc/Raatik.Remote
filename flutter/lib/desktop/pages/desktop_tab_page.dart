@@ -101,7 +101,7 @@ class _DesktopTabPageState extends State<DesktopTabPage> {
                 offstage: bind.isIncomingOnly() || bind.isDisableSettings(),
                 child: ActionIcon(
                   message: 'Settings',
-                  icon: IconFont.menu,
+                  icon: Icons.settings,
                   onTap: DesktopTabPage.onAddSetting,
                   isClose: false,
                 ),

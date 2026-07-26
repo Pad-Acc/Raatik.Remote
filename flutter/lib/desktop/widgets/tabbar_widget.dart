@@ -1081,7 +1081,7 @@ class _TabState extends State<_Tab> with RestorationMixin {
           color: isSelected
               ? MyTheme.tabbar(context).selectedTabIconColor
               : MyTheme.tabbar(context).unSelectedTabIconColor,
-        ).paddingOnly(right: 5));
+        ));
     final labelWidget = Obx(() {
       return ConstrainedBox(
           constraints: BoxConstraints(maxWidth: widget.maxLabelWidth ?? 200),
@@ -1108,6 +1108,7 @@ class _TabState extends State<_Tab> with RestorationMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             icon,
+            const SizedBox(width: 8),
             labelWidget,
           ],
         );
