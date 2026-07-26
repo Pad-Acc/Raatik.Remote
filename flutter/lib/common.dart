@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/desktop/widgets/refresh_wrapper.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
+import 'package:flutter_hbb/raatik/dialogs/dialog_style.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 import 'package:flutter_hbb/raatik/theme/my_theme_merge.dart' as my_theme_merge;
 import 'package:flutter_hbb/main.dart';
@@ -913,6 +914,12 @@ class CustomAlertDialog extends StatelessWidget {
     bool tabTapped = false;
     if (isAndroid) gFFI.invokeMethod("enable_soft_keyboard", true);
 
+    final desktop = isDesktop || isWebDesktop;
+    final constraints = desktop
+        ? raatikDesktopDialogConstraints(contentBoxConstraints)
+        : contentBoxConstraints;
+    final dialogActions = raatikDialogActions(actions);
+
     return FocusScope(
       node: scopeNode,
       autofocus: true,
@@ -941,10 +948,10 @@ class CustomAlertDialog extends StatelessWidget {
           scrollable: true,
           title: title,
           content: ConstrainedBox(
-            constraints: contentBoxConstraints,
+            constraints: constraints,
             child: content,
           ),
-          actions: actions,
+          actions: dialogActions,
           titlePadding: titlePadding ?? MyTheme.dialogTitlePadding(),
           contentPadding:
               MyTheme.dialogContentPadding(actions: actions is List),
@@ -2816,13 +2823,18 @@ Widget dialogButton(String text,
     TextStyle? style,
     ButtonStyle? buttonStyle}) {
   if (isDesktop || isWebDesktop) {
+    final minSize = raatikDialogButtonMinSize;
     if (isOutline) {
       return icon == null
           ? OutlinedButton(
+              style: OutlinedButton.styleFrom(minimumSize: minSize)
+                  .merge(buttonStyle),
               onPressed: onPressed,
               child: Text(translate(text), style: style),
             )
           : OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(minimumSize: minSize)
+                  .merge(buttonStyle),
               icon: icon,
               onPressed: onPressed,
               label: Text(translate(text), style: style),
@@ -2830,13 +2842,17 @@ Widget dialogButton(String text,
     } else {
       return icon == null
           ? ElevatedButton(
-              style: ElevatedButton.styleFrom(elevation: 0).merge(buttonStyle),
+              style:
+                  ElevatedButton.styleFrom(elevation: 0, minimumSize: minSize)
+                      .merge(buttonStyle),
               onPressed: onPressed,
               child: Text(translate(text), style: style),
             )
           : ElevatedButton.icon(
               icon: icon,
-              style: ElevatedButton.styleFrom(elevation: 0).merge(buttonStyle),
+              style:
+                  ElevatedButton.styleFrom(elevation: 0, minimumSize: minSize)
+                      .merge(buttonStyle),
               onPressed: onPressed,
               label: Text(translate(text), style: style),
             );

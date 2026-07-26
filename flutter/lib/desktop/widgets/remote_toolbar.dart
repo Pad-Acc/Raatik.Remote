@@ -12,6 +12,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/plugin/widgets/desc_ui.dart';
 import 'package:flutter_hbb/plugin/common.dart';
+import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -329,9 +330,11 @@ class ToolbarState {
 class _ToolbarTheme {
   /// T1 persistent top bar fill (Raatik Primary `#0284C7`).
   static const Color barColor = MyTheme.button;
+
   /// Icon chip on primary bar (translucent white so chips read on `#0284C7`).
   static const Color chipColor = Color(0x33FFFFFF);
   static const Color chipHoverColor = Color(0x55FFFFFF);
+
   /// Saturated accent for monitor selection / in-menu chips / number labels.
   static const Color blueColor = MyTheme.button;
   static const Color hoverBlueColor = MyTheme.accent;
@@ -345,9 +348,9 @@ class _ToolbarTheme {
   static const double height = 20.0;
   static const double dividerHeight = 12.0;
 
-  static const double buttonSize = 32;
+  static const double buttonSize = RaatikTokens.minTarget;
   static const double buttonHMargin = 2;
-  static const double buttonVMargin = 6;
+  static const double buttonVMargin = 2;
   static const double iconRadius = 8;
   static const double elevation = 1;
   static const double barHeight = 48;
@@ -825,69 +828,59 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       primaryItems.add(_VoiceCallMenu(id: widget.id, ffi: widget.ffi));
     }
 
-    return Material(
-      elevation: _ToolbarTheme.elevation,
-      color: _ToolbarTheme.barColor,
-      child: SizedBox(
-        width: double.infinity,
-        height: _ToolbarTheme.barHeight,
-        child: Theme(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Theme(
           data: themeData(),
-          child: Row(
-            children: [
-              const SizedBox(width: 8),
-              _buildBrandLabel(),
-              const SizedBox(width: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: primaryItems,
-                  ),
-                ),
-              ),
-              _MoreMenu(id: widget.id, ffi: widget.ffi),
-              _CloseMenu(id: widget.id, ffi: widget.ffi),
-              const SizedBox(width: 8),
-            ],
+          child: RaatikRemoteToolbarBar(
+            width: constraints.maxWidth,
+            brandLabel: _buildBrandLabel(),
+            primaryItems: primaryItems,
+            moreMenu: _MoreMenu(id: widget.id, ffi: widget.ffi),
+            closeMenu: _CloseMenu(id: widget.id, ffi: widget.ffi),
+            barColor: _ToolbarTheme.barColor,
+            elevation: _ToolbarTheme.elevation,
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   /// Compact leading brand chrome for the T1 primary top bar.
   Widget _buildBrandLabel() {
     final peer = _sessionPeerLabel();
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          'RaatikDesk',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
-        ),
-        if (peer.isNotEmpty) ...[
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 160),
-            child: Text(
-              peer,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.85),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-              ),
+    return Semantics(
+      label: peer.isEmpty ? 'RaatikDesk' : 'RaatikDesk $peer',
+      header: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'RaatikDesk',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
             ),
           ),
+          if (peer.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                peer,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -973,77 +966,81 @@ class _MoreMenu extends StatelessWidget {
         horizontal: _ToolbarTheme.buttonHMargin,
         vertical: _ToolbarTheme.buttonVMargin,
       ),
-      child: PopupMenuButton<String>(
-        tooltip: translate('More'),
-        offset: const Offset(0, 8),
-        onSelected: (value) {
-          switch (value) {
-            case 'mobile':
-              ffi.dialogManager.setMobileActionsOverlayVisible(
-                  !ffi.dialogManager.mobileActionsOverlayVisible.value);
-              break;
-            case 'record':
-              recordingModel.toggle();
-              break;
-            case 'cad':
-              bind.sessionCtrlAltDel(sessionId: ffi.sessionId);
-              break;
-            case 'lock':
-              bind.sessionLockScreen(sessionId: ffi.sessionId);
-              break;
-          }
-        },
-        itemBuilder: (context) {
-          final items = <PopupMenuEntry<String>>[];
-          if (showMobile) {
-            items.add(PopupMenuItem(
-              value: 'mobile',
-              child: Text(translate('Mobile Actions')),
-            ));
-          }
-          if (showRecord) {
-            items.add(PopupMenuItem(
-              value: 'record',
-              child: Text(translate(recordingModel.start
-                  ? 'Stop session recording'
-                  : 'Start session recording')),
-            ));
-          }
-          if (showCad) {
-            items.add(PopupMenuItem(
-              value: 'cad',
-              child: Text(translate('Insert Ctrl + Alt + Del')),
-            ));
-          }
-          if (ffi.connType == ConnType.defaultConn && ffiModel.keyboard) {
-            items.add(PopupMenuItem(
-              value: 'lock',
-              child: Text(translate('Insert Lock')),
-            ));
-          }
-          if (items.isEmpty) {
-            items.add(PopupMenuItem(
-              enabled: false,
-              child: Text(translate('More')),
-            ));
-          }
-          return items;
-        },
-        child: Material(
-          color: _ToolbarTheme.chipColor,
-          borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.more_horiz, color: Colors.white, size: 22),
-                const SizedBox(width: 4),
-                Text(
-                  translate('More'),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                ),
-              ],
+      child: Semantics(
+        label: translate('More'),
+        button: true,
+        child: PopupMenuButton<String>(
+          tooltip: translate('More'),
+          offset: const Offset(0, 8),
+          onSelected: (value) {
+            switch (value) {
+              case 'mobile':
+                ffi.dialogManager.setMobileActionsOverlayVisible(
+                    !ffi.dialogManager.mobileActionsOverlayVisible.value);
+                break;
+              case 'record':
+                recordingModel.toggle();
+                break;
+              case 'cad':
+                bind.sessionCtrlAltDel(sessionId: ffi.sessionId);
+                break;
+              case 'lock':
+                bind.sessionLockScreen(sessionId: ffi.sessionId);
+                break;
+            }
+          },
+          itemBuilder: (context) {
+            final items = <PopupMenuEntry<String>>[];
+            if (showMobile) {
+              items.add(PopupMenuItem(
+                value: 'mobile',
+                child: Text(translate('Mobile Actions')),
+              ));
+            }
+            if (showRecord) {
+              items.add(PopupMenuItem(
+                value: 'record',
+                child: Text(translate(recordingModel.start
+                    ? 'Stop session recording'
+                    : 'Start session recording')),
+              ));
+            }
+            if (showCad) {
+              items.add(PopupMenuItem(
+                value: 'cad',
+                child: Text(translate('Insert Ctrl + Alt + Del')),
+              ));
+            }
+            if (ffi.connType == ConnType.defaultConn && ffiModel.keyboard) {
+              items.add(PopupMenuItem(
+                value: 'lock',
+                child: Text(translate('Insert Lock')),
+              ));
+            }
+            if (items.isEmpty) {
+              items.add(PopupMenuItem(
+                enabled: false,
+                child: Text(translate('More')),
+              ));
+            }
+            return items;
+          },
+          child: Material(
+            color: _ToolbarTheme.chipColor,
+            borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.more_horiz, color: Colors.white, size: 22),
+                  const SizedBox(width: 4),
+                  Text(
+                    translate('More'),
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -2876,36 +2873,60 @@ class _CloseMenu extends StatelessWidget {
         horizontal: _ToolbarTheme.buttonHMargin,
         vertical: _ToolbarTheme.buttonVMargin,
       ),
-      child: Tooltip(
-        message: translate('Disconnect'),
-        child: Material(
-          color: _ToolbarTheme.redColor,
-          borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
-          child: InkWell(
-            onTap: onEndSession,
+      child: Semantics(
+        label: translate('Disconnect'),
+        button: true,
+        child: Tooltip(
+          message: translate('Disconnect'),
+          child: Material(
+            color: _ToolbarTheme.redColor,
             borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SvgPicture.asset(
-                    'assets/close.svg',
-                    colorFilter:
-                        const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                    width: 20,
-                    height: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    translate('Disconnect'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            child: InkWell(
+              onTap: onEndSession,
+              borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+              child: Focus(
+                child: Builder(
+                  builder: (context) {
+                    final focused = Focus.of(context).hasFocus;
+                    return Container(
+                      decoration: focused
+                          ? BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                  _ToolbarTheme.iconRadius),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                            )
+                          : null,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/close.svg',
+                              colorFilter: const ColorFilter.mode(
+                                  Colors.white, BlendMode.srcIn),
+                              width: 20,
+                              height: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              translate('Disconnect'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -2957,30 +2978,44 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
           width: _ToolbarTheme.buttonSize,
           height: _ToolbarTheme.buttonSize,
         );
-    var button = SizedBox(
+    Widget button = SizedBox(
       width: widget.width ?? _ToolbarTheme.buttonSize,
       height: _ToolbarTheme.buttonSize,
-      child: MenuItemButton(
-          style: ButtonStyle(
-              backgroundColor: MaterialStatePropertyAll(Colors.transparent),
-              padding: MaterialStatePropertyAll(EdgeInsets.zero),
-              overlayColor: MaterialStatePropertyAll(Colors.transparent)),
-          onHover: (value) => setState(() {
-                hover = value;
-              }),
-          onPressed: widget.onPressed,
-          child: Tooltip(
-            message: translate(widget.tooltip),
-            child: Material(
-                type: MaterialType.transparency,
-                child: Ink(
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(_ToolbarTheme.iconRadius),
-                      color: hover ? widget.hoverColor : widget.color,
-                    ),
-                    child: icon)),
-          )),
+      child: Semantics(
+        label: translate(widget.tooltip),
+        button: true,
+        child: MenuItemButton(
+            style: ButtonStyle(
+                backgroundColor: MaterialStatePropertyAll(Colors.transparent),
+                padding: MaterialStatePropertyAll(EdgeInsets.zero),
+                overlayColor: MaterialStatePropertyAll(Colors.transparent)),
+            onHover: (value) => setState(() {
+                  hover = value;
+                }),
+            onPressed: widget.onPressed,
+            child: Tooltip(
+              message: translate(widget.tooltip),
+              child: Focus(
+                child: Builder(
+                  builder: (context) {
+                    final focused = Focus.of(context).hasFocus;
+                    return Material(
+                        type: MaterialType.transparency,
+                        child: Ink(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                  _ToolbarTheme.iconRadius),
+                              color: hover ? widget.hoverColor : widget.color,
+                              border: focused
+                                  ? Border.all(color: Colors.white, width: 2)
+                                  : null,
+                            ),
+                            child: icon));
+                  },
+                ),
+              ),
+            )),
+      ),
     ).marginSymmetric(
         horizontal: widget.hMargin ?? _ToolbarTheme.buttonHMargin,
         vertical: widget.vMargin ?? _ToolbarTheme.buttonVMargin);
