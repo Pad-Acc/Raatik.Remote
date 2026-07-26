@@ -1193,7 +1193,7 @@ class _TabState extends State<_Tab> with RestorationMixin {
                                       tabSelected: isSelected,
                                       onClose: () => widget.onClose(),
                                     )))
-                              ])),
+                              ]))),
                   Offstage(
                     offstage: !showDivider,
                     child: VerticalDivider(
