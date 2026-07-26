@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/settings/settings_shell.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
+import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 enum _TestKey { general, safety, display, about }
 
@@ -11,6 +12,7 @@ const _destinations = [
     label: 'General',
     group: 'عمومی',
     icon: Icons.settings_outlined,
+    selectedIcon: Icons.settings,
   ),
   RaatikSettingsDestination<_TestKey>(
     keyValue: _TestKey.safety,
@@ -135,6 +137,44 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(picked, _TestKey.display);
+    });
+
+    testWidgets('sidebar rows meet min touch target height', (tester) async {
+      await _pumpShell(
+        tester,
+        1024,
+        600,
+        selected: _TestKey.general,
+        onSelected: (_) {},
+      );
+
+      final generalInkWell = find.ancestor(
+        of: find.text('General'),
+        matching: find.byType(InkWell),
+      );
+      expect(
+        tester.getSize(generalInkWell).height,
+        RaatikTokens.minTarget,
+      );
+    });
+
+    testWidgets('selected sidebar item uses selected icon', (tester) async {
+      await _pumpShell(
+        tester,
+        1024,
+        600,
+        selected: _TestKey.general,
+        onSelected: (_) {},
+      );
+
+      final generalInkWell = find.ancestor(
+        of: find.text('General'),
+        matching: find.byType(InkWell),
+      );
+      final generalIcon = tester.widgetList<Icon>(
+        find.descendant(of: generalInkWell, matching: find.byType(Icon)),
+      ).first;
+      expect(generalIcon.icon, Icons.settings);
     });
 
     testWidgets('no horizontal overflow at 800px', (tester) async {

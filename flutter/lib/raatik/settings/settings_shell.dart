@@ -7,12 +7,17 @@ class RaatikSettingsDestination<T> {
     required this.label,
     required this.group,
     required this.icon,
+    this.selectedIcon,
   });
 
   final T keyValue;
   final String label;
   final String group;
   final IconData icon;
+  final IconData? selectedIcon;
+
+  IconData resolveIcon(bool isSelected) =>
+      isSelected ? (selectedIcon ?? icon) : icon;
 }
 
 class RaatikSettingsShell<T> extends StatelessWidget {
@@ -119,7 +124,7 @@ class _CompactHeader<T> extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(
-                              d.icon,
+                              d.resolveIcon(d.keyValue == selected),
                               size: 20,
                               color: d.keyValue == selected
                                   ? RaatikTokens.primary
@@ -141,7 +146,7 @@ class _CompactHeader<T> extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        Icon(selectedDestination.icon,
+                        Icon(selectedDestination.resolveIcon(true),
                             size: 20, color: RaatikTokens.primary),
                         const SizedBox(width: 10),
                         Expanded(
@@ -269,7 +274,7 @@ class _SidebarItem<T> extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: SizedBox(
-            height: 42,
+            height: RaatikTokens.minTarget,
             child: Row(
               children: [
                 Container(
@@ -279,7 +284,7 @@ class _SidebarItem<T> extends StatelessWidget {
                 ),
                 const SizedBox(width: 9),
                 Icon(
-                  destination.icon,
+                  destination.resolveIcon(selected),
                   color: selected ? RaatikTokens.primary : null,
                   size: 20,
                 ),

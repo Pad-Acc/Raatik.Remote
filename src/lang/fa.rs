@@ -768,5 +768,10 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("All monitors", "همه نمایشگرها"),
         ("#{} monitor", "نمایشگر {}"),
         ("conn-e2ee-unavailable-tip", "رمزنگاری سرتاسری قابل تأیید نیست.\nدستگاه راه دور ممکن است هنوز در حال آماده‌سازی باشد. بعداً دوباره تلاش کنید.\nاگر این مشکل ادامه داشت، سرور ممکن است نامطمئن باشد.\nبا این حال ادامه می‌دهید؟"),
+        ("Control permissions, passwords, and who can connect to this device.", "دسترسی‌ها، رمزهای عبور و کسانی که می‌توانند به این دستگاه متصل شوند را کنترل کنید."),
+        ("Choose default image quality, codec, and how the remote screen is shown.", "کیفیت تصویر پیش‌فرض، کدک و نحوه نمایش صفحه راه‌دور را انتخاب کنید."),
+        ("Set relay servers, proxy, and other connection options.", "سرورهای رله، پروکسی و سایر گزینه‌های اتصال را تنظیم کنید."),
+        ("Manage plugins and advanced integrations.", "افزونه‌ها و یکپارچه‌سازی‌های پیشرفته را مدیریت کنید."),
+        ("Configure printers for remote print jobs.", "چاپگرها را برای کارهای چاپ از راه دور پیکربندی کنید."),
     ].iter().cloned().collect();
 }

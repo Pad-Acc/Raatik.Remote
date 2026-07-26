@@ -333,6 +333,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
             label: translate(tab.label),
             group: _groupForTab(tab.key),
             icon: tab.unselected,
+            selectedIcon: tab.selected,
           ),
         )
         .toList();
