@@ -53,28 +53,31 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      child: Obx(() => Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                height: 8,
-                width: 8,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: _svcStopped.value ||
-                          stateGlobal.svcStatus.value == SvcStatus.connecting
-                      ? kColorWarn
-                      : (stateGlobal.svcStatus.value == SvcStatus.ready
-                          ? Color.fromARGB(255, 50, 190, 166)
-                          : Color.fromARGB(255, 224, 79, 95)),
-                ),
-              ).marginSymmetric(horizontal: em),
-              Expanded(child: _buildConnStatusMsg()),
-            ],
-          )),
-    ).paddingOnly(right: bind.isIncomingOnly() ? 8 : 0);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(end: bind.isIncomingOnly() ? 8 : 0),
+      child: SizedBox(
+        height: height,
+        child: Obx(() => Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  height: 8,
+                  width: 8,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: _svcStopped.value ||
+                            stateGlobal.svcStatus.value == SvcStatus.connecting
+                        ? kColorWarn
+                        : (stateGlobal.svcStatus.value == SvcStatus.ready
+                            ? Color.fromARGB(255, 50, 190, 166)
+                            : Color.fromARGB(255, 224, 79, 95)),
+                  ),
+                ).marginSymmetric(horizontal: em),
+                Expanded(child: _buildConnStatusMsg()),
+              ],
+            )),
+      ),
+    );
   }
 
   _buildConnStatusMsg() {
@@ -227,10 +230,16 @@ class _ConnectionPageState extends State<ConnectionPage>
   @override
   Widget build(BuildContext context) {
     final isOutgoingOnly = bind.isOutgoingOnly();
-    return Column(
-      children: [
-        Expanded(
-            child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
+        final peerList = useExpanded
+            ? Expanded(child: PeerTabPage())
+            : const SizedBox(height: 320, child: PeerTabPage());
+
+        return Column(
+          mainAxisSize: useExpanded ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildConnectHeader(context),
@@ -239,20 +248,20 @@ class _ConnectionPageState extends State<ConnectionPage>
                 Flexible(child: _buildRemoteIDTextField(context)),
               ],
             ).marginOnly(top: 12),
-            SizedBox(height: 12),
-            Divider().paddingOnly(right: 12),
-            Expanded(child: PeerTabPage()),
+            const SizedBox(height: 12),
+            const Divider().padding(EdgeInsetsDirectional.only(end: 12)),
+            peerList,
+            if (!isOutgoingOnly) const Divider(height: 1),
+            if (!isOutgoingOnly) OnlineStatusWidget(),
           ],
-        ).paddingOnly(left: 12.0)),
-        if (!isOutgoingOnly) const Divider(height: 1),
-        if (!isOutgoingOnly) OnlineStatusWidget()
-      ],
+        ).padding(EdgeInsetsDirectional.only(start: 12.0));
+      },
     );
   }
 
   Widget _buildConnectHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 22, 12, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(8, 22, 12, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

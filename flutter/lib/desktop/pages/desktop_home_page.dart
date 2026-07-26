@@ -17,6 +17,7 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/plugin/ui_manager.dart';
+import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
@@ -67,21 +68,29 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
-    // B1: RTL two-column — first child (receive, flex 14) is dominant at start.
-    final panels = _buildBlock(
-        child: Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(flex: 14, child: buildReceiveSupportPanel(context)),
-        if (!isIncomingOnly) ...[
-          const SizedBox(width: 12),
-          Expanded(flex: 10, child: buildConnectToPeerPanel(context)),
-        ],
-      ],
-    ));
+    final receivePanel = buildReceiveSupportPanel(context);
+    final connectPanel = isIncomingOnly
+        ? const SizedBox.shrink()
+        : buildConnectToPeerPanel(context);
+
+    Widget homeLayout({
+      required Widget serviceGate,
+      required bool blocked,
+    }) =>
+        _buildBlock(
+          child: RaatikHomeLayout(
+            serviceGate: serviceGate,
+            receivePanel: receivePanel,
+            connectPanel: connectPanel,
+            blocked: blocked,
+          ),
+        );
 
     if (isOutgoingOnly) {
-      return panels;
+      return homeLayout(
+        serviceGate: const SizedBox.shrink(),
+        blocked: false,
+      );
     }
 
     return Obx(() {
@@ -102,28 +111,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         retryBody: translate('Retry'),
       );
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: RaatikServiceGate(
-              phase: phase,
-              copy: copy,
-              onStart: _serviceStartPending ? null : _handleServiceStart,
-            ),
-          ),
-          Expanded(
-            child: AbsorbPointer(
-              absorbing: blocked,
-              child: AnimatedOpacity(
-                opacity: blocked ? 0.48 : 1,
-                duration: const Duration(milliseconds: 180),
-                child: panels,
-              ),
-            ),
-          ),
-        ],
+      return homeLayout(
+        serviceGate: RaatikServiceGate(
+          phase: phase,
+          copy: copy,
+          onStart: _serviceStartPending ? null : _handleServiceStart,
+        ),
+        blocked: blocked,
       );
     });
   }
@@ -248,12 +242,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               });
             }
           },
-        ).marginOnly(bottom: 6, right: 6)
+        ).marginOnly(bottom: 6, end: 6)
       ]);
     }
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
-    final panelBorder =
-        Theme.of(context).dividerColor.withOpacity(0.45);
+    final panelBorder = Theme.of(context).dividerColor.withOpacity(0.45);
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
@@ -264,24 +257,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         ),
         child: Stack(
           children: [
-            Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _leftPaneScrollController,
-                    child: Column(
-                      key: _childKey,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: children,
-                    ),
-                  ),
-                ),
-              ],
+            SingleChildScrollView(
+              controller: _leftPaneScrollController,
+              child: Column(
+                key: _childKey,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children,
+              ),
             ),
             if (isOutgoingOnly)
-              Positioned(
+              PositionedDirectional(
                 bottom: 6,
-                left: 12,
+                start: 12,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: InkWell(
@@ -313,8 +300,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
   /// Secondary connect panel (support path): peer ID + connect + recent list.
   Widget buildConnectToPeerPanel(BuildContext context) {
-    final panelBorder =
-        Theme.of(context).dividerColor.withOpacity(0.45);
+    final panelBorder = Theme.of(context).dividerColor.withOpacity(0.45);
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -328,7 +314,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget buildCopyIdPasswordCta(BuildContext context) {
     final model = gFFI.serverModel;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 16, 12),
       child: SizedBox(
         height: 44,
         width: double.infinity,
@@ -351,8 +337,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   buildIDBoard(BuildContext context) {
     final model = gFFI.serverModel;
     return Container(
-      margin: const EdgeInsets.only(left: 20, right: 11),
-      height: 57,
+      margin: const EdgeInsetsDirectional.only(start: 20, end: 11),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
@@ -363,29 +348,26 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           ).marginOnly(top: 5),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 7),
+              padding: const EdgeInsetsDirectional.only(start: 7),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 25,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          translate("My ID"),
-                          style: TextStyle(
-                              fontSize: 14,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.color
-                                  ?.withOpacity(0.5)),
-                        ).marginOnly(top: 5),
-                        buildPopupMenu(context)
-                      ],
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        translate("My ID"),
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.color
+                                ?.withOpacity(0.5)),
+                      ).marginOnly(top: 5),
+                      buildPopupMenu(context)
+                    ],
                   ),
                   Flexible(
                     child: GestureDetector(
@@ -458,19 +440,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final showOneTime = model.approveMode != 'click' &&
         model.verificationMethod != kUsePermanentPassword;
     return Container(
-      margin: EdgeInsets.only(left: 20.0, right: 16, top: 13, bottom: 13),
+      margin: const EdgeInsetsDirectional.fromSTEB(20, 13, 16, 13),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
           Container(
             width: 2,
-            height: 52,
             decoration: BoxDecoration(color: MyTheme.accent),
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 7),
+              padding: const EdgeInsetsDirectional.only(start: 7),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -519,7 +500,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                 ))),
                           ),
                           onHover: (value) => refreshHover.value = value,
-                        ).marginOnly(right: 8, top: 4),
+                        ).marginOnly(end: 8, top: 4),
                       if (!bind.isDisableSettings())
                         InkWell(
                           child: Tooltip(
@@ -531,7 +512,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                     ? textColor
                                     : Color(0xFFDDDDDD),
                                 size: 22,
-                              ).marginOnly(right: 8, top: 4),
+                              ).marginOnly(end: 8, top: 4),
                             ),
                           ),
                           onTap: () => DesktopSettingPage.switch2page(
@@ -552,8 +533,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   buildTip(BuildContext context) {
     final isOutgoingOnly = bind.isOutgoingOnly();
     return Padding(
-      padding:
-          const EdgeInsets.only(left: 20.0, right: 16, top: 16.0, bottom: 5),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 16, 5),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -927,7 +907,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
     bool isChattyMethod(String methodName) {
       switch (methodName) {
-        case kWindowBumpMouse: return true;
+        case kWindowBumpMouse:
+          return true;
       }
 
       return false;
@@ -936,7 +917,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     rustDeskWinManager.setMethodHandler((call, fromWindowId) async {
       if (!isChattyMethod(call.method)) {
         debugPrint(
-          "[Main] call ${call.method} with args ${call.arguments} from window $fromWindowId");
+            "[Main] call ${call.method} with args ${call.arguments} from window $fromWindowId");
       }
       if (call.method == kWindowMainWindowOnTop) {
         windowOnTop(null);
@@ -971,9 +952,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           connToken: call.arguments['connToken'],
         );
       } else if (call.method == kWindowBumpMouse) {
-        return RdPlatformChannel.instance.bumpMouse(
-          dx: call.arguments['dx'],
-          dy: call.arguments['dy']);
+        return RdPlatformChannel.instance
+            .bumpMouse(dx: call.arguments['dx'], dy: call.arguments['dy']);
       } else if (call.method == kWindowEventMoveTabToNewWindow) {
         final args = call.arguments.split(',');
         int? windowId;
