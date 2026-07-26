@@ -313,10 +313,10 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
     final child = GestureDetector(
         onTap: () => widget.onSelect(),
         child: Padding(
-            padding: EdgeInsets.only(left: 5, right: 5),
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 5),
             child: Container(
                 height: 42,
-                margin: EdgeInsets.only(bottom: 5),
+                margin: const EdgeInsets.only(bottom: 5),
                 child: Row(
                   mainAxisSize: MainAxisSize.max,
                   children: [
@@ -324,40 +324,40 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                         decoration: BoxDecoration(
                           color: str2color(
                               '${widget.peer.id}${widget.peer.platform}', 0x7f),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(tileRadius),
-                            bottomLeft: Radius.circular(tileRadius),
-                          ),
+                          borderRadius: BorderRadiusDirectional.only(
+                            topStart: Radius.circular(tileRadius),
+                            bottomStart: Radius.circular(tileRadius),
+                          ).resolve(Directionality.of(context)),
                         ),
                         alignment: Alignment.center,
                         width: 42,
                         height: null,
                         child: Padding(
-                            padding: EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(6),
                             child: getPlatformImage(widget.peer.platform,
                                 size: 30))),
                     Expanded(
                       child: Container(
-                          padding: EdgeInsets.only(left: 10),
+                          padding: const EdgeInsetsDirectional.only(start: 10),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.background,
-                            borderRadius: BorderRadius.only(
-                              topRight: Radius.circular(tileRadius),
-                              bottomRight: Radius.circular(tileRadius),
-                            ),
+                            borderRadius: BorderRadiusDirectional.only(
+                              topEnd: Radius.circular(tileRadius),
+                              bottomEnd: Radius.circular(tileRadius),
+                            ).resolve(Directionality.of(context)),
                           ),
                           child: Row(
                             children: [
                               Expanded(
                                   child: Container(
-                                      margin: EdgeInsets.only(top: 2),
+                                      margin: const EdgeInsets.only(top: 2),
                                       child: Container(
-                                          margin: EdgeInsets.only(top: 2),
+                                          margin: const EdgeInsets.only(top: 2),
                                           child: Column(
                                             children: [
                                               Container(
                                                   margin:
-                                                      EdgeInsets.only(top: 2),
+                                                      const EdgeInsets.only(top: 2),
                                                   child: Row(children: [
                                                     getOnline(
                                                         8, widget.peer.online),
@@ -376,10 +376,9 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                                     widget.peer.alias.isNotEmpty
                                                         ? Padding(
                                                             padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                                    left: 5,
-                                                                    right: 5),
+                                                                const EdgeInsetsDirectional
+                                                                    .symmetric(
+                                                                    horizontal: 5),
                                                             child: Text(
                                                               ltrIsolate(
                                                                   "(${widget.peer.id})"),

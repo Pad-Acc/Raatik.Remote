@@ -618,15 +618,18 @@ class _GeneralState extends State<_General> {
     if (mainGetLocalBoolOptionSync(kOptionAllowMonitorSwitchMainToolbar)) {
       children.add(KeyedSubtree(
         key: _minToolbarOptionKey,
-        child: _OptionCheckBox(
-          context,
-          'Show on the minimized toolbar',
-          kOptionAllowMonitorSwitchMinToolbar,
-          isServer: false,
-          update: (_) {
-            reloadAllWindows();
-          },
-        ).marginOnly(left: _kCheckBoxLeftMargin * 3),
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin * 3),
+          child: _OptionCheckBox(
+            context,
+            'Show on the minimized toolbar',
+            kOptionAllowMonitorSwitchMinToolbar,
+            isServer: false,
+            update: (_) {
+              reloadAllWindows();
+            },
+          ),
+        ),
       ));
     }
     return _Card(title: 'Other', children: children);
@@ -745,46 +748,59 @@ class _GeneralState extends State<_General> {
               kOptionAllowAutoRecordOutgoing,
               isServer: false),
         if (showRootDir && !bind.isOutgoingOnly())
-          Row(
-            children: [
-              Text(
-                  '${translate(bind.isIncomingOnly() ? "Directory" : "Incoming")}:'),
-              Expanded(
-                child: GestureDetector(
-                    onTap: root_dir_exists
-                        ? () => launchUrl(Uri.file(root_dir))
-                        : null,
-                    child: Text(
-                      root_dir,
-                      softWrap: true,
-                      style: root_dir_exists
-                          ? const TextStyle(
-                              decoration: TextDecoration.underline)
-                          : null,
-                    )).marginOnly(left: 10),
-              ),
-            ],
-          ).marginOnly(left: _kContentHMargin),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: _kContentHMargin),
+            child: Row(
+              children: [
+                Text(
+                    '${translate(bind.isIncomingOnly() ? "Directory" : "Incoming")}:'),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 10),
+                    child: GestureDetector(
+                        onTap: root_dir_exists
+                            ? () => launchUrl(Uri.file(root_dir))
+                            : null,
+                        child: Text(
+                          root_dir,
+                          softWrap: true,
+                          style: root_dir_exists
+                              ? const TextStyle(
+                                  decoration: TextDecoration.underline)
+                              : null,
+                        )),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (!(showRootDir && bind.isIncomingOnly()))
-          Row(
-            children: [
-              Text(
-                  '${translate((showRootDir && !bind.isOutgoingOnly()) ? "Outgoing" : "Directory")}:'),
-              Expanded(
-                child: GestureDetector(
-                    onTap: user_dir_exists
-                        ? () => launchUrl(Uri.file(user_dir))
-                        : null,
-                    child: Text(
-                      user_dir,
-                      softWrap: true,
-                      style: user_dir_exists
-                          ? const TextStyle(
-                              decoration: TextDecoration.underline)
-                          : null,
-                    )).marginOnly(left: 10),
-              ),
-              ElevatedButton(
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: _kContentHMargin),
+            child: Row(
+              children: [
+                Text(
+                    '${translate((showRootDir && !bind.isOutgoingOnly()) ? "Outgoing" : "Directory")}:'),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 10),
+                    child: GestureDetector(
+                        onTap: user_dir_exists
+                            ? () => launchUrl(Uri.file(user_dir))
+                            : null,
+                        child: Text(
+                          user_dir,
+                          softWrap: true,
+                          style: user_dir_exists
+                              ? const TextStyle(
+                                  decoration: TextDecoration.underline)
+                              : null,
+                        )),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 5),
+                  child: ElevatedButton(
                       onPressed: isOptionFixed(kOptionVideoSaveDirectory)
                           ? null
                           : () async {
@@ -804,10 +820,11 @@ class _GeneralState extends State<_General> {
                                 setState(() {});
                               }
                             },
-                      child: Text(translate('Change')))
-                  .marginOnly(left: 5),
-            ],
-          ).marginOnly(left: _kContentHMargin),
+                      child: Text(translate('Change'))),
+                ),
+              ],
+            ),
+          ),
       ]);
     });
   }
