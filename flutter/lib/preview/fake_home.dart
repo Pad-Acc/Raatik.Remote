@@ -1,177 +1,135 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/raatik/home/home_layout.dart';
+import 'package:flutter_hbb/raatik/home/service_gate.dart';
+import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
-/// Static B1 home mock — receive-dominant RTL two-column layout.
+/// Preview home using production [RaatikHomeLayout] and [RaatikServiceGate].
 class FakeHomePage extends StatelessWidget {
-  const FakeHomePage({super.key});
+  const FakeHomePage({
+    super.key,
+    required this.phase,
+    required this.copy,
+  });
 
-  static const _accent = Color(0xFF0891B2);
-  static const _primary = Color(0xFF0284C7);
+  final RaatikServicePhase phase;
+  final RaatikServiceGateCopy copy;
+
+  bool get _blocked => phase != RaatikServicePhase.ready;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final muted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+    final isFa = Localizations.localeOf(context).languageCode == 'fa';
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+    return RaatikHomeLayout(
+      serviceGate: RaatikServiceGate(
+        phase: phase,
+        copy: copy,
+        onStart: () {},
+      ),
+      receivePanel: _FakeReceivePanel(isFa: isFa),
+      connectPanel: _FakeConnectPanel(isFa: isFa),
+      blocked: _blocked,
+    );
+  }
+}
+
+class _FakeReceivePanel extends StatelessWidget {
+  const _FakeReceivePanel({required this.isFa});
+
+  final bool isFa;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return _PreviewPanel(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            flex: 14,
-            child: _panel(
-              context,
-              cardColor: cardColor,
-              borderColor: borderColor,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 12),
-                    Center(child: _logo()),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: Text(
-                        'RaatikDesk',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: _primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'آماده برای پشتیبانی اتوفای',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'شناسه این سیستم را برای پشتیبان بخوانید یا کپی کنید',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _idRow(context, muted),
-                    const SizedBox(height: 12),
-                    _passwordRow(context, muted),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 16, 16),
-                      child: SizedBox(
-                        height: 44,
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _primary,
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.copy_rounded, size: 18),
-                          label: const Text('کپی شناسه و رمز'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          const SizedBox(height: 12),
+          Center(
+            child: Image.asset(
+              'assets/logo.png',
+              width: 64,
+              height: 64,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.desktop_windows,
+                size: 48,
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 10,
-            child: _panel(
-              context,
-              cardColor: cardColor,
-              borderColor: borderColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 22, 12, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'اتصال به سیستم دیگر',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'برای تیم پشتیبانی',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: muted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: 'شناسه مقصد',
-                                hintStyle: TextStyle(color: muted),
-                                border: InputBorder.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            onPressed: () {},
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _accent,
-                            ),
-                            child: const Text('اتصال'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'اتصالات اخیر',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: muted,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      children: [
-                        _peerTile('۱۲۳۴۵۶۷۸۹', 'دفتر مرکزی', borderColor),
-                        _peerTile('۹۸۷۶۵۴۳۲۱', 'لپ‌تاپ پشتیبانی', borderColor),
-                        _peerTile('۵۵۱۱۲۲۳۳۴', 'سیستم مشتری', borderColor),
-                      ],
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'RaatikDesk',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: RaatikTokens.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFa
+                      ? 'آماده برای پشتیبانی اتوفای'
+                      : 'Ready for Autofai support',
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isFa
+                      ? 'شناسه این سیستم را برای پشتیبان بخوانید یا کپی کنید'
+                      : 'Share this device ID with your support agent',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _CredentialRow(
+            label: isFa ? 'شناسه من' : 'My ID',
+            value: isFa ? '۱۲۳ ۴۵۶ ۷۸۹' : '123 456 789',
+            actions: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.copy, size: 20),
+                tooltip: isFa ? 'کپی' : 'Copy',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _CredentialRow(
+            label: isFa ? 'رمز یک‌بارمصرف' : 'One-time password',
+            value: isFa ? '۸۴۲۹۱۵' : '842915',
+            actions: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.refresh, size: 20),
+                tooltip: isFa ? 'بروزرسانی' : 'Refresh',
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.copy, size: 20),
+                tooltip: isFa ? 'کپی' : 'Copy',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: RaatikTokens.minTarget,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                label: Text(isFa ? 'کپی شناسه و رمز' : 'Copy ID and password'),
               ),
             ),
           ),
@@ -179,116 +137,179 @@ class FakeHomePage extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _logo() {
-    return Image.asset(
-      'assets/logo.png',
-      width: 64,
-      height: 64,
-      errorBuilder: (_, __, ___) => Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: _primary.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.desktop_windows, color: _primary, size: 36),
+class _FakeConnectPanel extends StatelessWidget {
+  const _FakeConnectPanel({required this.isFa});
+
+  final bool isFa;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.color;
+
+    return _PreviewPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 22, 12, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFa ? 'اتصال به سیستم دیگر' : 'Connect to another device',
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isFa ? 'برای تیم پشتیبانی' : 'For the support team',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 24, 20, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: isFa ? 'شناسه مقصد' : 'Remote ID',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () {},
+                  child: Text(isFa ? 'اتصال' : 'Connect'),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+            child: Text(
+              isFa ? 'اتصالات اخیر' : 'Recent connections',
+              style: TextStyle(
+                fontSize: 13,
+                color: muted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 180,
+            child: ListView(
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
+              children: [
+                _PeerTile(
+                  id: isFa ? '۱۲۳۴۵۶۷۸۹' : '123456789',
+                  label: isFa ? 'دفتر مرکزی' : 'Head office',
+                ),
+                _PeerTile(
+                  id: isFa ? '۹۸۷۶۵۴۳۲۱' : '987654321',
+                  label: isFa ? 'لپ‌تاپ پشتیبانی' : 'Support laptop',
+                ),
+                _PeerTile(
+                  id: isFa ? '۵۵۱۱۲۲۳۳۴' : '551122334',
+                  label: isFa ? 'سیستم مشتری' : 'Customer PC',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
+}
 
-  Widget _panel(
-    BuildContext context, {
-    required Color cardColor,
-    required Color borderColor,
-    required Widget child,
-  }) {
+class _PreviewPanel extends StatelessWidget {
+  const _PreviewPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor.withOpacity(0.45)),
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(RaatikTokens.radiusSm),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: child,
     );
   }
+}
 
-  Widget _idRow(BuildContext context, Color muted) {
+class _CredentialRow extends StatelessWidget {
+  const _CredentialRow({
+    required this.label,
+    required this.value,
+    required this.actions,
+  });
+
+  final String label;
+  final String value;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
-          Container(width: 2, height: 48, color: _accent),
+          Container(width: 2, height: 48, color: RaatikTokens.accent),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('شناسه من', style: TextStyle(fontSize: 14, color: muted)),
+                Text(label, style: TextStyle(fontSize: 14, color: muted)),
                 const SizedBox(height: 4),
-                const Text(
-                  '۱۲۳ ۴۵۶ ۷۸۹',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.copy, color: muted, size: 20),
-            tooltip: 'کپی',
-          ),
+          ...actions,
         ],
       ),
     );
   }
+}
 
-  Widget _passwordRow(BuildContext context, Color muted) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Container(width: 2, height: 48, color: _accent),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('رمز یک‌بارمصرف', style: TextStyle(fontSize: 14, color: muted)),
-                const SizedBox(height: 4),
-                const Text(
-                  '۸۴۲۹۱۵',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.refresh, color: muted, size: 20),
-            tooltip: 'بروزرسانی',
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.copy, color: muted, size: 20),
-            tooltip: 'کپی',
-          ),
-        ],
-      ),
-    );
-  }
+class _PeerTile extends StatelessWidget {
+  const _PeerTile({required this.id, required this.label});
 
-  Widget _peerTile(String id, String label, Color borderColor) {
+  final String id;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor.withOpacity(0.5)),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: [
@@ -298,12 +319,18 @@ class FakeHomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text(label,
+                    style: const TextStyle(fontWeight: FontWeight.w500)),
                 Text(id, style: const TextStyle(fontSize: 12)),
               ],
             ),
           ),
-          const Icon(Icons.chevron_left, size: 20),
+          Icon(
+            Directionality.of(context) == TextDirection.rtl
+                ? Icons.chevron_left
+                : Icons.chevron_right,
+            size: 20,
+          ),
         ],
       ),
     );
