@@ -143,6 +143,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     } else {
       stateGlobal.svcStatus.value = SvcStatus.notReady;
     }
+    try {
+      stateGlobal.videoConnCount.value = status['video_conn_count'] as int;
+    } catch (_) {}
   }
 
   Future<void> _handleServiceStart() async {
@@ -882,6 +885,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           setState(() {});
         }
       }
+      // Continuous svcStatus / videoConnCount updates (was OnlineStatusWidget).
+      await _pollConnectStatus();
     });
     Get.put<RxBool>(svcStopped, tag: 'stop-service');
     rustDeskWinManager.registerActiveWindowListener(onActiveWindowChanged);
