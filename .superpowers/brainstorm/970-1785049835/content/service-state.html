@@ -1,0 +1,49 @@
+<h2>در حالت «سرویس اجرا نشده»، صفحه اصلی چگونه رفتار کند؟</h2>
+<p class="subtitle">این وضعیت مستقیماً مانع دریافت پشتیبانی است؛ تفاوت گزینه‌ها در میزان مسدودکردن رابط است.</p>
+
+<div class="cards">
+  <div class="card" data-choice="service-a" onclick="toggleSelect(this)">
+    <div class="card-image" dir="rtl" style="background:#f3f8fb;padding:16px;color:#172033;min-height:260px">
+      <div style="background:#fff2f0;border:1px solid #f2b8b5;border-right:5px solid #d92d20;border-radius:14px;padding:16px">
+        <div style="font-size:12px;color:#b42318;font-weight:700">اقدام ضروری</div>
+        <h3 style="margin:5px 0">سرویس اجرا نشده</h3>
+        <p style="font-size:12px;color:#6b3b3b">تا اجرای سرویس، پشتیبان نمی‌تواند به این سیستم متصل شود.</p>
+        <button class="mock-button" style="width:100%;background:#d92d20;color:white">اجرای سرویس</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-top:12px;opacity:.52">
+        <div style="height:92px;background:white;border:1px solid #dce4ef;border-radius:14px"></div>
+        <div style="height:92px;background:white;border:1px solid #dce4ef;border-radius:14px"></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#64748b;margin-top:10px">باقی صفحه دیده می‌شود، اما تا رفع مشکل غیرفعال است.</div>
+    </div>
+    <div class="card-body"><h3>A — Critical Gate</h3><p>هشدار بالای صفحه + CTA قرمز؛ محتوای اصلی کم‌رنگ و غیرفعال. بیشترین وضوح بدون خروج از صفحه.</p></div>
+  </div>
+
+  <div class="card" data-choice="service-b" onclick="toggleSelect(this)">
+    <div class="card-image" dir="rtl" style="background:linear-gradient(135deg,#effafe,#f8fafc);padding:28px;color:#172033;min-height:260px">
+      <div style="max-width:430px;margin:auto;text-align:center;background:white;border:1px solid #bae6ef;border-radius:20px;padding:24px;box-shadow:0 12px 30px #0e749018">
+        <div style="width:48px;height:48px;margin:auto;border-radius:50%;background:#fff1f0;color:#d92d20;display:flex;align-items:center;justify-content:center;font-size:24px">!</div>
+        <h3 style="margin:12px 0 6px">برای شروع، سرویس را اجرا کنید</h3>
+        <p style="font-size:12px;color:#64748b">این مرحله برای برقراری اتصال امن پشتیبانی لازم است.</p>
+        <button class="mock-button" style="width:100%;background:#0284c7;color:white;margin-top:6px">اجرای سرویس و ادامه</button>
+        <div style="font-size:11px;color:#64748b;margin-top:10px">مشاهده راهنمای رفع مشکل</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B — Full-page Guided Step</h3><p>کل صفحه به یک اقدام تبدیل می‌شود. واضح‌ترین گزینه، اما شناسه و اتصال تا اجرای سرویس پنهان می‌مانند.</p></div>
+  </div>
+
+  <div class="card" data-choice="service-c" onclick="toggleSelect(this)">
+    <div class="card-image" dir="rtl" style="background:#f3f8fb;padding:16px;color:#172033;min-height:260px">
+      <div style="display:flex;align-items:center;gap:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px">
+        <div style="width:10px;height:10px;border-radius:50%;background:#ea580c"></div>
+        <div style="flex:1"><strong>سرویس اجرا نشده</strong><div style="font-size:11px;color:#7c4a22">اتصال ورودی در دسترس نیست</div></div>
+        <button class="mock-button" style="background:#ea580c;color:white;padding:7px 16px">اجرا</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-top:12px">
+        <div style="height:120px;background:white;border:1px solid #dce4ef;border-radius:14px"></div>
+        <div style="height:120px;background:white;border:1px solid #dce4ef;border-radius:14px"></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C — Persistent Warning Bar</h3><p>هشدار فشرده همیشه بالاست و بقیه رابط فعال می‌ماند. کم‌مزاحمت‌تر، اما احتمال نادیده‌گرفتن بیشتر است.</p></div>
+  </div>
+</div>
