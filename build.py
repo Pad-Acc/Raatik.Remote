@@ -47,6 +47,11 @@ def system2(cmd):
 
 
 def get_version():
+    # Prefer CI/display version (e.g. 2026.07.01) when set — Cargo.toml uses
+    # semver without leading zeros (2026.7.1), which would mismatch artifact names.
+    env_ver = (os.environ.get('VERSION') or os.environ.get('RAATIK_DISPLAY_VERSION') or '').strip()
+    if env_ver:
+        return env_ver
     with open("Cargo.toml", encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("version"):
