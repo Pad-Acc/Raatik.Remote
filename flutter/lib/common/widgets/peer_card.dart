@@ -88,7 +88,7 @@ class _PeerCardState extends State<_PeerCard>
         margin: EdgeInsets.symmetric(horizontal: 2),
         child: gestureDetector(
           child: Container(
-              padding: EdgeInsets.only(left: 12, top: 8, bottom: 8),
+              padding: EdgeInsetsDirectional.only(start: 12, top: 8, bottom: 8),
               child: _buildPeerTile(context, peer, null)),
         ));
   }
@@ -150,10 +150,10 @@ class _PeerCardState extends State<_PeerCard>
               color: str2color('${peer.id}${peer.platform}', 0x7f),
               borderRadius: isPortrait
                   ? BorderRadius.circular(_tileRadius)
-                  : BorderRadius.only(
-                      topLeft: Radius.circular(_tileRadius),
-                      bottomLeft: Radius.circular(_tileRadius),
-                    ),
+                  : BorderRadiusDirectional.only(
+                      topStart: Radius.circular(_tileRadius),
+                      bottomStart: Radius.circular(_tileRadius),
+                    ).resolve(Directionality.of(context)),
             ),
             alignment: Alignment.center,
             width: isPortrait ? 50 : 42,
@@ -163,9 +163,9 @@ class _PeerCardState extends State<_PeerCard>
                 getPlatformImage(peer.platform, size: isPortrait ? 38 : 30)
                     .paddingAll(6),
                 if (_shouldBuildPasswordIcon(peer))
-                  Positioned(
+                  PositionedDirectional(
                     top: 1,
-                    left: 1,
+                    start: 1,
                     child: Icon(Icons.key, size: 6, color: Colors.white),
                   ),
               ],
@@ -174,12 +174,14 @@ class _PeerCardState extends State<_PeerCard>
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.background,
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(_tileRadius),
-                bottomRight: Radius.circular(_tileRadius),
-              ),
+              borderRadius: BorderRadiusDirectional.only(
+                topEnd: Radius.circular(_tileRadius),
+                bottomEnd: Radius.circular(_tileRadius),
+              ).resolve(Directionality.of(context)),
             ),
-            child: Row(
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(start: 10.0, top: 3.0),
+              child: Row(
               children: [
                 Expanded(
                   child: Column(
@@ -245,7 +247,8 @@ class _PeerCardState extends State<_PeerCard>
                     ? checkBoxOrActionMorePortrait(peer)
                     : checkBoxOrActionMoreLandscape(peer, isTile: true),
               ],
-            ).paddingOnly(left: 10.0, top: 3.0),
+            ),
+            ),
           ),
         )
       ],
@@ -275,9 +278,9 @@ class _PeerCardState extends State<_PeerCard>
                 ),
         ),
         if (colors.isNotEmpty)
-          Obx(() => Positioned(
+          Obx(() => PositionedDirectional(
                 top: 2,
-                right: stateGlobal.isPortrait.isTrue ? 20 : 10,
+                end: stateGlobal.isPortrait.isTrue ? 20 : 10,
                 child: CustomPaint(
                   painter: TagPainter(radius: 3, colors: colors),
                 ),
@@ -360,7 +363,7 @@ class _PeerCardState extends State<_PeerCard>
                                   ],
                                 ),
                             ],
-                          ).paddingOnly(top: 4.0, left: 4.0, right: 4.0),
+                          ).paddingOnly(top: 4.0).paddingSymmetric(horizontal: 4.0),
                         ),
                       ],
                     ),
@@ -404,15 +407,15 @@ class _PeerCardState extends State<_PeerCard>
       child: Stack(children: [
         child,
         if (_shouldBuildPasswordIcon(peer))
-          Positioned(
+          PositionedDirectional(
             top: 4,
-            left: 12,
+            start: 12,
             child: Icon(Icons.key, size: 12, color: Colors.white),
           ),
         if (colors.isNotEmpty)
-          Positioned(
+          PositionedDirectional(
             top: 4,
-            right: 12,
+            end: 12,
             child: CustomPaint(
               painter: TagPainter(radius: 4, colors: colors),
             ),
@@ -468,15 +471,21 @@ class _PeerCardState extends State<_PeerCard>
             )
           : Icon(Icons.check_box_outline_blank);
       bool last = peerTabModel.isShiftDown && peer.id == peerTabModel.lastId;
-      double right = isTile ? 4 : 0;
+      double end = isTile ? 4 : 0;
       if (last) {
-        return Container(
-          decoration: BoxDecoration(
-              border: Border.all(color: MyTheme.accent, width: 1)),
-          child: icon,
-        ).marginOnly(right: right);
+        return Padding(
+          padding: EdgeInsetsDirectional.only(end: end),
+          child: Container(
+            decoration: BoxDecoration(
+                border: Border.all(color: MyTheme.accent, width: 1)),
+            child: icon,
+          ),
+        );
       } else {
-        return icon.marginOnly(right: right);
+        return Padding(
+          padding: EdgeInsetsDirectional.only(end: end),
+          child: icon,
+        );
       }
     } else {
       return _actionMore(peer);
@@ -652,7 +661,7 @@ abstract class BasePeerCard extends StatelessWidget {
               ),
               Expanded(
                   child: Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: Transform.scale(
                     scale: 0.8,
                     child: IconButton(
@@ -801,13 +810,15 @@ abstract class BasePeerCard extends StatelessWidget {
             style: style?.copyWith(color: Colors.red),
           ),
           Expanded(
-              child: Align(
-            alignment: Alignment.centerRight,
+              child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 4),
+            child: Align(
+            alignment: AlignmentDirectional.centerEnd,
             child: Transform.scale(
               scale: 0.8,
               child: Icon(Icons.delete_forever, color: Colors.red),
             ),
-          ).marginOnly(right: 4)),
+          ))),
         ],
       ),
       proc: () {
@@ -881,13 +892,15 @@ abstract class BasePeerCard extends StatelessWidget {
             style: style,
           ),
           Expanded(
-              child: Align(
-            alignment: Alignment.centerRight,
+              child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 4),
+            child: Align(
+            alignment: AlignmentDirectional.centerEnd,
             child: Transform.scale(
               scale: 0.8,
               child: Icon(Icons.star_outline),
             ),
-          ).marginOnly(right: 4)),
+          ))),
         ],
       ),
       proc: () {
@@ -916,13 +929,15 @@ abstract class BasePeerCard extends StatelessWidget {
             style: style,
           ),
           Expanded(
-              child: Align(
-            alignment: Alignment.centerRight,
+              child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 4),
+            child: Align(
+            alignment: AlignmentDirectional.centerEnd,
             child: Transform.scale(
               scale: 0.8,
               child: Icon(Icons.star),
             ),
-          ).marginOnly(right: 4)),
+          ))),
         ],
       ),
       proc: () {
@@ -1393,10 +1408,12 @@ void _rdpDialog(String id) async {
                 isDesktop
                     ? ConstrainedBox(
                         constraints: const BoxConstraints(minWidth: 140),
-                        child: Text(
-                          "${translate('Port')}:",
-                          textAlign: TextAlign.right,
-                        ).marginOnly(right: 10))
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 10),
+                          child: Text(
+                            "${translate('Port')}:",
+                            textAlign: TextAlign.start,
+                          )))
                     : SizedBox.shrink(),
                 Expanded(
                   child: TextField(
@@ -1418,10 +1435,12 @@ void _rdpDialog(String id) async {
                     stateGlobal.isPortrait.isFalse
                         ? ConstrainedBox(
                             constraints: const BoxConstraints(minWidth: 140),
-                            child: Text(
-                              "${translate('Username')}:",
-                              textAlign: TextAlign.right,
-                            ).marginOnly(right: 10))
+                            child: Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 10),
+                              child: Text(
+                                "${translate('Username')}:",
+                                textAlign: TextAlign.start,
+                              )))
                         : SizedBox.shrink(),
                     Expanded(
                       child: TextField(
@@ -1438,10 +1457,12 @@ void _rdpDialog(String id) async {
                     stateGlobal.isPortrait.isFalse
                         ? ConstrainedBox(
                             constraints: const BoxConstraints(minWidth: 140),
-                            child: Text(
-                              "${translate('Password')}:",
-                              textAlign: TextAlign.right,
-                            ).marginOnly(right: 10))
+                            child: Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 10),
+                              child: Text(
+                                "${translate('Password')}:",
+                                textAlign: TextAlign.start,
+                              )))
                         : SizedBox.shrink(),
                     Expanded(
                       child: Obx(() => TextField(
@@ -1474,12 +1495,12 @@ void _rdpDialog(String id) async {
   });
 }
 
-Widget getOnline(double rightPadding, bool online) {
+Widget getOnline(double endPadding, bool online) {
   return Tooltip(
       message: translate(online ? 'Online' : 'Offline'),
       waitDuration: const Duration(seconds: 1),
       child: Padding(
-          padding: EdgeInsets.fromLTRB(0, 4, rightPadding, 4),
+          padding: EdgeInsetsDirectional.fromSTEB(0, 4, endPadding, 4),
           child: CircleAvatar(
               radius: 3, backgroundColor: online ? Colors.green : kColorWarn)));
 }

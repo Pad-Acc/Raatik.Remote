@@ -439,7 +439,9 @@ class _PeerTabPageState extends State<PeerTabPage>
     return Offstage(
       offstage:
           model.currentTab != PeerTabIndex.recent.index, // show based on recent
-      child: _hoverAction(
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: !(isDesktop || isWebDesktop) ? 11 : 6),
+        child: _hoverAction(
         context: context,
         toolTip: translate('Add to Favorites'),
         onTap: () async {
@@ -455,7 +457,8 @@ class _PeerTabPageState extends State<PeerTabPage>
           showToast(translate('Successful'));
         },
         child: Icon(PeerTabModel.icons[PeerTabIndex.fav.index]),
-      ).marginOnly(left: !(isDesktop || isWebDesktop) ? 11 : 6),
+      ),
+      ),
     );
   }
 
@@ -467,7 +470,9 @@ class _PeerTabPageState extends State<PeerTabPage>
     }
     return Offstage(
       offstage: !gFFI.userModel.isLogin || addressbooks.isEmpty,
-      child: _hoverAction(
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: !(isDesktop || isWebDesktop) ? 11 : 6),
+        child: _hoverAction(
         context: context,
         toolTip: translate('Add to address book'),
         onTap: () {
@@ -476,7 +481,8 @@ class _PeerTabPageState extends State<PeerTabPage>
           model.setMultiSelectionMode(false);
         },
         child: Icon(PeerTabModel.icons[PeerTabIndex.ab.index]),
-      ).marginOnly(left: !(isDesktop || isWebDesktop) ? 11 : 6),
+      ),
+      ),
     );
   }
 
@@ -486,7 +492,9 @@ class _PeerTabPageState extends State<PeerTabPage>
       offstage: !gFFI.userModel.isLogin ||
           model.currentTab != PeerTabIndex.ab.index ||
           gFFI.abModel.currentAbTags.isEmpty,
-      child: _hoverAction(
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: !(isDesktop || isWebDesktop) ? 11 : 6),
+        child: _hoverAction(
               context: context,
               toolTip: translate('Edit Tag'),
               onTap: () {
@@ -498,8 +506,8 @@ class _PeerTabPageState extends State<PeerTabPage>
                   showToast(translate('Successful'));
                 });
               },
-              child: Icon(Icons.tag))
-          .marginOnly(left: !(isDesktop || isWebDesktop) ? 11 : 6),
+              child: Icon(Icons.tag)),
+      ),
     );
   }
 
@@ -514,27 +522,32 @@ class _PeerTabPageState extends State<PeerTabPage>
     return Offstage(
       offstage:
           model.selectedPeers.length >= model.currentTabCachedPeers.length,
-      child: _hoverAction(
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 6),
+        child: _hoverAction(
         context: context,
         toolTip: translate('Select All'),
         onTap: () {
           model.selectAll();
         },
         child: Icon(Icons.select_all),
-      ).marginOnly(left: 6),
+      ),
+      ),
     );
   }
 
   Widget closeSelection() {
     final model = Provider.of<PeerTabModel>(context);
-    return _hoverAction(
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 6),
+      child: _hoverAction(
             context: context,
             toolTip: translate('Close'),
             onTap: () {
               model.setMultiSelectionMode(false);
             },
-            child: Icon(Icons.clear))
-        .marginOnly(left: 6);
+            child: Icon(Icons.clear)),
+    );
   }
 
   Widget _toggleTags() {
@@ -557,7 +570,10 @@ class _PeerTabPageState extends State<PeerTabPage>
   List<Widget> _landscapeRightActions(BuildContext context) {
     final model = Provider.of<PeerTabModel>(context);
     return [
-      const PeerSearchBar().marginOnly(right: 13),
+      const Padding(
+        padding: const EdgeInsetsDirectional.only(end: 13),
+        child: PeerSearchBar(),
+      ),
       _createRefresh(
           index: PeerTabIndex.ab, loading: gFFI.abModel.currentAbLoading),
       _createRefresh(
@@ -678,7 +694,7 @@ class _PeerSearchBarState extends State<PeerSearchBar> {
         : _hoverAction(
             context: context,
             toolTip: translate('Search'),
-            padding: const EdgeInsets.only(right: 2),
+            padding: const EdgeInsetsDirectional.only(end: 2),
             onTap: () {
               setState(() {
                 drawer = true;
@@ -746,8 +762,8 @@ class _PeerSearchBarState extends State<PeerSearchBar> {
                     ),
                     // Icon(Icons.close),
                     IconButton(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 2),
+                      alignment: AlignmentDirectional.centerEnd,
+                      padding: const EdgeInsetsDirectional.only(end: 2),
                       onPressed: () {
                         setState(() {
                           peerSearchTextController.clear();

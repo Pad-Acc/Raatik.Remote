@@ -302,14 +302,17 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     if (!isWeb) {
       return null;
     }
-    return IconButton(
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 5),
+      child: IconButton(
       onPressed: () {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
       },
       icon: const Icon(Icons.arrow_back),
-    ).marginOnly(left: 5);
+    ),
+    );
   }
 
   void _selectTab(SettingsTabKey key) {
@@ -933,14 +936,18 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         }
       }
 
-      final tfa = GestureDetector(
+      final tfa = Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+        child: GestureDetector(
         child: InkWell(
           child: Obx(() => Row(
                 children: [
-                  Checkbox(
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 5),
+                    child: Checkbox(
                           value: has2fa.value,
-                          onChanged: enabled ? onChanged : null)
-                      .marginOnly(right: 5),
+                          onChanged: enabled ? onChanged : null),
+                  ),
                   Expanded(
                       child: Text(
                     translate('enable-2fa-title'),
@@ -953,7 +960,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         onTap: () {
           onChanged(!has2fa.value);
         },
-      ).marginOnly(left: _kCheckBoxLeftMargin);
+      ),
+      );
       if (!has2fa.value) {
         return tfa;
       }
@@ -973,17 +981,21 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         }
       }
 
-      final bot = GestureDetector(
+      final bot = Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin + 30),
+        child: GestureDetector(
         child: Tooltip(
           waitDuration: Duration(milliseconds: 300),
           message: translate("enable-bot-tip"),
           child: InkWell(
               child: Obx(() => Row(
                     children: [
-                      Checkbox(
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 5),
+                        child: Checkbox(
                               value: hasBot.value,
-                              onChanged: enabled ? onChangedBot : null)
-                          .marginOnly(right: 5),
+                              onChanged: enabled ? onChangedBot : null),
+                      ),
                       Expanded(
                           child: Text(
                         translate('Telegram bot'),
@@ -996,9 +1008,12 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         onTap: () {
           onChangedBot(!hasBot.value);
         },
-      ).marginOnly(left: _kCheckBoxLeftMargin + 30);
+      ),
+      );
 
-      final trust = Row(
+      final trust = Padding(
+        padding: const EdgeInsetsDirectional.only(start: 30),
+        child: Row(
         children: [
           Flexible(
             child: Tooltip(
@@ -1020,7 +1035,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                       },
                 child: Text(translate('Manage trusted devices')))
         ],
-      ).marginOnly(left: 30);
+      ),
+      );
 
       return Column(
         children: [tfa, bot, trust],
@@ -1070,7 +1086,9 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
       }
 
       return _Card(title: 'Permissions', children: [
-        ComboBox(
+        Padding(
+          padding: EdgeInsetsDirectional.only(start: _kContentHMargin),
+          child: ComboBox(
             keys: [
               defaultOptionAccessMode,
               'full',
@@ -1086,7 +1104,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
             onChanged: (mode) async {
               await bind.mainSetOption(key: kOptionAccessMode, value: mode);
               setState(() {});
-            }).marginOnly(left: _kContentHMargin),
+            }),
+        ),
         Column(
           children: [
             _OptionCheckBox(
@@ -1198,7 +1217,9 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
               : null;
           List<Widget> lengthRadios = ['6', '8', '10']
               .map((value) => GestureDetector(
-                    child: Row(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 10),
+                      child: Row(
                       children: [
                         Radio(
                             value: value,
@@ -1211,7 +1232,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                                   context, onChanged != null)),
                         ),
                       ],
-                    ).paddingOnly(right: 10),
+                    ),
+                    ),
                     onTap: () => onChanged?.call(value),
                   ))
               .toList();
@@ -1219,18 +1241,22 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
           final isOptFixedNumOTP =
               isOptionFixed(kOptionAllowNumericOneTimePassword);
           final isNumOPTChangable = !isOptFixedNumOTP && tmpEnabled && !locked;
-          final numericOneTimePassword = GestureDetector(
+          final numericOneTimePassword = Padding(
+            padding: EdgeInsetsDirectional.only(start: _kContentHSubMargin - 5),
+            child: GestureDetector(
             child: InkWell(
                 child: Row(
               children: [
-                Checkbox(
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 5),
+                  child: Checkbox(
                         value: model.allowNumericOneTimePassword,
                         onChanged: isNumOPTChangable
                             ? (bool? v) {
                                 model.switchAllowNumericOneTimePassword();
                               }
-                            : null)
-                    .marginOnly(right: 5),
+                            : null),
+                ),
                 Expanded(
                     child: Text(
                   translate('Numeric one-time password'),
@@ -1242,7 +1268,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
             onTap: isNumOPTChangable
                 ? () => model.switchAllowNumericOneTimePassword()
                 : null,
-          ).marginOnly(left: _kContentHSubMargin - 5);
+          ),
+          );
 
           final modeKeys = <String>[
             'password',
@@ -1262,13 +1289,16 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
 
           final isApproveModeFixed = isOptionFixed(kOptionApproveMode);
           return _Card(title: 'Password', children: [
-            ComboBox(
+            Padding(
+              padding: EdgeInsetsDirectional.only(start: _kContentHMargin),
+              child: ComboBox(
               enabled: !locked && !isApproveModeFixed,
               keys: modeKeys,
               values: modeValues,
               initialKey: modeInitialKey,
               onChanged: (key) => model.setApproveMode(key),
-            ).marginOnly(left: _kContentHMargin),
+            ),
+            ),
             if (usePassword) radios[0],
             if (usePassword)
               _SubLabeledWidget(
@@ -1322,19 +1352,24 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
     return Offstage(
       offstage: !(isWindows && bind.mainIsInstalled()),
       child: GestureDetector(
-          child: Row(
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+            child: Row(
             children: [
-              Checkbox(
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 5),
+                child: Checkbox(
                       value: value,
-                      onChanged: enabled ? (_) => onChanged(!value) : null)
-                  .marginOnly(right: 5),
+                      onChanged: enabled ? (_) => onChanged(!value) : null),
+              ),
               Expanded(
                 child: Text(translate('Enable RDP session sharing'),
                     style:
                         TextStyle(color: disabledTextColor(context, enabled))),
               )
             ],
-          ).marginOnly(left: _kCheckBoxLeftMargin),
+          ),
+          ),
           onTap: enabled ? () => onChanged(!value) : null),
     );
   }
@@ -1363,7 +1398,9 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
               Row(children: [
                 SizedBox(
                   width: 95,
-                  child: TextField(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 15),
+                    child: TextField(
                     controller: controller,
                     enabled: enabled && !locked && !isOptFixed,
                     onChanged: (_) => applyEnabled.value = true,
@@ -1376,7 +1413,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                       contentPadding:
                           EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     ),
-                  ).workaroundFreezeLinuxMint().marginOnly(right: 15),
+                  ).workaroundFreezeLinuxMint(),
+                  ),
                 ),
                 Obx(() => ElevatedButton(
                       onPressed: applyEnabled.value &&
@@ -1419,21 +1457,27 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
       }
 
       final isOptFixed = isOptionFixed(kOptionWhitelist);
-      return GestureDetector(
+      return Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+        child: GestureDetector(
         child: Tooltip(
           message: translate('whitelist_tip'),
           child: Obx(() => Row(
                 children: [
-                  Checkbox(
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 5),
+                    child: Checkbox(
                           value: hasWhitelist.value,
-                          onChanged: enabled && !isOptFixed ? onChanged : null)
-                      .marginOnly(right: 5),
+                          onChanged: enabled && !isOptFixed ? onChanged : null),
+                  ),
                   Offstage(
                     offstage: !hasWhitelist.value,
                     child: MouseRegion(
-                      child: const Icon(Icons.warning_amber_rounded,
-                              color: Color.fromARGB(255, 255, 204, 0))
-                          .marginOnly(right: 5),
+                      child: const Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 5),
+                        child: Icon(Icons.warning_amber_rounded,
+                              color: Color.fromARGB(255, 255, 204, 0)),
+                      ),
                       cursor: SystemMouseCursors.click,
                     ),
                   ),
@@ -1451,7 +1495,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                 onChanged(!hasWhitelist.value);
               }
             : null,
-      ).marginOnly(left: _kCheckBoxLeftMargin);
+      ),
+      );
     }
 
     return tmpWrapper();
@@ -1477,12 +1522,14 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                     enableHideCm ? () => onHideCmChanged(!model.hideCm) : null,
                 child: Row(
                   children: [
-                    Checkbox(
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 5),
+                      child: Checkbox(
                             value: model.hideCm,
                             onChanged: enabled && enableHideCm
                                 ? onHideCmChanged
-                                : null)
-                        .marginOnly(right: 5),
+                                : null),
+                    ),
                     Expanded(
                       child: Text(
                         translate('Hide connection management window'),
@@ -1520,7 +1567,9 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
             Row(children: [
               SizedBox(
                 width: 95,
-                child: TextField(
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 15),
+                  child: TextField(
                   controller: controller,
                   enabled: enabled && !locked && !isOptFixed,
                   onChanged: (_) => applyEnabled.value = true,
@@ -1533,7 +1582,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                     contentPadding:
                         EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                   ),
-                ).workaroundFreezeLinuxMint().marginOnly(right: 15),
+                ).workaroundFreezeLinuxMint(),
+                ),
               ),
               Obx(() => ElevatedButton(
                     onPressed:
@@ -1569,13 +1619,17 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
     }
 
     final isOptFixed = isOptionFixed(kOptionWhitelist);
-    return GestureDetector(
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+      child: GestureDetector(
       child: Obx(() => Row(
             children: [
-              Checkbox(
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 5),
+                child: Checkbox(
                       value: unlockPin.isNotEmpty,
-                      onChanged: enabled && !isOptFixed ? onChanged : null)
-                  .marginOnly(right: 5),
+                      onChanged: enabled && !isOptFixed ? onChanged : null),
+              ),
               Expanded(
                   child: Text(
                 translate('Unlock with PIN'),
@@ -1588,7 +1642,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
               onChanged(!unlockPin.isNotEmpty);
             }
           : null,
-    ).marginOnly(left: _kCheckBoxLeftMargin);
+    ),
+    );
   }
 }
 
@@ -2047,17 +2102,22 @@ class _DisplayState extends State<_Display> {
     }
 
     return GestureDetector(
-        child: Row(
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+          child: Row(
           children: [
-            Checkbox(
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 5),
+              child: Checkbox(
                     value: value,
-                    onChanged: isOptFixed ? null : (_) => onChanged(!value))
-                .marginOnly(right: 5),
+                    onChanged: isOptFixed ? null : (_) => onChanged(!value)),
+            ),
             Expanded(
               child: Text(translate(label)),
             )
           ],
-        ).marginOnly(left: _kCheckBoxLeftMargin),
+        ),
+        ),
         onTap: isOptFixed ? null : () => onChanged(!value));
   }
 
@@ -2100,7 +2160,9 @@ class _AccountState extends State<_Account> {
   }
 
   Widget useInfo() {
-    return Obx(() => Offstage(
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 18, top: 16),
+      child: Obx(() => Offstage(
           offstage: gFFI.userModel.userName.value.isEmpty,
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -2147,7 +2209,8 @@ class _AccountState extends State<_Account> {
               );
             }),
           ),
-        )).marginOnly(left: 18, top: 16);
+        )),
+    );
   }
 
   Widget? _buildUserAvatar() {
@@ -2196,17 +2259,23 @@ class _CheckboxState extends State<_Checkbox> {
     }
 
     return GestureDetector(
-      child: Row(
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+        child: Row(
         children: [
-          Checkbox(
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 5),
+            child: Checkbox(
             value: value,
             onChanged: (_) => onChanged(!value),
-          ).marginOnly(right: 5),
+          ),
+          ),
           Expanded(
             child: Text(translate(widget.label)),
           )
         ],
-      ).marginOnly(left: _kCheckBoxLeftMargin),
+      ),
+      ),
       onTap: () => onChanged(!value),
     );
   }
@@ -2283,18 +2352,24 @@ class __PrinterState extends State<_Printer> {
         bind.mainGetCommonSync(key: 'is-support-printer-driver') == 'true';
 
     Widget tipOsNotSupported() {
-      return Align(
+      return Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
+        child: Align(
         alignment: Alignment.topLeft,
         child: Text(translate('printer-os-requirement-tip')),
-      ).marginOnly(left: _kCardLeftMargin);
+      ),
+      );
     }
 
     Widget tipClientNotInstalled() {
-      return Align(
+      return Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
+        child: Align(
         alignment: Alignment.topLeft,
         child:
             Text(translate('printer-requires-installed-{$appName}-client-tip')),
-      ).marginOnly(left: _kCardLeftMargin);
+      ),
+      );
     }
 
     Widget tipPrinterNotInstalled() {
@@ -2307,7 +2382,9 @@ class __PrinterState extends State<_Printer> {
           failedMsg.value = evt['msg'] as String;
         }
       }, replace: true);
-      return Column(children: [
+      return Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin, bottom: 2.0),
+        child: Column(children: [
         Obx(
           () => failedMsg.value.isNotEmpty
               ? Offstage()
@@ -2332,14 +2409,18 @@ class __PrinterState extends State<_Printer> {
           failedMsg.value = '';
           bind.mainSetCommon(key: 'install-printer', value: '');
         })
-      ]).marginOnly(left: _kCardLeftMargin, bottom: 2.0);
+      ]),
+      );
     }
 
     Widget tipReady() {
-      return Align(
+      return Padding(
+        padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
+        child: Align(
         alignment: Alignment.topLeft,
         child: Text(translate('printer-{$appName}-ready-tip')),
-      ).marginOnly(left: _kCardLeftMargin);
+      ),
+      );
     }
 
     final installed = bind.mainIsInstalled();
@@ -2386,7 +2467,9 @@ class __PrinterState extends State<_Printer> {
           label: 'use-the-selected-printer-tip',
           onChanged: onRadioChanged),
       if (printerOptions.printerNames.isNotEmpty)
-        ComboBox(
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 10),
+          child: ComboBox(
           initialKey: printerOptions.printerName,
           keys: printerOptions.printerNames,
           values: printerOptions.printerNames,
@@ -2396,7 +2479,8 @@ class __PrinterState extends State<_Printer> {
                 key: kKeyPrinterSelected, value: value);
             setState(() {});
           },
-        ).marginOnly(left: 10),
+        ),
+        ),
       _OptionCheckBox(
         context,
         'auto-print-tip',
@@ -2439,7 +2523,9 @@ class _AboutState extends State<_About> {
       return SingleChildScrollView(
         controller: scrollController,
         child: _Card(title: translate('About RustDesk'), children: [
-          Column(
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: _kContentHMargin),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(
@@ -2502,7 +2588,8 @@ class _AboutState extends State<_About> {
                 )),
               ).marginSymmetric(vertical: 4.0)
             ],
-          ).marginOnly(left: _kContentHMargin)
+          ),
+          )
         ]),
       );
     });
@@ -2898,14 +2985,19 @@ Widget _Button(String label, Function() onPressed,
   } else {
     child = Tooltip(message: translate(tip), child: button);
   }
-  return Row(children: [
+  return Padding(
+    padding: EdgeInsetsDirectional.only(start: _kContentHMargin),
+    child: Row(children: [
     child,
-  ]).marginOnly(left: _kContentHMargin);
+  ]),
+  );
 }
 
 // ignore: non_constant_identifier_names
 Widget _SubButton(String label, Function() onPressed, [bool enabled = true]) {
-  return Row(
+  return Padding(
+    padding: EdgeInsetsDirectional.only(start: _kContentHSubMargin),
+    child: Row(
     children: [
       ElevatedButton(
         onPressed: enabled ? onPressed : null,
@@ -2914,13 +3006,16 @@ Widget _SubButton(String label, Function() onPressed, [bool enabled = true]) {
         ).marginSymmetric(horizontal: 15),
       ),
     ],
-  ).marginOnly(left: _kContentHSubMargin);
+  ),
+  );
 }
 
 // ignore: non_constant_identifier_names
 Widget _SubLabeledWidget(BuildContext context, String label, Widget child,
     {bool enabled = true}) {
-  return Row(
+  return Padding(
+    padding: EdgeInsetsDirectional.only(start: _kContentHSubMargin),
+    child: Row(
     children: [
       Text(
         '${translate(label)}: ',
@@ -2931,7 +3026,8 @@ Widget _SubLabeledWidget(BuildContext context, String label, Widget child,
       ),
       child,
     ],
-  ).marginOnly(left: _kContentHSubMargin);
+  ),
+  );
 }
 
 Widget _lock(
@@ -2947,7 +3043,9 @@ Widget _lock(
             child: ConstrainedBox(
               constraints:
                   const BoxConstraints(maxWidth: _kSettingsContentMaxWidth),
-              child: Card(
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
+                child: Card(
                 child: ElevatedButton(
                   child: SizedBox(
                       height: 25,
@@ -2958,7 +3056,10 @@ Widget _lock(
                               Icons.security_sharp,
                               size: 20,
                             ),
-                            Text(translate(label)).marginOnly(left: 5),
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(start: 5),
+                              child: Text(translate(label)),
+                            ),
                           ]).marginSymmetric(vertical: 2)),
                   onPressed: () async {
                     final unlockPin = bind.mainGetUnlockPin();
@@ -2972,7 +3073,8 @@ Widget _lock(
                     }
                   },
                 ).marginSymmetric(horizontal: 2, vertical: 4),
-              ).marginOnly(left: _kCardLeftMargin),
+              ),
+              ),
             ).marginOnly(top: 10),
           ),
         ],
@@ -2996,10 +3098,10 @@ _LabeledTextField(
       TableRow(
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsetsDirectional.only(end: 10),
             child: Text(
               '${translate(label)}:',
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.start,
               style: TextStyle(
                 fontSize: 16,
                 color: disabledTextColor(context, enabled),
@@ -3161,13 +3263,18 @@ void changeSocks5Proxy() async {
                 if (!isMobile)
                   ConstrainedBox(
                     constraints: const BoxConstraints(minWidth: 140),
-                    child: Align(
-                        alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 10),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
                         child: Row(
                           children: [
-                            Text(
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 4),
+                              child: Text(
                               translate('Server'),
-                            ).marginOnly(right: 4),
+                            ),
+                            ),
                             Tooltip(
                               waitDuration: Duration(milliseconds: 0),
                               message: translate("default_proxy_tip"),
@@ -3182,7 +3289,8 @@ void changeSocks5Proxy() async {
                               ),
                             ),
                           ],
-                        )).marginOnly(right: 10),
+                        )),
+                    ),
                   ),
                 Expanded(
                   child: TextField(
@@ -3205,10 +3313,13 @@ void changeSocks5Proxy() async {
                 if (!isMobile)
                   ConstrainedBox(
                       constraints: const BoxConstraints(minWidth: 140),
-                      child: Text(
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 10),
+                        child: Text(
                         '${translate("Username")}:',
-                        textAlign: TextAlign.right,
-                      ).marginOnly(right: 10)),
+                        textAlign: TextAlign.start,
+                      ),
+                      )),
                 Expanded(
                   child: TextField(
                     controller: userController,
@@ -3225,10 +3336,13 @@ void changeSocks5Proxy() async {
                 if (!isMobile)
                   ConstrainedBox(
                       constraints: const BoxConstraints(minWidth: 140),
-                      child: Text(
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 10),
+                        child: Text(
                         '${translate("Password")}:',
-                        textAlign: TextAlign.right,
-                      ).marginOnly(right: 10)),
+                        textAlign: TextAlign.start,
+                      ),
+                      )),
                 Expanded(
                   child: Obx(() => TextField(
                         obscureText: obscure.value,

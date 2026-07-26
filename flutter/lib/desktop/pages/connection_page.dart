@@ -1,7 +1,5 @@
 // main window right pane
 
-import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -19,100 +17,6 @@ import '../../common/widgets/autocomplete.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../raatik/bidi/ltr_isolate.dart';
-
-class OnlineStatusWidget extends StatefulWidget {
-  const OnlineStatusWidget({Key? key, this.onSvcStatusChanged})
-      : super(key: key);
-
-  final VoidCallback? onSvcStatusChanged;
-
-  @override
-  State<OnlineStatusWidget> createState() => _OnlineStatusWidgetState();
-}
-
-/// State for the connection page.
-class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
-  final _svcStopped = Get.find<RxBool>(tag: 'stop-service');
-  Timer? _updateTimer;
-
-  double get em => 14.0;
-  double? get height => bind.isIncomingOnly() ? null : em * 3;
-
-  @override
-  void initState() {
-    super.initState();
-    _updateTimer = periodic_immediate(Duration(seconds: 1), () async {
-      updateStatus();
-    });
-  }
-
-  @override
-  void dispose() {
-    _updateTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.only(end: bind.isIncomingOnly() ? 8 : 0),
-      child: SizedBox(
-        height: height,
-        child: Obx(() => Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  height: 8,
-                  width: 8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                    color: _svcStopped.value ||
-                            stateGlobal.svcStatus.value == SvcStatus.connecting
-                        ? kColorWarn
-                        : (stateGlobal.svcStatus.value == SvcStatus.ready
-                            ? Color.fromARGB(255, 50, 190, 166)
-                            : Color.fromARGB(255, 224, 79, 95)),
-                  ),
-                ).marginSymmetric(horizontal: em),
-                Expanded(child: _buildConnStatusMsg()),
-              ],
-            )),
-      ),
-    );
-  }
-
-  _buildConnStatusMsg() {
-    widget.onSvcStatusChanged?.call();
-    return Text(
-      _svcStopped.value
-          ? translate("Service is not running")
-          : stateGlobal.svcStatus.value == SvcStatus.connecting
-              ? translate("connecting_status")
-              : stateGlobal.svcStatus.value == SvcStatus.notReady
-                  ? translate("not_ready_status")
-                  : translate('Ready'),
-      style: TextStyle(fontSize: em),
-    );
-  }
-
-  updateStatus() async {
-    final status =
-        jsonDecode(await bind.mainGetConnectStatus()) as Map<String, dynamic>;
-    final statusNum = status['status_num'] as int;
-    if (statusNum == 0) {
-      stateGlobal.svcStatus.value = SvcStatus.connecting;
-    } else if (statusNum == -1) {
-      stateGlobal.svcStatus.value = SvcStatus.notReady;
-    } else if (statusNum == 1) {
-      stateGlobal.svcStatus.value = SvcStatus.ready;
-    } else {
-      stateGlobal.svcStatus.value = SvcStatus.notReady;
-    }
-    try {
-      stateGlobal.videoConnCount.value = status['video_conn_count'] as int;
-    } catch (_) {}
-  }
-}
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {

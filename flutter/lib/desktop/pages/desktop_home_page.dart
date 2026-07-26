@@ -697,7 +697,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     }
     if (bind.isIncomingOnly()) {
       return Align(
-        alignment: Alignment.centerRight,
+        alignment: AlignmentDirectional.centerEnd,
         child: OutlinedButton(
           onPressed: () {
             SystemNavigator.pop(); // Close the application
@@ -1125,7 +1125,10 @@ void setPasswordDialog({VoidCallback? notEmptyCallback}) async {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.key, color: MyTheme.accent),
-          Text(translate("Set Password")).paddingOnly(left: 10),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate("Set Password")),
+          ),
         ],
       ),
       content: ConstrainedBox(
@@ -1189,8 +1192,10 @@ void setPasswordDialog({VoidCallback? notEmptyCallback}) async {
             if (statusTip.isNotEmpty)
               Row(
                 children: [
-                  Icon(Icons.info, color: Colors.amber, size: 18)
-                      .marginOnly(right: 6),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 6),
+                    child: Icon(Icons.info, color: Colors.amber, size: 18),
+                  ),
                   Expanded(
                       child: Text(
                     statusTip,
@@ -1258,10 +1263,10 @@ void setPasswordDialog({VoidCallback? notEmptyCallback}) async {
         if (!isDesktop && !isWebDesktop && localPasswordSet) {
           return [
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

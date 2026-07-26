@@ -19,7 +19,7 @@ void main() {
     );
   });
 
-  test('OnlineStatusWidget is not mounted on home/connection pages', () {
+  test('OnlineStatusWidget is deleted and not mounted', () {
     final connection = File('lib/desktop/pages/connection_page.dart');
     final home = File('lib/desktop/pages/desktop_home_page.dart');
     expect(connection.existsSync(), isTrue);
@@ -28,11 +28,12 @@ void main() {
     final connectionSrc = connection.readAsStringSync();
     final homeSrc = home.readAsStringSync();
 
-    // Home must not construct/mount the widget.
+    // Class must be fully removed from connection_page.
+    expect(connectionSrc.contains('class OnlineStatusWidget'), isFalse);
+    expect(connectionSrc.contains('_OnlineStatusWidgetState'), isFalse);
+
+    // Neither page may mount it.
     expect(RegExp(r'OnlineStatusWidget\s*\(').hasMatch(homeSrc), isFalse);
-    // Connection keeps the class + constructor; forbid bare mounts.
-    expect(connectionSrc.contains('OnlineStatusWidget(),'), isFalse);
-    expect(connectionSrc.contains('child: OnlineStatusWidget'), isFalse);
-    expect(connectionSrc.contains('OnlineStatusWidget(onSvc'), isFalse);
+    expect(RegExp(r'OnlineStatusWidget\s*\(').hasMatch(connectionSrc), isFalse);
   });
 }

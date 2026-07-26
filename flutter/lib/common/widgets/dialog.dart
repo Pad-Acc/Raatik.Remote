@@ -18,6 +18,7 @@ import 'package:flutter_hbb/utils/http_service.dart' as http;
 import '../../common.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
+import '../../raatik/bidi/ltr_isolate.dart';
 import 'address_book.dart';
 
 void clientClose(SessionID sessionId, FFI ffi) async {
@@ -130,25 +131,28 @@ void changeIdDialog() {
           const SizedBox(
             height: 12.0,
           ),
-          TextField(
-            decoration: InputDecoration(
-                labelText: translate('Your new ID'),
-                errorText: msg.isEmpty ? null : translate(msg),
-                suffixText: '${rxId.value.length}/16',
-                suffixStyle: const TextStyle(fontSize: 12, color: Colors.grey)),
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(16),
-              // FilteringTextInputFormatter(RegExp(r"[a-zA-z][a-zA-z0-9\_]*"), allow: true)
-            ],
-            controller: controller,
-            autofocus: true,
-            onChanged: (value) {
-              setState(() {
-                rxId.value = value.trim();
-                msg = '';
-              });
-            },
-          ).workaroundFreezeLinuxMint(),
+          ltrTextDirection(
+            child: TextField(
+              decoration: InputDecoration(
+                  labelText: translate('Your new ID'),
+                  errorText: msg.isEmpty ? null : translate(msg),
+                  suffixText: '${rxId.value.length}/16',
+                  suffixStyle:
+                      const TextStyle(fontSize: 12, color: Colors.grey)),
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(16),
+                // FilteringTextInputFormatter(RegExp(r"[a-zA-z][a-zA-z0-9\_]*"), allow: true)
+              ],
+              controller: controller,
+              autofocus: true,
+              onChanged: (value) {
+                setState(() {
+                  rxId.value = value.trim();
+                  msg = '';
+                });
+              },
+            ).workaroundFreezeLinuxMint(),
+          ),
           const SizedBox(
             height: 8.0,
           ),
