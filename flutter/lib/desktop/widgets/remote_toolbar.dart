@@ -12,6 +12,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/plugin/widgets/desc_ui.dart';
 import 'package:flutter_hbb/plugin/common.dart';
+import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -3113,7 +3114,10 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
             menuChildren: widget
                 .menuChildrenGetter(this)
                 .map((e) => _buildPointerTrackWidget(e, widget.ffi))
-                .toList()));
+                .toList(),
+          ),
+        ),
+    );
     return MenuBar(children: [
       button.marginSymmetric(
           horizontal: _ToolbarTheme.buttonHMargin,
