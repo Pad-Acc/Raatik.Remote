@@ -19,6 +19,7 @@ import 'package:scroll_pos/scroll_pos.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../raatik/chrome/window_chrome.dart';
 import '../../utils/multi_window_manager.dart';
 
 const double _kTabBarHeight = kDesktopRemoteTabBarHeight;
@@ -515,20 +516,24 @@ class _DesktopTabState extends State<DesktopTab>
         if (stateGlobal.showTabBar.isTrue &&
             !(kUseCompatibleUiMode && isHideSingleItem())) {
           final showBottomDivider = _showTabBarBottomDivider(tabType);
-          return SizedBox(
-            height: _kTabBarHeight,
-            child: Column(
-              children: [
-                SizedBox(
-                  height:
-                      showBottomDivider ? _kTabBarHeight - 1 : _kTabBarHeight,
-                  child: _buildBar(),
-                ),
-                if (showBottomDivider)
-                  const Divider(
-                    height: 1,
+          return ColoredBox(
+            color: Theme.of(context).colorScheme.surface,
+            child: SizedBox(
+              height: _kTabBarHeight,
+              child: Column(
+                children: [
+                  SizedBox(
+                    height:
+                        showBottomDivider ? _kTabBarHeight - 1 : _kTabBarHeight,
+                    child: _buildBar(),
                   ),
-              ],
+                  if (showBottomDivider)
+                    Divider(
+                      height: 1,
+                      color: Theme.of(context).dividerColor,
+                    ),
+                ],
+              ),
             ),
           );
         } else {
@@ -610,7 +615,9 @@ class _DesktopTabState extends State<DesktopTab>
                               .then((value) => stateGlobal.setMaximized(value));
                         }
                       }
-                    : (isIncomingHomePage ? () {} : null), // Keep tap recognizer for Windows touch.
+                    : (isIncomingHomePage
+                        ? () {}
+                        : null), // Keep tap recognizer for Windows touch.
                 onPanStart: (_) => startDragging(isMainWindow),
                 onPanCancel: () {
                   // We want to disable dragging of the tab area in the tab bar.
@@ -632,20 +639,9 @@ class _DesktopTabState extends State<DesktopTab>
                           width: 78,
                         )),
                     Offstage(
-                      offstage: kUseCompatibleUiMode || isMacOS,
-                      child: Row(children: [
-                        Offstage(
-                          offstage: !showLogo,
-                          child: loadIcon(16),
-                        ),
-                        Offstage(
-                            offstage: !showTitle,
-                            child: const Text(
-                              "RustDesk",
-                              style: TextStyle(fontSize: 13),
-                            ).marginOnly(left: 2))
-                      ]).marginOnly(
-                        left: 5,
+                      offstage: kUseCompatibleUiMode || isMacOS || !showLogo,
+                      child: const RaatikWindowBrand().marginOnly(
+                        left: 12,
                         right: 10,
                       ),
                     ),
@@ -1457,27 +1453,27 @@ class TabbarTheme extends ThemeExtension<TabbarTheme> {
 
   static const light = TabbarTheme(
       selectedTabIconColor: MyTheme.accent,
-      unSelectedTabIconColor: Color.fromARGB(255, 162, 203, 241),
-      selectedTextColor: Colors.black,
-      unSelectedTextColor: Color.fromARGB(255, 112, 112, 112),
-      selectedIconColor: Color.fromARGB(255, 26, 26, 26),
-      unSelectedIconColor: Color.fromARGB(255, 96, 96, 96),
-      dividerColor: Color.fromARGB(255, 238, 238, 238),
-      hoverColor: Colors.white54,
-      closeHoverColor: Colors.white,
-      selectedTabBackgroundColor: Colors.white54);
+      unSelectedTabIconColor: Color(0xFF64748B),
+      selectedTextColor: Color(0xFF0F172A),
+      unSelectedTextColor: Color(0xFF64748B),
+      selectedIconColor: Color(0xFF0F172A),
+      unSelectedIconColor: Color(0xFF64748B),
+      dividerColor: Color(0xFFE2E8F0),
+      hoverColor: Color(0xFFE2E8F0),
+      closeHoverColor: Color(0xFFF1F5F9),
+      selectedTabBackgroundColor: Color(0xFFF1F5F9));
 
   static const dark = TabbarTheme(
       selectedTabIconColor: MyTheme.accent,
-      unSelectedTabIconColor: Color.fromARGB(255, 30, 65, 98),
-      selectedTextColor: Colors.white,
-      unSelectedTextColor: Color.fromARGB(255, 192, 192, 192),
-      selectedIconColor: Color.fromARGB(255, 192, 192, 192),
-      unSelectedIconColor: Color.fromARGB(255, 255, 255, 255),
-      dividerColor: Color.fromARGB(255, 64, 64, 64),
-      hoverColor: Colors.black26,
-      closeHoverColor: Colors.black,
-      selectedTabBackgroundColor: Colors.black26);
+      unSelectedTabIconColor: Color(0xFF94A3B8),
+      selectedTextColor: Color(0xFFE2E8F0),
+      unSelectedTextColor: Color(0xFF94A3B8),
+      selectedIconColor: Color(0xFFE2E8F0),
+      unSelectedIconColor: Color(0xFF94A3B8),
+      dividerColor: Color(0xFF374151),
+      hoverColor: Color(0xFF374151),
+      closeHoverColor: Color(0xFF1F2937),
+      selectedTabBackgroundColor: Color(0xFF374151));
 
   @override
   ThemeExtension<TabbarTheme> copyWith({
