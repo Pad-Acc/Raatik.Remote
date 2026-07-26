@@ -480,34 +480,42 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                         ),
                       ),
                       if (showOneTime)
-                        AnimatedRotationWidget(
-                          onPressed: () => bind.mainUpdateTemporaryPassword(),
-                          child: Tooltip(
-                            message: translate('Refresh Password'),
-                            child: Obx(() => RotatedBox(
-                                quarterTurns: 2,
-                                child: Icon(
-                                  Icons.refresh,
-                                  color: refreshHover.value
-                                      ? textColor
-                                      : Color(0xFFDDDDDD),
-                                  size: 22,
-                                ))),
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                              end: 8, top: 4),
+                          child: AnimatedRotationWidget(
+                            onPressed: () => bind.mainUpdateTemporaryPassword(),
+                            child: Tooltip(
+                              message: translate('Refresh Password'),
+                              child: Obx(() => RotatedBox(
+                                  quarterTurns: 2,
+                                  child: Icon(
+                                    Icons.refresh,
+                                    color: refreshHover.value
+                                        ? textColor
+                                        : Color(0xFFDDDDDD),
+                                    size: 22,
+                                  ))),
+                            ),
+                            onHover: (value) => refreshHover.value = value,
                           ),
-                          onHover: (value) => refreshHover.value = value,
-                        ).marginOnly(right: 8, top: 4),
+                        ),
                       if (!bind.isDisableSettings())
                         InkWell(
                           child: Tooltip(
                             message: translate('Change Password'),
                             child: Obx(
-                              () => Icon(
-                                Icons.edit,
-                                color: editHover.value
-                                    ? textColor
-                                    : Color(0xFFDDDDDD),
-                                size: 22,
-                              ).marginOnly(right: 8, top: 4),
+                              () => Padding(
+                                padding: const EdgeInsetsDirectional.only(
+                                    end: 8, top: 4),
+                                child: Icon(
+                                  Icons.edit,
+                                  color: editHover.value
+                                      ? textColor
+                                      : Color(0xFFDDDDDD),
+                                  size: 22,
+                                ),
+                              ),
                             ),
                           ),
                           onTap: () => DesktopSettingPage.switch2page(
