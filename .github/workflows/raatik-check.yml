@@ -39,6 +39,9 @@ jobs:
       - name: Test hbb_common (no vcpkg needed)
         run: cargo test -p hbb_common --lib
 
+      - name: Verify Windows icon sources
+        run: python raatik/verify_windows_icons.py
+
   # The root crate only compiles with --features flutter if src/bridge_generated.rs
   # exists (src/lib.rs gates `mod bridge_generated` on cfg(feature = "flutter")), but
   # that file is gitignored and generated at build time. Mirrors raatik-windows.yml's

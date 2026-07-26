@@ -175,6 +175,10 @@ jobs:
       - name: Build
         run: python3 .\build.py --portable --flutter --hwcodec --vram
 
+      - name: Verify runtime icons
+        run: |
+          python3 raatik/verify_windows_icons.py --release-dir ./flutter/build/windows/x64/runner/Release
+
       - name: Brand-leak gate
         shell: bash
         run: |
