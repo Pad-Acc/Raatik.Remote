@@ -6,6 +6,15 @@ import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 void main() {
   group('RaatikTokens', () {
+    test('expose standard spacing', () {
+      expect(RaatikTokens.spaceSm, 8);
+      expect(RaatikTokens.iconLabelGap, 12);
+      expect(
+        RaatikTokens.inputContentPadding.horizontal,
+        greaterThanOrEqualTo(24),
+      );
+    });
+
     test('defines brand colors and layout constants', () {
       expect(RaatikTokens.primary, const Color(0xFF0284C7));
       expect(RaatikTokens.accent, const Color(0xFF0891B2));
@@ -49,6 +58,15 @@ void main() {
       final focusedBorder = theme.inputDecorationTheme.focusedBorder;
       expect(focusedBorder, isNotNull);
       expect(focusedBorder, isA<OutlineInputBorder>());
+    });
+
+    test('inputDecoration has contentPadding', () {
+      final theme = buildRaatikLightTheme();
+      expect(theme.inputDecorationTheme.contentPadding, isNotNull);
+      expect(
+        theme.inputDecorationTheme.contentPadding,
+        RaatikTokens.inputContentPadding,
+      );
     });
   });
 

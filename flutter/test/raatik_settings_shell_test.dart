@@ -177,6 +177,31 @@ void main() {
       expect(generalIcon.icon, Icons.settings);
     });
 
+    testWidgets('sidebar icon-label gap uses RaatikTokens', (tester) async {
+      await _pumpShell(
+        tester,
+        1024,
+        600,
+        selected: _TestKey.general,
+        onSelected: (_) {},
+      );
+
+      final generalInkWell = find.ancestor(
+        of: find.text('General'),
+        matching: find.byType(InkWell),
+      );
+      final gaps = tester
+          .widgetList<SizedBox>(
+            find.descendant(of: generalInkWell, matching: find.byType(SizedBox)),
+          )
+          .where((box) => box.width != null && box.width! > 0)
+          .map((box) => box.width)
+          .toList();
+
+      expect(gaps, contains(RaatikTokens.iconLabelGap));
+      expect(gaps, contains(RaatikTokens.spaceMd));
+    });
+
     testWidgets('no horizontal overflow at 800px', (tester) async {
       await _pumpShell(
         tester,

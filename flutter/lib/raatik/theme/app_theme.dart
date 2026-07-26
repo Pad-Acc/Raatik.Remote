@@ -13,6 +13,9 @@ ButtonStyle _raatikButtonStyle({
     minimumSize: const MaterialStatePropertyAll(
       Size(0, RaatikTokens.minTarget),
     ),
+    padding: const MaterialStatePropertyAll(
+      EdgeInsets.symmetric(horizontal: RaatikTokens.spaceLg),
+    ),
     backgroundColor: MaterialStatePropertyAll(background),
     foregroundColor: MaterialStatePropertyAll(foreground),
     shape: const MaterialStatePropertyAll(
@@ -30,7 +33,8 @@ InputDecorationTheme _raatikInputDecorationTheme({
   return InputDecorationTheme(
     filled: true,
     fillColor: fill,
-    isDense: true,
+    isDense: false,
+    contentPadding: RaatikTokens.inputContentPadding,
     border: OutlineInputBorder(borderRadius: _radiusSm),
     enabledBorder: OutlineInputBorder(
       borderRadius: _radiusSm,

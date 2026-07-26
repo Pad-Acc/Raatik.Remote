@@ -130,7 +130,7 @@ class _CompactHeader<T> extends StatelessWidget {
                                   ? RaatikTokens.primary
                                   : null,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: RaatikTokens.iconLabelGap),
                             Expanded(child: Text(d.label)),
                           ],
                         ),
@@ -148,7 +148,7 @@ class _CompactHeader<T> extends StatelessWidget {
                       children: [
                         Icon(selectedDestination.resolveIcon(true),
                             size: 20, color: RaatikTokens.primary),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: RaatikTokens.iconLabelGap),
                         Expanded(
                           child: Text(
                             selectedDestination.label,
@@ -282,13 +282,13 @@ class _SidebarItem<T> extends StatelessWidget {
                   height: 29,
                   color: selected ? RaatikTokens.primary : null,
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: RaatikTokens.spaceMd),
                 Icon(
                   destination.resolveIcon(selected),
                   color: selected ? RaatikTokens.primary : null,
                   size: 20,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: RaatikTokens.iconLabelGap),
                 Expanded(
                   child: Text(
                     destination.label,
