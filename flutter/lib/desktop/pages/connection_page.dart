@@ -53,58 +53,28 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isIncomingOnly = bind.isIncomingOnly();
-    startServiceWidget() => Offstage(
-          offstage: !_svcStopped.value,
-          child: InkWell(
-                  onTap: () async {
-                    await start_service(true);
-                  },
-                  child: Text(translate("Start service"),
-                      style: TextStyle(
-                          decoration: TextDecoration.underline, fontSize: em)))
-              .marginOnly(left: em),
-        );
-
-    basicWidget() => Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              height: 8,
-              width: 8,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: _svcStopped.value ||
-                        stateGlobal.svcStatus.value == SvcStatus.connecting
-                    ? kColorWarn
-                    : (stateGlobal.svcStatus.value == SvcStatus.ready
-                        ? Color.fromARGB(255, 50, 190, 166)
-                        : Color.fromARGB(255, 224, 79, 95)),
-              ),
-            ).marginSymmetric(horizontal: em),
-            Container(
-              width: isIncomingOnly ? 226 : null,
-              child: _buildConnStatusMsg(),
-            ),
-            // stop
-            if (!isIncomingOnly) startServiceWidget(),
-          ],
-        );
-
     return Container(
       height: height,
-      child: Obx(() => isIncomingOnly
-          ? Column(
-              children: [
-                basicWidget(),
-                Align(
-                        child: startServiceWidget(),
-                        alignment: Alignment.centerLeft)
-                    .marginOnly(top: 2.0, left: 22.0),
-              ],
-            )
-          : basicWidget()),
-    ).paddingOnly(right: isIncomingOnly ? 8 : 0);
+      child: Obx(() => Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                height: 8,
+                width: 8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: _svcStopped.value ||
+                          stateGlobal.svcStatus.value == SvcStatus.connecting
+                      ? kColorWarn
+                      : (stateGlobal.svcStatus.value == SvcStatus.ready
+                          ? Color.fromARGB(255, 50, 190, 166)
+                          : Color.fromARGB(255, 224, 79, 95)),
+                ),
+              ).marginSymmetric(horizontal: em),
+              Expanded(child: _buildConnStatusMsg()),
+            ],
+          )),
+    ).paddingOnly(right: bind.isIncomingOnly() ? 8 : 0);
   }
 
   _buildConnStatusMsg() {

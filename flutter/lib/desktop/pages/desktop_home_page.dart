@@ -17,6 +17,7 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/plugin/ui_manager.dart';
+import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
 import 'package:get/get.dart';
@@ -49,7 +50,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   var watchIsInputMonitoring = false;
   var watchIsCanRecordAudio = false;
   Timer? _updateTimer;
+  Timer? _serviceStartTimeout;
+  bool _serviceStartPending = false;
+  String? _serviceStartError;
   bool isCardClosed = false;
+
+  static const _serviceStartTimeoutDuration = Duration(seconds: 12);
 
   final RxBool _editHover = false.obs;
   final RxBool _block = false.obs;
@@ -60,8 +66,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    final isOutgoingOnly = bind.isOutgoingOnly();
     // B1: RTL two-column — first child (receive, flex 14) is dominant at start.
-    return _buildBlock(
+    final panels = _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -72,11 +79,123 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         ],
       ],
     ));
+
+    if (isOutgoingOnly) {
+      return panels;
+    }
+
+    return Obx(() {
+      final phase = deriveRaatikServicePhase(
+        stopped: svcStopped.value,
+        status: stateGlobal.svcStatus.value,
+        startPending: _serviceStartPending,
+        error: _serviceStartError,
+      );
+      final blocked = phase != RaatikServicePhase.ready;
+      final copy = RaatikServiceGateCopy(
+        stoppedTitle: translate('Service is not running'),
+        startLabel: translate('Start service'),
+        startingLabel: translate('connecting_status'),
+        readyLabel: translate('Ready'),
+        stoppedBody: translate('not_ready_status'),
+        failedTitle: translate('Failed'),
+        retryBody: translate('Retry'),
+      );
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: RaatikServiceGate(
+              phase: phase,
+              copy: copy,
+              onStart: _serviceStartPending ? null : _handleServiceStart,
+            ),
+          ),
+          Expanded(
+            child: AbsorbPointer(
+              absorbing: blocked,
+              child: AnimatedOpacity(
+                opacity: blocked ? 0.48 : 1,
+                duration: const Duration(milliseconds: 180),
+                child: panels,
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildBlock({required Widget child}) {
     return buildRemoteBlock(
         block: _block, mask: true, use: canBeBlocked, child: child);
+  }
+
+  Future<void> _pollConnectStatus() async {
+    final status =
+        jsonDecode(await bind.mainGetConnectStatus()) as Map<String, dynamic>;
+    final statusNum = status['status_num'] as int;
+    if (statusNum == 0) {
+      stateGlobal.svcStatus.value = SvcStatus.connecting;
+    } else if (statusNum == -1) {
+      stateGlobal.svcStatus.value = SvcStatus.notReady;
+    } else if (statusNum == 1) {
+      stateGlobal.svcStatus.value = SvcStatus.ready;
+    } else {
+      stateGlobal.svcStatus.value = SvcStatus.notReady;
+    }
+  }
+
+  Future<void> _handleServiceStart() async {
+    if (_serviceStartPending) return;
+    setState(() {
+      _serviceStartPending = true;
+      _serviceStartError = null;
+    });
+    _serviceStartTimeout?.cancel();
+    _serviceStartTimeout = Timer(_serviceStartTimeoutDuration, () {
+      if (!mounted) return;
+      if (_serviceStartPending) {
+        debugPrint('[RaatikServiceGate] Service start timed out after 12s');
+        setState(() {
+          _serviceStartPending = false;
+          _serviceStartError = 'timeout';
+        });
+      }
+    });
+    try {
+      await start_service(true);
+      await _waitUntilServiceReady();
+    } catch (e, st) {
+      debugPrint('[RaatikServiceGate] Service start failed: $e\n$st');
+      if (mounted) {
+        setState(() {
+          _serviceStartPending = false;
+          _serviceStartError = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _waitUntilServiceReady() async {
+    while (mounted && _serviceStartPending) {
+      await _pollConnectStatus();
+      final stopped = await mainGetBoolOption(kOptionStopService);
+      if (stopped != svcStopped.value) {
+        svcStopped.value = stopped;
+      }
+      if (!stopped && stateGlobal.svcStatus.value == SvcStatus.ready) {
+        _serviceStartTimeout?.cancel();
+        setState(() {
+          _serviceStartPending = false;
+          _serviceStartError = null;
+        });
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
   }
 
   /// Dominant receive panel (customer path): logo, ID, one-time password, copy CTA.
@@ -920,6 +1039,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     _uniLinksSubscription?.cancel();
     Get.delete<RxBool>(tag: 'stop-service');
     _updateTimer?.cancel();
+    _serviceStartTimeout?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
