@@ -7,7 +7,12 @@ const _receiveKey = Key('receive-panel');
 const _connectKey = Key('connect-panel');
 const _gateKey = Key('service-gate');
 
-Widget _homeAtSize(double width, double height, {bool blocked = false}) =>
+Widget _homeAtSize(
+  double width,
+  double height, {
+  bool blocked = false,
+  bool showConnectPanel = true,
+}) =>
     MaterialApp(
       theme: buildRaatikLightTheme(),
       home: Scaffold(
@@ -18,6 +23,7 @@ Widget _homeAtSize(double width, double height, {bool blocked = false}) =>
             serviceGate: const SizedBox(key: _gateKey, height: 40),
             receivePanel: const SizedBox(key: _receiveKey, height: 120),
             connectPanel: const SizedBox(key: _connectKey, height: 100),
+            showConnectPanel: showConnectPanel,
             blocked: blocked,
           ),
         ),
@@ -49,10 +55,18 @@ Future<void> _pumpHome(
   double width,
   double height, {
   bool blocked = false,
+  bool showConnectPanel = true,
 }) async {
   await tester.binding.setSurfaceSize(Size(width, height));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(_homeAtSize(width, height, blocked: blocked));
+  await tester.pumpWidget(
+    _homeAtSize(
+      width,
+      height,
+      blocked: blocked,
+      showConnectPanel: showConnectPanel,
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -84,6 +98,28 @@ void main() {
 
       expect(_isTwoColumnLayout(tester), isTrue);
       expect(_isCompactLayout(tester), isFalse);
+    });
+  });
+
+  group('RaatikHomeLayout incoming-only', () {
+    testWidgets('omits connect panel and receive fills width at 1024',
+        (tester) async {
+      await _pumpHome(tester, 1024, 600, showConnectPanel: false);
+
+      expect(find.byKey(_connectKey), findsNothing);
+      expect(_isTwoColumnLayout(tester), isFalse);
+
+      final receive = tester.getRect(find.byKey(_receiveKey));
+      final layout = tester.getRect(find.byType(RaatikHomeLayout));
+      expect(receive.width, closeTo(layout.width - 32, 1));
+    });
+
+    testWidgets('omits connect panel in compact layout at 800', (tester) async {
+      await _pumpHome(tester, 800, 600, showConnectPanel: false);
+
+      expect(find.byKey(_connectKey), findsNothing);
+      expect(_isCompactLayout(tester), isFalse);
+      expect(find.byKey(_receiveKey), findsOneWidget);
     });
   });
 

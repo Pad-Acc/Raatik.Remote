@@ -7,28 +7,35 @@ class RaatikHomeLayout extends StatelessWidget {
     required this.receivePanel,
     required this.connectPanel,
     required this.blocked,
+    this.showConnectPanel = true,
   });
 
   final Widget serviceGate;
   final Widget receivePanel;
   final Widget connectPanel;
   final bool blocked;
+  final bool showConnectPanel;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 900;
-          final panels = compact
-              ? Column(children: [
-                  receivePanel,
-                  const SizedBox(height: 12),
-                  connectPanel,
-                ])
-              : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(flex: 14, child: receivePanel),
-                  const SizedBox(width: 12),
-                  Expanded(flex: 10, child: connectPanel),
-                ]);
+          final Widget panels;
+          if (!showConnectPanel) {
+            panels = receivePanel;
+          } else if (compact) {
+            panels = Column(children: [
+              receivePanel,
+              const SizedBox(height: 12),
+              connectPanel,
+            ]);
+          } else {
+            panels = Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(flex: 14, child: receivePanel),
+              const SizedBox(width: 12),
+              Expanded(flex: 10, child: connectPanel),
+            ]);
+          }
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [

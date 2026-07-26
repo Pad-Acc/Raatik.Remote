@@ -82,6 +82,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             serviceGate: serviceGate,
             receivePanel: receivePanel,
             connectPanel: connectPanel,
+            showConnectPanel: !isIncomingOnly,
             blocked: blocked,
           ),
         );
@@ -369,25 +370,23 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                       buildPopupMenu(context)
                     ],
                   ),
-                  Flexible(
-                    child: GestureDetector(
-                      onDoubleTap: () {
-                        Clipboard.setData(
-                            ClipboardData(text: model.serverId.text));
-                        showToast(translate("Copied"));
-                      },
-                      child: TextFormField(
-                        controller: model.serverId,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.only(top: 10, bottom: 10),
-                        ),
-                        style: TextStyle(
-                          fontSize: 22,
-                        ),
-                      ).workaroundFreezeLinuxMint(),
-                    ),
+                  GestureDetector(
+                    onDoubleTap: () {
+                      Clipboard.setData(
+                          ClipboardData(text: model.serverId.text));
+                      showToast(translate("Copied"));
+                    },
+                    child: TextFormField(
+                      controller: model.serverId,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.only(top: 10, bottom: 10),
+                      ),
+                      style: TextStyle(
+                        fontSize: 22,
+                      ),
+                    ).workaroundFreezeLinuxMint(),
                   )
                 ],
               ),
