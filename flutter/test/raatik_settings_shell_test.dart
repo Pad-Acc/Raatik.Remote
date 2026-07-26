@@ -202,6 +202,53 @@ void main() {
       expect(gaps, contains(RaatikTokens.spaceMd));
     });
 
+    testWidgets('settings sidebar icon and label are at least 12px apart',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildRaatikLightTheme(),
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: SizedBox(
+              width: 1024,
+              height: 600,
+              child: RaatikSettingsShell<_TestKey>(
+                destinations: _destinations,
+                selected: _TestKey.general,
+                onSelected: (_) {},
+                content: const SizedBox(key: Key('settings-content')),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final generalInkWell = find.ancestor(
+        of: find.text('General'),
+        matching: find.byType(InkWell),
+      );
+      final icon = find.descendant(
+        of: generalInkWell,
+        matching: find.byType(Icon),
+      );
+      final label = find.descendant(
+        of: generalInkWell,
+        matching: find.text('General'),
+      );
+
+      final iconRect = tester.getRect(icon);
+      final labelRect = tester.getRect(label);
+      // Under RTL, label is to the left of icon; gap is between their facing edges.
+      final gap = (iconRect.left - labelRect.right).abs();
+      expect(gap, greaterThanOrEqualTo(RaatikTokens.iconLabelGap));
+    });
+
     testWidgets('no horizontal overflow at 800px', (tester) async {
       await _pumpShell(
         tester,

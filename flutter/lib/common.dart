@@ -3545,10 +3545,13 @@ class ComboBox extends StatelessWidget {
                 color: enabled
                     ? Theme.of(context).textTheme.titleMedium?.color
                     : disabledTextColor(context, enabled)),
-            icon: const Icon(
-              Icons.expand_more_sharp,
-              size: 20,
-            ).marginOnly(right: 15),
+            icon: const Padding(
+              padding: EdgeInsetsDirectional.only(end: 15),
+              child: Icon(
+                Icons.expand_more_sharp,
+                size: 20,
+              ),
+            ),
             onChanged: enabled
                 ? (String? newValue) {
                     if (newValue != null && newValue != ref.value) {
@@ -3561,11 +3564,14 @@ class ComboBox extends StatelessWidget {
             items: values.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 value: value,
-                child: Text(
-                  value,
-                  style: const TextStyle(fontSize: 15),
-                  overflow: TextOverflow.ellipsis,
-                ).marginOnly(left: 15),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 15),
+                  child: Text(
+                    value,
+                    style: const TextStyle(fontSize: 15),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               );
             }).toList(),
           )),

@@ -20,6 +20,7 @@ import 'package:flutter_hbb/plugin/ui_manager.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
+import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
 import 'package:get/get.dart';
@@ -258,7 +259,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 bottom: 6,
                 start: 12,
                 child: Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: InkWell(
                     child: Obx(
                       () => Icon(
@@ -315,7 +316,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             Clipboard.setData(ClipboardData(text: text));
             showToast(translate("Copied"));
           },
-          icon: const Icon(Icons.copy_rounded, size: 18),
+          icon: const Padding(
+            padding: EdgeInsetsDirectional.only(end: RaatikTokens.spaceSm),
+            child: Icon(Icons.copy_rounded, size: 18),
+          ),
           label: Text(translate("Copy ID and password")),
         ),
       ),

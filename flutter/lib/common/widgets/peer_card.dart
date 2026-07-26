@@ -202,7 +202,7 @@ class _PeerCardState extends State<_PeerCard>
                               message: name,
                               waitDuration: const Duration(seconds: 1),
                               child: Align(
-                                alignment: Alignment.centerLeft,
+                                alignment: AlignmentDirectional.centerStart,
                                 child: Text(
                                   ltrIsolate(name),
                                   style: isPortrait ? null : greyStyle,
@@ -218,17 +218,21 @@ class _PeerCardState extends State<_PeerCard>
                                 message: peer.note,
                                 waitDuration: const Duration(seconds: 1),
                                 child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    peer.note,
-                                    style: isPortrait ? null : greyStyle,
-                                    textAlign: TextAlign.start,
-                                    overflow: TextOverflow.ellipsis,
-                                  ).marginOnly(
-                                      left: peerCardUiType.value ==
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Padding(
+                                    padding: EdgeInsetsDirectional.only(
+                                      start: peerCardUiType.value ==
                                               PeerUiType.list
                                           ? 32
-                                          : 4),
+                                          : 4,
+                                    ),
+                                    child: Text(
+                                      peer.note,
+                                      style: isPortrait ? null : greyStyle,
+                                      textAlign: TextAlign.start,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ),
                               ),
                             )

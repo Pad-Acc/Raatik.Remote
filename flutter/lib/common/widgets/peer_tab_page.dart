@@ -109,26 +109,31 @@ class _PeerTabPageState extends State<PeerTabPage>
       textBaseline: TextBaseline.ideographic,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Obx(() => SizedBox(
-              height: 32,
-              child: Container(
-                padding: stateGlobal.isPortrait.isTrue
-                    ? EdgeInsets.symmetric(horizontal: 2)
-                    : null,
-                child: selectionWrap(Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                        child: visibleContextMenuListener(
-                            _createSwitchBar(context))),
-                    if (stateGlobal.isPortrait.isTrue)
-                      ..._portraitRightActions(context)
-                    else
-                      ..._landscapeRightActions(context)
-                  ],
-                )),
+        Obx(() => Padding(
+              padding: EdgeInsetsDirectional.only(
+                end: stateGlobal.isPortrait.isTrue ? 0 : 12,
               ),
-            ).paddingOnly(right: stateGlobal.isPortrait.isTrue ? 0 : 12)),
+              child: SizedBox(
+                height: 32,
+                child: Container(
+                  padding: stateGlobal.isPortrait.isTrue
+                      ? EdgeInsets.symmetric(horizontal: 2)
+                      : null,
+                  child: selectionWrap(Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                          child: visibleContextMenuListener(
+                              _createSwitchBar(context))),
+                      if (stateGlobal.isPortrait.isTrue)
+                        ..._portraitRightActions(context)
+                      else
+                        ..._landscapeRightActions(context)
+                    ],
+                  )),
+                ),
+              ),
+            )),
         _createPeersView(),
       ],
     );

@@ -131,7 +131,10 @@ class _FakeReceivePanel extends StatelessWidget {
               height: RaatikTokens.minTarget,
               child: ElevatedButton.icon(
                 onPressed: () {},
-                icon: const Icon(Icons.copy_rounded, size: 18),
+                icon: const Padding(
+                  padding: EdgeInsetsDirectional.only(end: RaatikTokens.spaceSm),
+                  child: Icon(Icons.copy_rounded, size: 18),
+                ),
                 label: Text(isFa ? 'کپی شناسه و رمز' : 'Copy ID and password'),
               ),
             ),

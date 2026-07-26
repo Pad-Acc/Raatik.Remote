@@ -5,6 +5,7 @@ import 'package:flutter_hbb/preview/fake_home.dart';
 import 'package:flutter_hbb/preview_main.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
+import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 Widget _wrapHome(Widget child) {
   return MaterialApp(
@@ -80,5 +81,40 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('آماده به کار'), findsOneWidget);
+  });
+
+  testWidgets('copy CTA icon has end padding for RTL-safe gap', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1024, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      _wrapHome(
+        FakeHomePage(
+          phase: RaatikServicePhase.ready,
+          copy: previewServiceGateCopy(const Locale('fa')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final copyLabel = find.text('کپی شناسه و رمز');
+    expect(copyLabel, findsOneWidget);
+    final copyButton = find.ancestor(
+      of: copyLabel,
+      matching: find.byWidgetPredicate((w) => w is ElevatedButton),
+    );
+    expect(copyButton, findsOneWidget);
+    final iconPadding = find.descendant(
+      of: copyButton,
+      matching: find.byWidgetPredicate((w) {
+        if (w is! Padding) return false;
+        final p = w.padding;
+        if (p is EdgeInsetsDirectional) {
+          return p.end == RaatikTokens.spaceSm;
+        }
+        return false;
+      }),
+    );
+    expect(iconPadding, findsOneWidget);
   });
 }

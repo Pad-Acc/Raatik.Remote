@@ -28,6 +28,7 @@ import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 import '../../raatik/flags.dart';
 import '../../raatik/settings/settings_shell.dart';
+import '../../raatik/theme/tokens.dart';
 
 const double _kSettingsContentMaxWidth = 900;
 const double _kCardLeftMargin = 15;
@@ -696,15 +697,18 @@ class _GeneralState extends State<_General> {
     }
 
     builder(devices, currentDevice, setDevice) {
-      final child = ComboBox(
-        keys: devices,
-        values: devices,
-        initialKey: currentDevice,
-        onChanged: (key) async {
-          setDevice(key);
-          setState(() {});
-        },
-      ).marginOnly(left: _kContentHMargin);
+      final child = Padding(
+        padding: const EdgeInsetsDirectional.only(start: _kContentHMargin),
+        child: ComboBox(
+          keys: devices,
+          values: devices,
+          initialKey: currentDevice,
+          onChanged: (key) async {
+            setDevice(key);
+            setState(() {});
+          },
+        ),
+      );
       return _Card(title: 'Audio Input Device', children: [child]);
     }
 
@@ -825,18 +829,21 @@ class _GeneralState extends State<_General> {
         currentKey = defaultOptionLang;
       }
       final isOptFixed = isOptionFixed(kCommConfKeyLang);
-      return ComboBox(
-        keys: keys,
-        values: values,
-        initialKey: currentKey,
-        onChanged: (key) async {
-          await bind.mainSetLocalOption(key: kCommConfKeyLang, value: key);
-          if (isWeb) reloadCurrentWindow();
-          if (!isWeb) reloadAllWindows();
-          if (!isWeb) bind.mainChangeLanguage(lang: key);
-        },
-        enabled: !isOptFixed,
-      ).marginOnly(left: _kContentHMargin);
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(start: _kContentHMargin),
+        child: ComboBox(
+          keys: keys,
+          values: values,
+          initialKey: currentKey,
+          onChanged: (key) async {
+            await bind.mainSetLocalOption(key: kCommConfKeyLang, value: key);
+            if (isWeb) reloadCurrentWindow();
+            if (!isWeb) reloadAllWindows();
+            if (!isWeb) bind.mainChangeLanguage(lang: key);
+          },
+          enabled: !isOptFixed,
+        ),
+      );
     });
   }
 }
@@ -2541,27 +2548,38 @@ Widget _Card(
         child: ConstrainedBox(
           constraints:
               const BoxConstraints(maxWidth: _kSettingsContentMaxWidth),
-          child: Card(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                        child: Text(
-                      translate(title),
-                      textAlign: TextAlign.start,
-                      style: const TextStyle(
-                        fontSize: _kTitleFontSize,
-                      ),
-                    )),
-                    ...?title_suffix
-                  ],
-                ).marginOnly(left: _kContentHMargin, top: 10, bottom: 10),
-                ...children
-                    .map((e) => e.marginOnly(top: 4, right: _kContentHMargin)),
-              ],
-            ).marginOnly(bottom: 10),
-          ).marginOnly(left: _kCardLeftMargin, top: 15),
+          child: Padding(
+            padding:
+                const EdgeInsetsDirectional.only(start: _kCardLeftMargin, top: 15),
+            child: Card(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                        start: _kContentHMargin, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: Text(
+                          translate(title),
+                          textAlign: TextAlign.start,
+                          style: const TextStyle(
+                            fontSize: _kTitleFontSize,
+                          ),
+                        )),
+                        ...?title_suffix
+                      ],
+                    ),
+                  ),
+                  ...children.map((e) => Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                            top: 4, end: _kContentHMargin),
+                        child: e,
+                      )),
+                ],
+              ).marginOnly(bottom: 10),
+            ),
+          ),
         ),
       ),
     ],
@@ -2613,25 +2631,35 @@ Widget _OptionCheckBox(
   }
 
   return GestureDetector(
-    child: Obx(
-      () => Row(
-        children: [
-          Checkbox(
+    child: Padding(
+      padding: const EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+      child: Obx(
+        () => Row(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 5),
+              child: Checkbox(
                   value: ref.value,
-                  onChanged: enabled && !isOptFixed ? onChanged : null)
-              .marginOnly(right: 5),
-          Offstage(
-            offstage: !ref.value || checkedIcon == null,
-            child: checkedIcon?.marginOnly(right: 5),
-          ),
-          Expanded(
-              child: Text(
-            translate(label),
-            style: TextStyle(color: disabledTextColor(context, enabled)),
-          ))
-        ],
+                  onChanged: enabled && !isOptFixed ? onChanged : null),
+            ),
+            Offstage(
+              offstage: !ref.value || checkedIcon == null,
+              child: checkedIcon == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 5),
+                      child: checkedIcon,
+                    ),
+            ),
+            Expanded(
+                child: Text(
+              translate(label),
+              style: TextStyle(color: disabledTextColor(context, enabled)),
+            ))
+          ],
+        ),
       ),
-    ).marginOnly(left: _kCheckBoxLeftMargin),
+    ),
     onTap: enabled && !isOptFixed
         ? () {
             onChanged(!ref.value);
@@ -2655,19 +2683,25 @@ Widget _Radio<T>(BuildContext context,
         }
       : null;
   return GestureDetector(
-    child: Row(
-      children: [
-        Radio<T>(value: value, groupValue: groupValue, onChanged: onChange2),
-        Expanded(
-          child: Text(translate(label),
+    child: Padding(
+      padding: const EdgeInsetsDirectional.only(start: _kRadioLeftMargin),
+      child: Row(
+        children: [
+          Radio<T>(value: value, groupValue: groupValue, onChanged: onChange2),
+          Expanded(
+            child: Padding(
+              padding:
+                  const EdgeInsetsDirectional.only(start: RaatikTokens.spaceSm),
+              child: Text(translate(label),
                   overflow: autoNewLine ? null : TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: _kContentFontSize,
-                      color: disabledTextColor(context, onChange2 != null)))
-              .marginOnly(left: 5),
-        ),
-      ],
-    ).marginOnly(left: _kRadioLeftMargin),
+                      color: disabledTextColor(context, onChange2 != null))),
+            ),
+          ),
+        ],
+      ),
+    ),
     onTap: () => onChange2?.call(value),
   );
 }

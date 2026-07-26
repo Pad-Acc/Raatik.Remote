@@ -642,12 +642,13 @@ class _DesktopTabState extends State<DesktopTab>
                       offstage: kUseCompatibleUiMode ||
                           isMacOS ||
                           (!showLogo && !showTitle),
-                      child: RaatikWindowBrand(
-                        showLogo: showLogo,
-                        showTitle: showTitle,
-                      ).marginOnly(
-                        left: 12,
-                        right: 10,
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                            start: 12, end: 10),
+                        child: RaatikWindowBrand(
+                          showLogo: showLogo,
+                          showTitle: showTitle,
+                        ),
                       ),
                     ),
                     Expanded(
@@ -683,18 +684,21 @@ class _DesktopTabState extends State<DesktopTab>
                   ],
                 ))),
         // hide simulated action buttons when we in compatible ui mode, because of reusing system title bar.
-        WindowActionPanel(
-          isMainWindow: isMainWindow,
-          state: state,
-          tabController: controller,
-          invisibleTabKeys: invisibleTabKeys,
-          tail: tail,
-          showMinimize: showMinimize,
-          showMaximize: showMaximize,
-          showClose: showClose,
-          onClose: onWindowCloseButton,
-          labelGetter: labelGetter,
-        ).paddingOnly(left: 10)
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 10),
+          child: WindowActionPanel(
+            isMainWindow: isMainWindow,
+            state: state,
+            tabController: controller,
+            invisibleTabKeys: invisibleTabKeys,
+            tail: tail,
+            showMinimize: showMinimize,
+            showMaximize: showMaximize,
+            showClose: showClose,
+            onClose: onWindowCloseButton,
+            labelGetter: labelGetter,
+          ),
+        )
       ],
     );
   }
@@ -1177,16 +1181,19 @@ class _TabState extends State<_Tab> with RestorationMixin {
                       height: _showTabBarBottomDivider(widget.tabType)
                           ? _kTabBarHeight - 1
                           : _kTabBarHeight,
-                      child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            _buildTabContent(),
-                            Obx((() => _CloseButton(
-                                  visible: hover.value && widget.closable,
-                                  tabSelected: isSelected,
-                                  onClose: () => widget.onClose(),
-                                )))
-                          ])).paddingOnly(left: 10, right: 5),
+                      child: Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                              start: 10, end: 5),
+                          child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _buildTabContent(),
+                                Obx((() => _CloseButton(
+                                      visible: hover.value && widget.closable,
+                                      tabSelected: isSelected,
+                                      onClose: () => widget.onClose(),
+                                    )))
+                              ])),
                   Offstage(
                     offstage: !showDivider,
                     child: VerticalDivider(
@@ -1226,27 +1233,30 @@ class _CloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-            width: _kIconSize,
-            child: () {
-              if (visible) {
-                return InkWell(
-                  hoverColor: MyTheme.tabbar(context).closeHoverColor,
-                  customBorder: const CircleBorder(),
-                  onTap: () => onClose(),
-                  child: Icon(
-                    Icons.close,
-                    size: _kIconSize,
-                    color: tabSelected
-                        ? MyTheme.tabbar(context).selectedIconColor
-                        : MyTheme.tabbar(context).unSelectedIconColor,
-                  ),
-                );
-              } else {
-                return Offstage();
-              }
-            }())
-        .paddingOnly(left: 10);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 10),
+      child: SizedBox(
+        width: _kIconSize,
+        child: () {
+          if (visible) {
+            return InkWell(
+              hoverColor: MyTheme.tabbar(context).closeHoverColor,
+              customBorder: const CircleBorder(),
+              onTap: () => onClose(),
+              child: Icon(
+                Icons.close,
+                size: _kIconSize,
+                color: tabSelected
+                    ? MyTheme.tabbar(context).selectedIconColor
+                    : MyTheme.tabbar(context).unSelectedIconColor,
+              ),
+            );
+          } else {
+            return Offstage();
+          }
+        }(),
+      ),
+    );
   }
 }
 
