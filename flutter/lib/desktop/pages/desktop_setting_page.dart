@@ -2355,7 +2355,7 @@ class __PrinterState extends State<_Printer> {
       return Padding(
         padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
         child: Align(
-        alignment: Alignment.topLeft,
+        alignment: AlignmentDirectional.topStart,
         child: Text(translate('printer-os-requirement-tip')),
       ),
       );
@@ -2365,7 +2365,7 @@ class __PrinterState extends State<_Printer> {
       return Padding(
         padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
         child: Align(
-        alignment: Alignment.topLeft,
+        alignment: AlignmentDirectional.topStart,
         child:
             Text(translate('printer-requires-installed-{$appName}-client-tip')),
       ),
@@ -2389,7 +2389,7 @@ class __PrinterState extends State<_Printer> {
           () => failedMsg.value.isNotEmpty
               ? Offstage()
               : Align(
-                  alignment: Alignment.topLeft,
+                  alignment: AlignmentDirectional.topStart,
                   child: Text(translate('printer-{$appName}-not-installed-tip'))
                       .marginOnly(bottom: 10.0),
                 ),
@@ -2398,7 +2398,7 @@ class __PrinterState extends State<_Printer> {
           () => failedMsg.value.isEmpty
               ? Offstage()
               : Align(
-                  alignment: Alignment.topLeft,
+                  alignment: AlignmentDirectional.topStart,
                   child: Text(failedMsg.value,
                           style: DefaultTextStyle.of(context)
                               .style
@@ -2417,7 +2417,7 @@ class __PrinterState extends State<_Printer> {
       return Padding(
         padding: EdgeInsetsDirectional.only(start: _kCardLeftMargin),
         child: Align(
-        alignment: Alignment.topLeft,
+        alignment: AlignmentDirectional.topStart,
         child: Text(translate('printer-{$appName}-ready-tip')),
       ),
       );
@@ -2949,7 +2949,7 @@ class _WaylandCardState extends State<WaylandCard> {
         () => _clearShortcutsInhibitorFailedMsg.value.isEmpty
             ? Offstage()
             : Align(
-                alignment: Alignment.topLeft,
+                alignment: AlignmentDirectional.topStart,
                 child: Text(_clearShortcutsInhibitorFailedMsg.value,
                         style: DefaultTextStyle.of(context)
                             .style

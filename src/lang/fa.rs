@@ -695,7 +695,7 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Default trackpad speed", "سرعت پیش‌فرض ترک‌پد"),
         ("Numeric one-time password", "رمز یک‌بارمصرف عددی — فقط رقم؛ وارد کردن آسان‌تر"),
         ("Enable IPv6 P2P connection", "اتصال IPv6 همتا‌به‌همتا — مسیر جایگزین در شبکه‌های مدرن"),
-        ("Enable UDP hole punching", "UDP hole punching — کمک به اتصال مستقیم همتا‌به‌همتا"),
+        ("Enable UDP hole punching", "حفره UDP — کمک به اتصال مستقیم همتا‌به‌همتا"),
         ("View camera", "نمایش دوربین"),
         ("Enable camera", "دوربین — اجازه مشاهده دوربین سیستم از راه دور"),
         ("No cameras", "هیچ دوربینی یافت نشد"),

@@ -419,9 +419,9 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
       child: Stack(children: [
         child,
         if (colors.isNotEmpty)
-          Positioned(
+          PositionedDirectional(
             top: 5,
-            right: 10,
+            end: 10,
             child: CustomPaint(
               painter: TagPainter(radius: 3, colors: colors),
             ),

@@ -344,9 +344,9 @@ class MyTheme {
         : EdgeInsets.fromLTRB(p, 0, (p - mobileTextButtonPaddingLR), (p / 2));
   }
 
-  static EdgeInsets dialogButtonPadding = (isDesktop || isWebDesktop)
-      ? EdgeInsets.only(left: dialogPadding)
-      : EdgeInsets.only(left: dialogPadding / 3);
+  static EdgeInsetsGeometry dialogButtonPadding = (isDesktop || isWebDesktop)
+      ? const EdgeInsetsDirectional.only(start: dialogPadding)
+      : EdgeInsetsDirectional.only(start: dialogPadding / 3);
 
   static ScrollbarThemeData scrollbarTheme = ScrollbarThemeData(
     thickness: MaterialStateProperty.all(6),
@@ -3115,7 +3115,7 @@ Widget buildErrorBanner(BuildContext context,
               ).marginAll(4),
               Flexible(
                 child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: Tooltip(
                       message: translate(err.value),
                       child: SelectableText(

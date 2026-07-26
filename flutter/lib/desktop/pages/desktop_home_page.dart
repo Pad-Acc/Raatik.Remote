@@ -818,9 +818,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                           : <Widget>[]))),
         ),
         if (closeButton != null && closeButton == true)
-          Positioned(
+          PositionedDirectional(
             top: 18,
-            right: 0,
+            end: 0,
             child: IconButton(
               icon: Icon(
                 Icons.close,
