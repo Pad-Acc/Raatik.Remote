@@ -14,6 +14,7 @@ import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../desktop/widgets/popup_menu.dart';
+import '../../raatik/bidi/ltr_isolate.dart';
 import '../../raatik/flags.dart';
 import 'dart:math' as math;
 
@@ -187,7 +188,9 @@ class _PeerCardState extends State<_PeerCard>
                         getOnline(isPortrait ? 4 : 8, peer.online),
                         Expanded(
                             child: Text(
-                          peer.alias.isEmpty ? formatID(peer.id) : peer.alias,
+                          peer.alias.isEmpty
+                              ? formatIDForDisplay(peer.id)
+                              : peer.alias,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleSmall,
                         )),
@@ -201,7 +204,7 @@ class _PeerCardState extends State<_PeerCard>
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  name,
+                                  ltrIsolate(name),
                                   style: isPortrait ? null : greyStyle,
                                   textAlign: TextAlign.start,
                                   overflow: TextOverflow.ellipsis,
@@ -323,7 +326,7 @@ class _PeerCardState extends State<_PeerCard>
                                       message: name,
                                       waitDuration: const Duration(seconds: 1),
                                       child: Text(
-                                        name,
+                                        ltrIsolate(name),
                                         style: const TextStyle(
                                             color: Colors.white70,
                                             fontSize: 12),
@@ -369,7 +372,9 @@ class _PeerCardState extends State<_PeerCard>
                         getOnline(8, peer.online),
                         Expanded(
                             child: Text(
-                          peer.alias.isEmpty ? formatID(peer.id) : peer.alias,
+                          peer.alias.isEmpty
+                              ? formatIDForDisplay(peer.id)
+                              : peer.alias,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleSmall,
                         )),
@@ -831,7 +836,7 @@ abstract class BasePeerCard extends StatelessWidget {
         }
 
         deleteConfirmDialog(onSubmit,
-            '${translate('Delete')} "${peer.alias.isEmpty ? formatID(peer.id) : peer.alias}"?');
+            '${translate('Delete')} "${peer.alias.isEmpty ? formatIDForDisplay(peer.id) : peer.alias}"?');
       },
       padding: menuPadding,
       dismissOnClicked: true,

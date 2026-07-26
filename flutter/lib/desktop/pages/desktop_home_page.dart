@@ -17,6 +17,7 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/plugin/ui_manager.dart';
+import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
@@ -379,17 +380,20 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                           ClipboardData(text: model.serverId.text));
                       showToast(translate("Copied"));
                     },
-                    child: TextFormField(
-                      controller: model.serverId,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.only(top: 10, bottom: 10),
-                      ),
-                      style: TextStyle(
-                        fontSize: 22,
-                      ),
-                    ).workaroundFreezeLinuxMint(),
+                    child: ltrTextDirection(
+                      child: TextFormField(
+                        controller: model.serverId,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsetsDirectional.only(
+                              top: 10, bottom: 10, start: 4),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 22,
+                        ),
+                      ).workaroundFreezeLinuxMint(),
+                    ),
                   )
                 ],
               ),
@@ -474,16 +478,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                               showToast(translate("Copied"));
                             }
                           },
-                          child: TextFormField(
-                            controller: model.serverPasswd,
-                            readOnly: true,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding:
-                                  EdgeInsets.only(top: 14, bottom: 10),
-                            ),
-                            style: TextStyle(fontSize: 15),
-                          ).workaroundFreezeLinuxMint(),
+                          child: ltrTextDirection(
+                            child: TextFormField(
+                              controller: model.serverPasswd,
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsetsDirectional.only(
+                                    top: 14, bottom: 10, start: 4),
+                              ),
+                              style: const TextStyle(fontSize: 15),
+                            ).workaroundFreezeLinuxMint(),
+                          ),
                         ),
                       ),
                       if (showOneTime)

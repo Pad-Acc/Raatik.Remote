@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common/formatter/id_formatter.dart';
+import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
@@ -94,7 +96,7 @@ class _FakeReceivePanel extends StatelessWidget {
           const SizedBox(height: 20),
           _CredentialRow(
             label: isFa ? 'شناسه من' : 'My ID',
-            value: isFa ? '۱۲۳ ۴۵۶ ۷۸۹' : '123 456 789',
+            value: formatIDForDisplay('123456789'),
             actions: [
               IconButton(
                 onPressed: () {},
@@ -106,7 +108,7 @@ class _FakeReceivePanel extends StatelessWidget {
           const SizedBox(height: 12),
           _CredentialRow(
             label: isFa ? 'رمز یک‌بارمصرف' : 'One-time password',
-            value: isFa ? '۸۴۲۹۱۵' : '842915',
+            value: ltrIsolate('842915'),
             actions: [
               IconButton(
                 onPressed: () {},
@@ -207,15 +209,15 @@ class _FakeConnectPanel extends StatelessWidget {
               padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
               children: [
                 _PeerTile(
-                  id: isFa ? '۱۲۳۴۵۶۷۸۹' : '123456789',
+                  id: formatIDForDisplay('123456789'),
                   label: isFa ? 'دفتر مرکزی' : 'Head office',
                 ),
                 _PeerTile(
-                  id: isFa ? '۹۸۷۶۵۴۳۲۱' : '987654321',
+                  id: formatIDForDisplay('987654321'),
                   label: isFa ? 'لپ‌تاپ پشتیبانی' : 'Support laptop',
                 ),
                 _PeerTile(
-                  id: isFa ? '۵۵۱۱۲۲۳۳۴' : '551122334',
+                  id: formatIDForDisplay('551122334'),
                   label: isFa ? 'سیستم مشتری' : 'Customer PC',
                 ),
               ],
@@ -277,11 +279,13 @@ class _CredentialRow extends StatelessWidget {
               children: [
                 Text(label, style: TextStyle(fontSize: 14, color: muted)),
                 const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w500,
+                ltrTextDirection(
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],

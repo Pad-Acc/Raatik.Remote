@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
+import 'package:flutter_hbb/preview/fake_home.dart';
+import 'package:flutter_hbb/preview_main.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
+import 'package:flutter_hbb/raatik/home/service_gate.dart';
+import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 
 void main() {
   test('formatID keeps logical groups', () {
@@ -35,5 +39,68 @@ void main() {
       find.byType(RichText).first,
     );
     expect(paragraph.text.toPlainText(), contains('1 662 867 586'));
+  });
+
+  testWidgets('My ID TextFormField is wrapped in LTR Directionality',
+      (tester) async {
+    // Pump a minimal replica: Directionality.rtl > ltrTextDirection > TextField
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: ltrTextDirection(
+              child: const TextField(
+                decoration: InputDecoration(border: InputBorder.none),
+                controller: null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final dirs = tester.widgetList<Directionality>(find.byType(Directionality));
+    expect(
+      dirs.any((d) => d.textDirection == TextDirection.ltr),
+      isTrue,
+    );
+  });
+
+  testWidgets('FakeHomePage credential ID uses formatIDForDisplay under fa',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1024, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    const locale = Locale('fa');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildRaatikLightTheme(),
+        locale: locale,
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: Scaffold(
+          body: FakeHomePage(
+            phase: RaatikServicePhase.ready,
+            copy: previewServiceGateCopy(locale),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final expectedId = formatIDForDisplay('123456789');
+    expect(find.text(expectedId), findsWidgets);
+
+    // Credential value Text must sit under an LTR Directionality ancestor.
+    final idText = find.text(expectedId).first;
+    final dirs = tester.widgetList<Directionality>(
+      find.ancestor(of: idText, matching: find.byType(Directionality)),
+    );
+    expect(
+      dirs.any((d) => d.textDirection == TextDirection.ltr),
+      isTrue,
+    );
   });
 }

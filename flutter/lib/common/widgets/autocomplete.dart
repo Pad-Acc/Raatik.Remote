@@ -7,6 +7,7 @@ import '../../../models/platform_model.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/peer_card.dart';
+import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 
 @visibleForTesting
 List<Peer> mergeAutocompletePeers({
@@ -363,7 +364,7 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                                     Expanded(
                                                         child: Text(
                                                       widget.peer.alias.isEmpty
-                                                          ? formatID(
+                                                          ? formatIDForDisplay(
                                                               widget.peer.id)
                                                           : widget.peer.alias,
                                                       overflow:
@@ -380,7 +381,8 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                                                     left: 5,
                                                                     right: 5),
                                                             child: Text(
-                                                              "(${widget.peer.id})",
+                                                              ltrIsolate(
+                                                                  "(${widget.peer.id})"),
                                                               style: greyStyle,
                                                               overflow:
                                                                   TextOverflow
@@ -391,7 +393,7 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                               Align(
                                                 alignment: Alignment.centerLeft,
                                                 child: Text(
-                                                  name,
+                                                  ltrIsolate(name),
                                                   style: greyStyle,
                                                   textAlign: TextAlign.start,
                                                   overflow:
