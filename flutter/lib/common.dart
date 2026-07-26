@@ -12,6 +12,7 @@ import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/desktop/widgets/refresh_wrapper.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
+import 'package:flutter_hbb/raatik/theme/my_theme_merge.dart' as my_theme_merge;
 import 'package:flutter_hbb/main.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/peer_tab_model.dart';
@@ -372,60 +373,62 @@ class MyTheme {
     }),
   );
 
-  static ThemeData lightTheme = buildRaatikLightTheme().copyWith(
-    scrollbarTheme: scrollbarTheme,
-    tooltipTheme: tooltipTheme(),
-    splashColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
-    highlightColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
-    splashFactory: (isDesktop || isWebDesktop) ? NoSplash.splashFactory : null,
-    textButtonTheme: (isDesktop || isWebDesktop)
-        ? TextButtonThemeData(
-            style: TextButton.styleFrom(
-              splashFactory: NoSplash.splashFactory,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18.0),
-              ),
-            ),
-          )
-        : mobileTextButtonTheme,
-    switchTheme: switchTheme(),
-    radioTheme: radioTheme(),
-    menuBarTheme: MenuBarThemeData(
-        style:
-            MenuStyle(backgroundColor: MaterialStatePropertyAll(Colors.white))),
-    extensions: <ThemeExtension<dynamic>>[
-      ColorThemeExtension.light,
-      TabbarTheme.light,
-    ],
-  );
-  static ThemeData darkTheme = buildRaatikDarkTheme().copyWith(
-    scrollbarTheme: scrollbarThemeDark,
-    tooltipTheme: tooltipTheme(),
-    splashColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
-    highlightColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
-    splashFactory: (isDesktop || isWebDesktop) ? NoSplash.splashFactory : null,
-    textButtonTheme: (isDesktop || isWebDesktop)
-        ? TextButtonThemeData(
-            style: TextButton.styleFrom(
-              splashFactory: NoSplash.splashFactory,
-              disabledForegroundColor: Colors.white70,
-              foregroundColor: Colors.white70,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18.0),
-              ),
-            ),
-          )
-        : mobileTextButtonTheme,
-    switchTheme: switchTheme(),
-    radioTheme: radioTheme(),
-    menuBarTheme: MenuBarThemeData(
-        style: MenuStyle(
-            backgroundColor: MaterialStatePropertyAll(Color(0xFF121212)))),
-    extensions: <ThemeExtension<dynamic>>[
-      ColorThemeExtension.dark,
-      TabbarTheme.dark,
-    ],
-  );
+  static ThemeData lightTheme = () {
+    final base = buildRaatikLightTheme();
+    return base.copyWith(
+      scrollbarTheme: scrollbarTheme,
+      tooltipTheme: tooltipTheme(),
+      splashColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+      highlightColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+      splashFactory:
+          (isDesktop || isWebDesktop) ? NoSplash.splashFactory : null,
+      textButtonTheme: my_theme_merge.mergeTextButtonTheme(
+        base.textButtonTheme,
+        desktop: isDesktop || isWebDesktop,
+      ),
+      checkboxTheme: my_theme_merge.mergeCheckboxTheme(
+        base.checkboxTheme,
+        splashRadius: checkboxTheme.splashRadius,
+      ),
+      switchTheme: switchTheme(),
+      radioTheme: radioTheme(),
+      menuBarTheme: MenuBarThemeData(
+          style: MenuStyle(
+              backgroundColor: MaterialStatePropertyAll(Colors.white))),
+      extensions: <ThemeExtension<dynamic>>[
+        ColorThemeExtension.light,
+        TabbarTheme.light,
+      ],
+    );
+  }();
+  static ThemeData darkTheme = () {
+    final base = buildRaatikDarkTheme();
+    return base.copyWith(
+      scrollbarTheme: scrollbarThemeDark,
+      tooltipTheme: tooltipTheme(),
+      splashColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+      highlightColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+      splashFactory:
+          (isDesktop || isWebDesktop) ? NoSplash.splashFactory : null,
+      textButtonTheme: my_theme_merge.mergeTextButtonTheme(
+        base.textButtonTheme,
+        desktop: isDesktop || isWebDesktop,
+      ),
+      checkboxTheme: my_theme_merge.mergeCheckboxTheme(
+        base.checkboxTheme,
+        splashRadius: checkboxTheme.splashRadius,
+      ),
+      switchTheme: switchTheme(),
+      radioTheme: radioTheme(),
+      menuBarTheme: MenuBarThemeData(
+          style: MenuStyle(
+              backgroundColor: MaterialStatePropertyAll(Color(0xFF121212)))),
+      extensions: <ThemeExtension<dynamic>>[
+        ColorThemeExtension.dark,
+        TabbarTheme.dark,
+      ],
+    );
+  }();
 
   static ThemeMode getThemeModePreference() {
     return themeModeFromString(bind.mainGetLocalOption(key: kCommConfKeyTheme));

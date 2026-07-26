@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
+import 'package:flutter_hbb/raatik/theme/my_theme_merge.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 void main() {
@@ -66,6 +67,17 @@ void main() {
       final style = theme.elevatedButtonTheme?.style;
 
       expect(style?.minimumSize?.resolve({}), const Size(0, RaatikTokens.minTarget));
+    });
+  });
+
+  group('MyTheme live path', () {
+    test('lightTheme and darkTheme text buttons keep 44px minimum height', () {
+      for (final builder in [buildRaatikLightTheme, buildRaatikDarkTheme]) {
+        final theme = applyMyThemeButtonLayers(builder());
+        final style = theme.textButtonTheme?.style;
+        expect(style?.minimumSize?.resolve({}),
+            const Size(0, RaatikTokens.minTarget));
+      }
     });
   });
 }
