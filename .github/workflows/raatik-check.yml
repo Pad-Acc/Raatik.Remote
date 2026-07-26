@@ -5,9 +5,9 @@ name: raatik-check
 # comment), this is cheap enough to run automatically on every push.
 on:
   push:
-    branches: [raatik/1.4.9, raatik/ui-2026.07.01]
+    branches: [raatik/1.4.9, raatik/ui-2026.08.01]
   pull_request:
-    branches: [raatik/1.4.9, raatik/ui-2026.07.01]
+    branches: [raatik/1.4.9, raatik/ui-2026.08.01]
   workflow_dispatch:
 
 env:

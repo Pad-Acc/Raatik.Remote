@@ -2,18 +2,18 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship RaatikDesk **2026.07.01** with RTL Farsi UI, IRANSansXFaNum, Raatik theme, B1 home, settings IA, T1 remote toolbar, API surfaces hidden, admin elevation, and a Flutter web preview harness — without rewriting the remote-desktop engine.
+**Goal:** Ship RaatikDesk **2026.08.01** with RTL Farsi UI, IRANSansXFaNum, Raatik theme, B1 home, settings IA, T1 remote toolbar, API surfaces hidden, admin elevation, and a Flutter web preview harness — without rewriting the remote-desktop engine.
 
 **Architecture:** Approach 1 from the spec — keep FFI/models; replace `MyTheme` tokens, register IRANSansXFaNum, force RTL for `fa`, rewrite home/settings/toolbar presentation, gate API UI with `kRaatikApiEnabled`, bump release version, verify via preview + CI Actions.
 
 **Tech Stack:** Flutter 3.24.5 (desktop + Chrome preview), Rust 1.75 / existing bridge, GitHub Actions `raatik-windows` / `raatik-check`, IRANSansXFaNum TTFs under `flutter/assets/`.
 
-**Spec:** [2026-07-26-raatikdesk-ui-redesign-design.md](../specs/2026-07-26-raatikdesk-ui-redesign-design.md). Branch: `raatik/ui-2026.07.01`.
+**Spec:** [2026-07-26-raatikdesk-ui-redesign-design.md](../specs/2026-07-26-raatikdesk-ui-redesign-design.md). Branch: `raatik/ui-2026.08.01`.
 
 ## Global Constraints
 
 - **Product name in UI chrome:** `RaatikDesk` (Latin only). Farsi sentences may say «برنامه».
-- **Release display / CI artifact version:** `2026.07.01` → `RaatikDesk-2026.07.01-install.exe`.
+- **Release display / CI artifact version:** `2026.08.01` → `RaatikDesk-2026.08.01-install.exe`.
 - **Semver for Cargo + pubspec (no leading zeros):** `2026.7.1` / Flutter `2026.7.1+20260701`.
 - **Audience:** customers first; support second. Home B1; toolbar T1; settings groups per spec §7.
 - **API:** `kRaatikApiEnabled = false` — hide login/cloud AB; do not redesign those screens.
@@ -32,8 +32,8 @@
 |---|---|
 | `Cargo.toml`, `libs/portable/Cargo.toml` | Package version `2026.7.1` |
 | `flutter/pubspec.yaml` | Version + IRANSansXFaNum font family |
-| `.github/workflows/raatik-windows.yml` | `VERSION: "2026.07.01"`; optionally trigger branch |
-| `.github/workflows/raatik-check.yml` | Allow branch `raatik/ui-2026.07.01` |
+| `.github/workflows/raatik-windows.yml` | `VERSION: "2026.08.01"`; optionally trigger branch |
+| `.github/workflows/raatik-check.yml` | Allow branch `raatik/ui-2026.08.01` |
 | `res/manifest.xml`, `flutter/windows/runner/runner.exe.manifest` | UAC `requireAdministrator` |
 | `flutter/assets/logo.png` (+ ico sources under `res/` / `runner/resources/`) | In-window + taskbar Raatik mark |
 | `flutter/lib/common.dart` | `MyTheme` tokens, default `fontFamily`, RTL/`TextDirection` helpers |
@@ -50,7 +50,7 @@
 
 ---
 
-### Task 1: Version bump to 2026.07.01
+### Task 1: Version bump to 2026.08.01
 
 **Files:**
 - Modify: `Cargo.toml` (root `version`)
@@ -60,7 +60,7 @@
 - Modify: `.github/workflows/raatik-check.yml` (branch filter)
 
 **Interfaces:**
-- Produces: artifact name `RaatikDesk-2026.07.01-install.exe`; About/package semver `2026.7.1`.
+- Produces: artifact name `RaatikDesk-2026.08.01-install.exe`; About/package semver `2026.7.1`.
 
 - [ ] **Step 1: Set Cargo versions**
 
@@ -83,19 +83,19 @@ version: 2026.7.1+20260701
 In `.github/workflows/raatik-windows.yml`:
 
 ```yaml
-VERSION: "2026.07.01"
+VERSION: "2026.08.01"
 ```
 
 - [ ] **Step 4: Allow check workflow on this branch**
 
-In `.github/workflows/raatik-check.yml`, ensure `push`/`pull_request` branches include `raatik/ui-2026.07.01` (keep `raatik/1.4.9` too).
+In `.github/workflows/raatik-check.yml`, ensure `push`/`pull_request` branches include `raatik/ui-2026.08.01` (keep `raatik/1.4.9` too).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add Cargo.toml libs/portable/Cargo.toml flutter/pubspec.yaml .github/workflows/raatik-windows.yml .github/workflows/raatik-check.yml
 git commit -m "$(cat <<'EOF'
-build: set RaatikDesk release version to 2026.07.01
+build: set RaatikDesk release version to 2026.08.01
 
 EOF
 )"
@@ -516,12 +516,12 @@ EOF
 
 **Files:**
 - Modify: `raatik/no_leak_gate.py` if new hardcoded English/RustDesk strings appear
-- Trigger: `gh workflow run raatik-check --ref raatik/ui-2026.07.01`
-- Trigger: `gh workflow run raatik-windows --ref raatik/ui-2026.07.01` when ready for artifact
+- Trigger: `gh workflow run raatik-check --ref raatik/ui-2026.08.01`
+- Trigger: `gh workflow run raatik-windows --ref raatik/ui-2026.08.01` when ready for artifact
 
 **Interfaces:**
-- Consumes: completed Tasks 1–7 on branch `raatik/ui-2026.07.01`.
-- Produces: green check + `RaatikDesk-2026.07.01-install.exe` artifact.
+- Consumes: completed Tasks 1–7 on branch `raatik/ui-2026.08.01`.
+- Produces: green check + `RaatikDesk-2026.08.01-install.exe` artifact.
 
 - [ ] **Step 1: Run no_leak_gate locally**
 
@@ -535,13 +535,13 @@ Expected: exit 0. If fail, fix allowlist only for true false-positives; never al
 
 ```bash
 git push -u raatik HEAD
-gh workflow run raatik-check --ref raatik/ui-2026.07.01
+gh workflow run raatik-check --ref raatik/ui-2026.08.01
 ```
 
 - [ ] **Step 3: Run windows release workflow**
 
 ```bash
-gh workflow run raatik-windows --ref raatik/ui-2026.07.01
+gh workflow run raatik-windows --ref raatik/ui-2026.08.01
 ```
 
 Download artifact; verify: UAC on start, title-bar Raatik logo, B1 home, no server tip, no login entry, Farsi RTL + font.
@@ -576,6 +576,6 @@ EOF
 
 ## Self-review notes
 
-- Semver `2026.7.1` vs display `2026.07.01` is intentional (Cargo/pub reject leading zeros).
+- Semver `2026.7.1` vs display `2026.08.01` is intentional (Cargo/pub reject leading zeros).
 - Login files remain in tree; only gated — matches “do not redesign API screens”.
 - Preview mocks may drift from production widgets; prefer extracting shared presentational widgets later only if duplication hurts — YAGNI for v1.

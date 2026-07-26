@@ -478,7 +478,7 @@ python raatik/verify_windows_icons.py
 - [ ] Extract the installer icon:
 
 ```powershell
-$installer = Resolve-Path "RaatikDesk-2026.07.01-install.exe"
+$installer = Resolve-Path "RaatikDesk-2026.08.01-install.exe"
 Add-Type -AssemblyName System.Drawing
 $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($installer.Path)
 $icon.ToBitmap().Save("$env:TEMP\raatikdesk-installer-icon.png")

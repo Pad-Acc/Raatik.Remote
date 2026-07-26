@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-26  
 **Status:** Approved  
-**Release version:** `2026.07.01` (Cargo/pubspec semver: `2026.7.1` — no leading zeros)  
-**Branch:** `raatik/ui-2026.07.01`  
+**Release version:** `2026.08.01` (Cargo/pubspec semver: `2026.7.1` — no leading zeros)  
+**Branch:** `raatik/ui-2026.08.01`  
 **Baseline:** RaatikDesk white-label on RustDesk 1.4.9 (`raatik/1.4.9`)  
 **Related:** [2026-07-25-raatikdesk-rebrand-design.md](./2026-07-25-raatikdesk-rebrand-design.md)
 

@@ -3,7 +3,7 @@ name: raatik-windows
 # Manual only. This job takes 40-60 minutes because vcpkg compiles ffmpeg, aom,
 # libvpx, libyuv, opus and mfx-dispatch from source. Triggering it on every push
 # would burn hours of wall-clock on commits that raatik-check already validates.
-# Run it deliberately: gh workflow run raatik-windows --ref raatik/ui-2026.07.01
+# Run it deliberately: gh workflow run raatik-windows --ref raatik/ui-2026.08.01
 on:
   workflow_dispatch:
 
@@ -12,7 +12,7 @@ env:
   LLVM_VERSION: "15.0.6"
   FLUTTER_VERSION: "3.24.5"
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
-  VERSION: "2026.07.01"
+  VERSION: "2026.08.01"
   # flutter_rust_bridge codegen inputs (see .github/workflows/bridge.yml) — the Windows
   # build consumes src/bridge_generated.rs and flutter/lib/generated_bridge.dart, which are
   # gitignored and must be generated in CI, not shipped in the tree.
