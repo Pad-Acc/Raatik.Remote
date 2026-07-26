@@ -3078,9 +3078,9 @@ Widget unreadTopRightBuilder(RxInt? count, {Widget? icon}) {
   return Stack(
     children: [
       icon ?? Icon(Icons.chat),
-      Positioned(
+      PositionedDirectional(
           top: 0,
-          right: 0,
+          end: 0,
           child: unreadMessageCountBuilder(count, size: 12, fontSize: 8))
     ],
   );

@@ -445,15 +445,18 @@ class DialogTextField extends StatelessWidget {
               ),
               if (errorText != null)
                 Align(
-                  alignment: Alignment.centerLeft,
-                  child: SelectableText(
-                    errorText!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(top: 8, start: 12),
+                    child: SelectableText(
+                      errorText!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.start,
                     ),
-                    textAlign: TextAlign.left,
-                  ).paddingOnly(top: 8, left: 12),
+                  ),
                 ),
             ],
           ).workaroundFreezeLinuxMint(),
@@ -931,7 +934,7 @@ _connectDialog(
       return Column(
         children: [
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: Text(
               text,
               maxLines: 3,
@@ -977,15 +980,18 @@ _connectDialog(
           ),
           if (errUsername.value.isNotEmpty)
             Align(
-              alignment: Alignment.centerLeft,
-              child: SelectableText(
-                errUsername.value,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 12,
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(start: 12, bottom: 2),
+                child: SelectableText(
+                  errUsername.value,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.start,
                 ),
-                textAlign: TextAlign.left,
-              ).paddingOnly(left: 12, bottom: 2),
+              ),
             ),
           PasswordWidget(
             controller: osPasswordController,
@@ -1034,7 +1040,10 @@ _connectDialog(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.password_rounded, color: MyTheme.accent),
-          Text(translate('Password Required')).paddingOnly(left: 10),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate('Password Required')),
+          ),
         ],
       ),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1103,12 +1112,15 @@ void showRequestElevationDialog(
     () => Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Radio(
-          visualDensity: VisualDensity(horizontal: -4, vertical: -4),
-          value: '',
-          groupValue: groupValue.value,
-          onChanged: onRadioChanged,
-        ).marginOnly(right: 10),
+        Container(
+          margin: EdgeInsetsDirectional.only(end: 10),
+          child: Radio(
+            visualDensity: VisualDensity(horizontal: -4, vertical: -4),
+            value: '',
+            groupValue: groupValue.value,
+            onChanged: onRadioChanged,
+          ),
+        ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1135,12 +1147,15 @@ void showRequestElevationDialog(
     () => Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Radio(
-          visualDensity: VisualDensity(horizontal: -4, vertical: -4),
-          value: 'logon',
-          groupValue: groupValue.value,
-          onChanged: onRadioChanged,
-        ).marginOnly(right: 10),
+        Container(
+          margin: EdgeInsetsDirectional.only(end: 10),
+          child: Radio(
+            visualDensity: VisualDensity(horizontal: -4, vertical: -4),
+            value: 'logon',
+            groupValue: groupValue.value,
+            onChanged: onRadioChanged,
+          ),
+        ),
         Expanded(
           child: InkWell(
             hoverColor: Colors.transparent,
@@ -1155,7 +1170,7 @@ void showRequestElevationDialog(
   );
 
   Widget UacNote = Container(
-    padding: EdgeInsets.fromLTRB(10, 8, 8, 8),
+    padding: EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
     decoration: BoxDecoration(
       color: MyTheme.currentThemeMode() == ThemeMode.dark
           ? Color.fromARGB(135, 87, 87, 90)
@@ -1165,7 +1180,10 @@ void showRequestElevationDialog(
     ),
     child: Row(
       children: [
-        Icon(Icons.info_outline_rounded, size: 20).marginOnly(right: 10),
+        Container(
+          margin: EdgeInsetsDirectional.only(end: 10),
+          child: Icon(Icons.info_outline_rounded, size: 20),
+        ),
         Expanded(
           child: Text(
             translate('still_click_uac_tip'),
@@ -1184,23 +1202,28 @@ void showRequestElevationDialog(
         OptionCredentials,
         Offstage(
           offstage: 'logon' != groupValue.value,
-          child: Column(
-            children: [
-              UacNote.marginOnly(bottom: 10),
-              DialogTextField(
-                controller: userController,
-                title: translate('Username'),
-                hintText: translate('elevation_username_tip'),
-                prefixIcon: DialogTextField.kUsernameIcon,
-                errorText: errUser.isEmpty ? null : errUser.value,
-              ),
-              PasswordWidget(
-                controller: pwdController,
-                autoFocus: false,
-                errorText: errPwd.isEmpty ? null : errPwd.value,
-              ),
-            ],
-          ).marginOnly(left: stateGlobal.isPortrait.isFalse ? 35 : 0),
+          child: Container(
+            margin: EdgeInsetsDirectional.only(
+              start: stateGlobal.isPortrait.isFalse ? 35 : 0,
+            ),
+            child: Column(
+              children: [
+                UacNote.marginOnly(bottom: 10),
+                DialogTextField(
+                  controller: userController,
+                  title: translate('Username'),
+                  hintText: translate('elevation_username_tip'),
+                  prefixIcon: DialogTextField.kUsernameIcon,
+                  errorText: errUser.isEmpty ? null : errUser.value,
+                ),
+                PasswordWidget(
+                  controller: pwdController,
+                  autoFocus: false,
+                  errorText: errPwd.isEmpty ? null : errPwd.value,
+                ),
+              ],
+            ),
+          ),
         ).marginOnly(top: 10),
       ],
     ),
@@ -1332,8 +1355,10 @@ void showRestartRemoteDevice(PeerInfo pi, String id, SessionID sessionId,
             title: Row(children: [
               Icon(Icons.warning_rounded, color: Colors.redAccent, size: 28),
               Flexible(
-                  child: Text(translate("Restart remote device"))
-                      .paddingOnly(left: 10)),
+                  child: Padding(
+                padding: EdgeInsetsDirectional.only(start: 10),
+                child: Text(translate("Restart remote device")),
+              )),
             ]),
             content: Text(
                 "${translate('Are you sure you want to restart')} \n${pi.username}@${pi.hostname}($id) ?"),
@@ -1396,7 +1421,10 @@ showSetOSPassword(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.password_rounded, color: MyTheme.accent),
-          Text(translate('OS Password')).paddingOnly(left: 10),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate('OS Password')),
+          ),
         ],
       ),
       content: Column(
@@ -1466,7 +1494,7 @@ showSetOSAccount(
       return Column(
         children: [
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: Text(
               text,
               maxLines: 3,
@@ -1487,7 +1515,10 @@ showSetOSAccount(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.password_rounded, color: MyTheme.accent),
-          Text(translate('OS Account')).paddingOnly(left: 10),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate('OS Account')),
+          ),
         ],
       ),
       content: Column(
@@ -1948,8 +1979,9 @@ void deleteConfirmDialog(Function onSubmit, String title) async {
               color: Colors.red,
             ),
             Expanded(
-              child: Text(title, overflow: TextOverflow.ellipsis).paddingOnly(
-                left: 10,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(start: 10),
+                child: Text(title, overflow: TextOverflow.ellipsis),
               ),
             ),
           ],
@@ -2101,7 +2133,10 @@ void renameDialog(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.edit_rounded, color: MyTheme.accent),
-          Text(translate('Rename')).paddingOnly(left: 10),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate('Rename')),
+          ),
         ],
       ),
       content: Column(
@@ -2452,7 +2487,10 @@ void addPeersToAbDialog(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(IconFont.addressBook, color: MyTheme.accent),
-          Text(translate('Add to address book')).paddingOnly(left: 10),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate('Add to address book')),
+          ),
         ],
       ),
       content: Obx(() => Column(
@@ -2527,10 +2565,12 @@ void setSharedAbPasswordDialog(String abName, Peer peer) {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.key, color: MyTheme.accent),
-          Text(translate(peer.password.isEmpty
-                  ? 'Set shared password'
-                  : 'Change Password'))
-              .paddingOnly(left: 10),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Text(translate(peer.password.isEmpty
+                ? 'Set shared password'
+                : 'Change Password')),
+          ),
         ],
       ),
       content: Obx(() => Column(children: [
@@ -2553,7 +2593,10 @@ void setSharedAbPasswordDialog(String abName, Peer peer) {
             ).workaroundFreezeLinuxMint(),
             if (!gFFI.abModel.current.isPersonal())
               Row(children: [
-                Icon(Icons.info, color: Colors.amber).marginOnly(right: 4),
+                Container(
+                  margin: EdgeInsetsDirectional.only(end: 4),
+                  child: Icon(Icons.info, color: Colors.amber),
+                ),
                 Text(
                   translate('share_warning_tip'),
                   style: TextStyle(fontSize: 12),
