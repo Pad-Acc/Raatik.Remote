@@ -389,7 +389,7 @@ class MyTheme {
       ),
       checkboxTheme: my_theme_merge.mergeCheckboxTheme(
         base.checkboxTheme,
-        splashRadius: checkboxTheme.splashRadius,
+        splashRadius: checkboxTheme.splashRadius ?? 0,
       ),
       switchTheme: switchTheme(),
       radioTheme: radioTheme(),
@@ -417,7 +417,7 @@ class MyTheme {
       ),
       checkboxTheme: my_theme_merge.mergeCheckboxTheme(
         base.checkboxTheme,
-        splashRadius: checkboxTheme.splashRadius,
+        splashRadius: checkboxTheme.splashRadius ?? 0,
       ),
       switchTheme: switchTheme(),
       radioTheme: radioTheme(),

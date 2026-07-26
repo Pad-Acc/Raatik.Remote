@@ -235,15 +235,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     if (isIncomingOnly) {
       children.addAll([
         Divider(),
-        OnlineStatusWidget(
-          onSvcStatusChanged: () {
-            if (isInHomePage()) {
-              Future.delayed(Duration(milliseconds: 300), () {
-                _updateWindowSize();
-              });
-            }
-          },
-        ).marginOnly(bottom: 6, end: 6)
+        Padding(
+          padding: const EdgeInsetsDirectional.only(bottom: 6, end: 6),
+          child: OnlineStatusWidget(
+            onSvcStatusChanged: () {
+              if (isInHomePage()) {
+                Future.delayed(Duration(milliseconds: 300), () {
+                  _updateWindowSize();
+                });
+              }
+            },
+          ),
+        )
       ]);
     }
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
@@ -499,7 +502,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                 ))),
                           ),
                           onHover: (value) => refreshHover.value = value,
-                        ).marginOnly(end: 8, top: 4),
+                        ).marginOnly(right: 8, top: 4),
                       if (!bind.isDisableSettings())
                         InkWell(
                           child: Tooltip(
@@ -511,7 +514,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                     ? textColor
                                     : Color(0xFFDDDDDD),
                                 size: 22,
-                              ).marginOnly(end: 8, top: 4),
+                              ).marginOnly(right: 8, top: 4),
                             ),
                           ),
                           onTap: () => DesktopSettingPage.switch2page(

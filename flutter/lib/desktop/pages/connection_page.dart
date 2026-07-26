@@ -238,23 +238,29 @@ class _ConnectionPageState extends State<ConnectionPage>
             ? Expanded(child: PeerTabPage())
             : const SizedBox(height: 320, child: PeerTabPage());
 
-        return Column(
-          mainAxisSize: useExpanded ? MainAxisSize.max : MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildConnectHeader(context),
-            Row(
-              children: [
-                Flexible(child: _buildRemoteIDTextField(context)),
-              ],
-            ).marginOnly(top: 12),
-            const SizedBox(height: 12),
-            const Divider().padding(EdgeInsetsDirectional.only(end: 12)),
-            peerList,
-            if (!isOutgoingOnly) const Divider(height: 1),
-            if (!isOutgoingOnly) OnlineStatusWidget(),
-          ],
-        ).padding(EdgeInsetsDirectional.only(start: 12.0));
+        return Padding(
+          padding: const EdgeInsetsDirectional.only(start: 12.0),
+          child: Column(
+            mainAxisSize: useExpanded ? MainAxisSize.max : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildConnectHeader(context),
+              Row(
+                children: [
+                  Flexible(child: _buildRemoteIDTextField(context)),
+                ],
+              ).marginOnly(top: 12),
+              const SizedBox(height: 12),
+              const Padding(
+                padding: EdgeInsetsDirectional.only(end: 12),
+                child: Divider(),
+              ),
+              peerList,
+              if (!isOutgoingOnly) const Divider(height: 1),
+              if (!isOutgoingOnly) OnlineStatusWidget(),
+            ],
+          ),
+        );
       },
     );
   }
