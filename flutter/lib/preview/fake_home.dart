@@ -81,6 +81,7 @@ class _FakeReceivePanel extends StatelessWidget {
                   isFa
                       ? 'آماده برای پشتیبانی اتوفای'
                       : 'Ready for Autofai support',
+                  textAlign: TextAlign.start,
                   style: theme.textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),

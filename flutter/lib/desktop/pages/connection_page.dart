@@ -230,7 +230,6 @@ class _ConnectionPageState extends State<ConnectionPage>
 
   @override
   Widget build(BuildContext context) {
-    final isOutgoingOnly = bind.isOutgoingOnly();
     return LayoutBuilder(
       builder: (context, constraints) {
         final useExpanded =
@@ -257,8 +256,6 @@ class _ConnectionPageState extends State<ConnectionPage>
                 child: Divider(),
               ),
               peerList,
-              if (!isOutgoingOnly) const Divider(height: 1),
-              if (!isOutgoingOnly) OnlineStatusWidget(),
             ],
           ),
         );

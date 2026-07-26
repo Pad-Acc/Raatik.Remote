@@ -233,23 +233,6 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       ),
       buildPluginEntry(),
     ];
-    if (isIncomingOnly) {
-      children.addAll([
-        Divider(),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(bottom: 6, end: 6),
-          child: OnlineStatusWidget(
-            onSvcStatusChanged: () {
-              if (isInHomePage()) {
-                Future.delayed(Duration(milliseconds: 300), () {
-                  _updateWindowSize();
-                });
-              }
-            },
-          ),
-        )
-      ]);
-    }
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
     final panelBorder = Theme.of(context).dividerColor.withOpacity(0.45);
     return ChangeNotifierProvider.value(
@@ -546,18 +529,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            children: [
-              if (!isOutgoingOnly)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    translate("Your Desktop"),
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-            ],
-          ),
+          if (!isOutgoingOnly)
+            Text(
+              translate("Your Desktop"),
+              textAlign: TextAlign.start,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
           SizedBox(
             height: 10.0,
           ),
