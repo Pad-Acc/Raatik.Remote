@@ -66,6 +66,20 @@ class RaatikServiceGate extends StatelessWidget {
       phase == RaatikServicePhase.starting ||
       phase == RaatikServicePhase.connecting;
 
+  String get _title {
+    switch (phase) {
+      case RaatikServicePhase.failed:
+        return copy.failedTitle;
+      case RaatikServicePhase.starting:
+      case RaatikServicePhase.connecting:
+        return copy.startingLabel;
+      case RaatikServicePhase.stopped:
+        return copy.stoppedTitle;
+      case RaatikServicePhase.ready:
+        return copy.readyLabel;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -102,9 +116,7 @@ class RaatikServiceGate extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              phase == RaatikServicePhase.failed
-                  ? copy.failedTitle
-                  : copy.stoppedTitle,
+              _title,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: _isCritical ? RaatikTokens.danger : null,

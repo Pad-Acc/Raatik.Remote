@@ -115,7 +115,9 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('...در حال برقراری ارتباط با سرور'), findsOneWidget);
+      expect(find.text('...در حال برقراری ارتباط با سرور'), findsNWidgets(2));
+
+      expect(find.text('سرویس اجرا نشده'), findsNothing);
 
       final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNull);
@@ -123,6 +125,23 @@ void main() {
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
       expect(tapped, 0);
+    });
+
+    testWidgets('connecting shows starting label as title, not stopped title',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          RaatikServiceGate(
+            phase: RaatikServicePhase.connecting,
+            copy: _faCopy,
+            onStart: () {},
+          ),
+        ),
+      );
+
+      expect(find.text('...در حال برقراری ارتباط با سرور'), findsNWidgets(2));
+      expect(find.text('سرویس اجرا نشده'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('ready shows compact success row', (WidgetTester tester) async {
