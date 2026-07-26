@@ -918,7 +918,7 @@ class CustomAlertDialog extends StatelessWidget {
     final constraints = desktop
         ? raatikDesktopDialogConstraints(contentBoxConstraints)
         : contentBoxConstraints;
-    final dialogActions = raatikDialogActions(actions);
+    final dialogActions = desktop ? raatikDialogActions(actions) : actions;
 
     return FocusScope(
       node: scopeNode,
@@ -952,10 +952,16 @@ class CustomAlertDialog extends StatelessWidget {
             child: content,
           ),
           actions: dialogActions,
-          titlePadding: titlePadding ?? MyTheme.dialogTitlePadding(),
-          contentPadding:
-              MyTheme.dialogContentPadding(actions: actions is List),
-          actionsPadding: MyTheme.dialogActionsPadding(),
+          titlePadding: titlePadding ??
+              (desktop
+                  ? raatikDesktopDialogTitlePadding()
+                  : MyTheme.dialogTitlePadding()),
+          contentPadding: desktop
+              ? raatikDesktopDialogContentPadding(actions: actions is List)
+              : MyTheme.dialogContentPadding(actions: actions is List),
+          actionsPadding: desktop
+              ? raatikDesktopDialogActionsPadding()
+              : MyTheme.dialogActionsPadding(),
           buttonPadding: MyTheme.dialogButtonPadding),
     );
   }

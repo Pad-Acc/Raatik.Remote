@@ -12,6 +12,23 @@ BoxConstraints raatikDesktopDialogConstraints(
 ) =>
     contentBoxConstraints.copyWith(maxWidth: RaatikDialogStyle.maxWidth);
 
+double get _dialogPadding => RaatikDialogStyle.padding.left;
+
+EdgeInsets raatikDesktopDialogTitlePadding({bool content = true}) {
+  final p = _dialogPadding;
+  return EdgeInsets.fromLTRB(p, p, p, content ? 0 : p);
+}
+
+EdgeInsets raatikDesktopDialogContentPadding({bool actions = true}) {
+  final p = _dialogPadding;
+  return EdgeInsets.fromLTRB(p, p, p, actions ? (p - 4) : p);
+}
+
+EdgeInsets raatikDesktopDialogActionsPadding() {
+  final p = _dialogPadding;
+  return EdgeInsets.fromLTRB(p, 0, p, p - 4);
+}
+
 List<Widget>? raatikDialogActions(List<Widget>? actions) {
   if (actions == null) {
     return null;

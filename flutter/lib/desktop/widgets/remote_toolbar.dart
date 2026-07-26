@@ -13,6 +13,7 @@ import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/plugin/widgets/desc_ui.dart';
 import 'package:flutter_hbb/plugin/common.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
+import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -2889,14 +2890,11 @@ class _CloseMenu extends StatelessWidget {
                   builder: (context) {
                     final focused = Focus.of(context).hasFocus;
                     return Container(
-                      decoration: focused
+                      decoration: raatikToolbarFocusBorder(focused) != null
                           ? BoxDecoration(
                               borderRadius: BorderRadius.circular(
                                   _ToolbarTheme.iconRadius),
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
+                              border: raatikToolbarFocusBorder(focused),
                             )
                           : null,
                       child: Padding(
@@ -3002,13 +3000,12 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
                     return Material(
                         type: MaterialType.transparency,
                         child: Ink(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                  _ToolbarTheme.iconRadius),
-                              color: hover ? widget.hoverColor : widget.color,
-                              border: focused
-                                  ? Border.all(color: Colors.white, width: 2)
-                                  : null,
+                            decoration: raatikToolbarIconDecoration(
+                              focused: focused,
+                              hover: hover,
+                              color: widget.color,
+                              hoverColor: widget.hoverColor,
+                              borderRadius: _ToolbarTheme.iconRadius,
                             ),
                             child: icon));
                   },
@@ -3080,7 +3077,10 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
     final button = SizedBox(
         width: widget.width ?? _ToolbarTheme.buttonSize,
         height: _ToolbarTheme.buttonSize,
-        child: SubmenuButton(
+        child: Semantics(
+          label: translate(widget.tooltip),
+          button: true,
+          child: SubmenuButton(
             menuStyle:
                 widget.menuStyle ?? _ToolbarTheme.defaultMenuStyle(context),
             style: _ToolbarTheme.defaultMenuButtonStyle,
@@ -3088,16 +3088,28 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
                   hover = value;
                 }),
             child: Tooltip(
-                message: translate(widget.tooltip),
-                child: Material(
-                    type: MaterialType.transparency,
-                    child: Ink(
-                        decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(_ToolbarTheme.iconRadius),
-                          color: hover ? widget.hoverColor : widget.color,
+              message: translate(widget.tooltip),
+              child: Focus(
+                child: Builder(
+                  builder: (context) {
+                    final focused = Focus.of(context).hasFocus;
+                    return Material(
+                      type: MaterialType.transparency,
+                      child: Ink(
+                        decoration: raatikToolbarIconDecoration(
+                          focused: focused,
+                          hover: hover,
+                          color: widget.color,
+                          hoverColor: widget.hoverColor,
+                          borderRadius: _ToolbarTheme.iconRadius,
                         ),
-                        child: icon))),
+                        child: icon,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
             menuChildren: widget
                 .menuChildrenGetter(this)
                 .map((e) => _buildPointerTrackWidget(e, widget.ffi))

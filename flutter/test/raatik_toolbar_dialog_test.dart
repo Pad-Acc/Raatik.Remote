@@ -4,6 +4,7 @@ import 'package:flutter_hbb/raatik/dialogs/dialog_style.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
+import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
 
 Widget _toolbarAtWidth(double width) => MaterialApp(
       theme: buildRaatikLightTheme(),
@@ -62,7 +63,17 @@ void main() {
       expect(constraints.maxWidth, RaatikDialogStyle.maxWidth);
     });
 
-    test('dialog actions wrap with OverflowBar', () {
+    test('desktop dialog content padding derives from RaatikDialogStyle.padding',
+        () {
+      final padding =
+          raatikDesktopDialogContentPadding(actions: true);
+      expect(padding.left, RaatikDialogStyle.padding.left);
+      expect(padding.top, RaatikDialogStyle.padding.top);
+      expect(padding.right, RaatikDialogStyle.padding.right);
+      expect(padding.bottom, RaatikDialogStyle.padding.bottom - 4);
+    });
+
+    test('dialog actions wrap with OverflowBar on desktop helper', () {
       final actions = raatikDialogActions([
         const Text('Cancel'),
         const Text('OK'),
@@ -73,6 +84,27 @@ void main() {
 
     test('dialog buttons use 44px minimum height', () {
       expect(raatikDialogButtonMinSize.height, RaatikTokens.minTarget);
+    });
+  });
+
+  group('RaatikToolbarFocusRing', () {
+    test('focus border uses shared white 2px ring', () {
+      final border = raatikToolbarFocusBorder(true);
+      expect(border?.top.color, raatikToolbarFocusRingColor);
+      expect(border?.top.width, raatikToolbarFocusRingWidth);
+      expect(raatikToolbarFocusBorder(false), isNull);
+    });
+
+    test('icon decoration applies focus border when focused', () {
+      final decoration = raatikToolbarIconDecoration(
+        focused: true,
+        hover: false,
+        color: Colors.blue,
+        hoverColor: Colors.lightBlue,
+        borderRadius: 4,
+      );
+      expect(decoration.border?.top.color, raatikToolbarFocusRingColor);
+      expect(decoration.border?.top.width, raatikToolbarFocusRingWidth);
     });
   });
 
@@ -146,46 +178,38 @@ void main() {
       );
     });
 
-    testWidgets('toolbar buttons show visible focus ring', (tester) async {
+    testWidgets('production icon decoration shows visible focus ring',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: buildRaatikLightTheme(),
-          home: const Scaffold(
-            body: Focus(
-              autofocus: true,
-              child: _FocusRingProbe(),
+          home: Scaffold(
+            body: Material(
+              type: MaterialType.transparency,
+              child: Ink(
+                decoration: raatikToolbarIconDecoration(
+                  focused: true,
+                  hover: false,
+                  color: const Color(0xFF0284C7),
+                  hoverColor: const Color(0xFF0369A1),
+                  borderRadius: 4,
+                ),
+                child: const SizedBox(
+                  width: RaatikRemoteToolbarBar.actionSize,
+                  height: RaatikRemoteToolbarBar.actionSize,
+                ),
+              ),
             ),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final probe = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(_FocusRingProbe),
-          matching: find.byType(Container),
-        ),
-      );
-      final border = (probe.decoration as BoxDecoration?)?.border as Border?;
-      expect(border?.top.color, Colors.white);
-      expect(border?.top.width, 2);
+      final ink = tester.widget<Ink>(find.byType(Ink));
+      final border =
+          (ink.decoration as BoxDecoration?)?.border as Border?;
+      expect(border?.top.color, raatikToolbarFocusRingColor);
+      expect(border?.top.width, raatikToolbarFocusRingWidth);
     });
   });
-}
-
-class _FocusRingProbe extends StatelessWidget {
-  const _FocusRingProbe();
-
-  @override
-  Widget build(BuildContext context) {
-    final focused = Focus.of(context).hasFocus;
-    return Container(
-      width: RaatikRemoteToolbarBar.actionSize,
-      height: RaatikRemoteToolbarBar.actionSize,
-      decoration: BoxDecoration(
-        color: const Color(0x33FFFFFF),
-        border: focused ? Border.all(color: Colors.white, width: 2) : null,
-      ),
-    );
-  }
 }
