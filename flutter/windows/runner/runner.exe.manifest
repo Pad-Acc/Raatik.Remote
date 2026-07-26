@@ -17,11 +17,6 @@
       <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/>
     </application>
   </compatibility>
-  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
-    <security>
-      <requestedPrivileges>
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
-      </requestedPrivileges>
-    </security>
-  </trustInfo>
+  <!-- Elevation is set via LINK_FLAGS /MANIFESTUAC in CMakeLists.txt.
+       Putting trustInfo here makes Flutter's mt.exe fail with LNK1327. -->
 </assembly>
