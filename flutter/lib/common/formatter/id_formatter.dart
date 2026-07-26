@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 
 class IDTextEditingController extends TextEditingController {
   IDTextEditingController({String? text}) : super(text: text);
@@ -58,3 +59,5 @@ String formatID(String id) {
 String trimID(String id) {
   return id.replaceAll(' ', '');
 }
+
+String formatIDForDisplay(String id) => ltrIsolate(formatID(id));
