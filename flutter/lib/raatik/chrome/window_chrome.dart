@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class RaatikWindowBrand extends StatelessWidget {
-  const RaatikWindowBrand({super.key});
+  final bool showLogo;
+  final bool showTitle;
+
+  const RaatikWindowBrand({
+    super.key,
+    this.showLogo = true,
+    this.showTitle = true,
+  });
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -10,10 +17,11 @@ class RaatikWindowBrand extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/logo.png', width: 22, height: 22),
-            const SizedBox(width: 8),
-            const Text('RaatikDesk',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            if (showLogo) Image.asset('assets/logo.png', width: 22, height: 22),
+            if (showLogo && showTitle) const SizedBox(width: 8),
+            if (showTitle)
+              const Text('RaatikDesk',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       );

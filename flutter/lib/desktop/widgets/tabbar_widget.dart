@@ -639,8 +639,13 @@ class _DesktopTabState extends State<DesktopTab>
                           width: 78,
                         )),
                     Offstage(
-                      offstage: kUseCompatibleUiMode || isMacOS || !showLogo,
-                      child: const RaatikWindowBrand().marginOnly(
+                      offstage: kUseCompatibleUiMode ||
+                          isMacOS ||
+                          (!showLogo && !showTitle),
+                      child: RaatikWindowBrand(
+                        showLogo: showLogo,
+                        showTitle: showTitle,
+                      ).marginOnly(
                         left: 12,
                         right: 10,
                       ),

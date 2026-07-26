@@ -36,4 +36,27 @@ void main() {
     expect(image.width, 22);
     expect(image.height, 22);
   });
+
+  testWidgets('RaatikWindowBrand with showTitle false shows logo only',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildRaatikLightTheme(),
+        home: const Scaffold(
+          body: RaatikWindowBrand(showTitle: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('RaatikDesk'), findsNothing);
+    expect(find.byType(Image), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == 'RaatikDesk',
+      ),
+      findsOneWidget,
+    );
+  });
 }
