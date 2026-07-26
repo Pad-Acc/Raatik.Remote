@@ -27,10 +27,9 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 import '../../raatik/flags.dart';
+import '../../raatik/settings/settings_shell.dart';
 
-const double _kTabWidth = 200;
-const double _kTabHeight = 42;
-const double _kCardFixedWidth = 540;
+const double _kSettingsContentMaxWidth = 900;
 const double _kCardLeftMargin = 15;
 const double _kContentHMargin = 15;
 const double _kContentHSubMargin = _kContentHMargin + 33;
@@ -178,6 +177,23 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     _videoConnTimer?.cancel();
   }
 
+  String _groupForTab(SettingsTabKey key) {
+    switch (key) {
+      case SettingsTabKey.general:
+      case SettingsTabKey.safety:
+        return 'عمومی';
+      case SettingsTabKey.display:
+      case SettingsTabKey.network:
+      case SettingsTabKey.plugin:
+      case SettingsTabKey.printer:
+        return 'برای پشتیبان';
+      case SettingsTabKey.account:
+        return 'حساب';
+      case SettingsTabKey.about:
+        return 'درباره';
+    }
+  }
+
   List<_TabInfo> _settingTabs() {
     final List<_TabInfo> settingTabs = <_TabInfo>[];
     for (final tab in DesktopSettingPage.tabKeys) {
@@ -281,124 +297,72 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     });
   }
 
+  Widget? _webLeading(BuildContext context) {
+    if (!isWeb) {
+      return null;
+    }
+    return IconButton(
+      onPressed: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      },
+      icon: const Icon(Icons.arrow_back),
+    ).marginOnly(left: 5);
+  }
+
+  void _selectTab(SettingsTabKey key) {
+    if (selectedTab.value != key) {
+      final index = DesktopSettingPage.tabKeys.indexOf(key);
+      if (index == -1) {
+        return;
+      }
+      controller.jumpToPage(index);
+    }
+    selectedTab.value = key;
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final tabs = _settingTabs();
+    final destinations = tabs
+        .map(
+          (tab) => RaatikSettingsDestination<SettingsTabKey>(
+            keyValue: tab.key,
+            label: translate(tab.label),
+            group: _groupForTab(tab.key),
+            icon: tab.unselected,
+          ),
+        )
+        .toList();
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: _buildBlock(
         children: <Widget>[
-          SizedBox(
-            width: _kTabWidth,
-            child: Column(
-              children: [
-                _header(context),
-                Flexible(child: _listView(tabs: _settingTabs())),
-              ],
-            ),
-          ),
-          const VerticalDivider(width: 1),
           Expanded(
-            child: Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: PageView(
-                controller: controller,
-                physics: NeverScrollableScrollPhysics(),
-                children: _children(),
+            child: Obx(
+              () => RaatikSettingsShell<SettingsTabKey>(
+                destinations: destinations,
+                selected: selectedTab.value,
+                onSelected: _selectTab,
+                title: translate('Settings'),
+                leading: _webLeading(context),
+                content: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: PageView(
+                    controller: controller,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: _children(),
+                  ),
+                ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
-  }
-
-  Widget _header(BuildContext context) {
-    final settingsText = Text(
-      translate('Settings'),
-      textAlign: TextAlign.left,
-      style: const TextStyle(
-        color: _accentColor,
-        fontSize: _kTitleFontSize,
-        fontWeight: FontWeight.w400,
-      ),
-    );
-    return Row(
-      children: [
-        if (isWeb)
-          IconButton(
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-            },
-            icon: Icon(Icons.arrow_back),
-          ).marginOnly(left: 5),
-        if (isWeb)
-          SizedBox(
-            height: 62,
-            child: Align(
-              alignment: Alignment.center,
-              child: settingsText,
-            ),
-          ).marginOnly(left: 20),
-        if (!isWeb)
-          SizedBox(
-            height: 62,
-            child: settingsText,
-          ).marginOnly(left: 20, top: 10),
-        const Spacer(),
-      ],
-    );
-  }
-
-  Widget _listView({required List<_TabInfo> tabs}) {
-    final scrollController = ScrollController();
-    return ListView(
-      controller: scrollController,
-      children: tabs.map((tab) => _listItem(tab: tab)).toList(),
-    );
-  }
-
-  Widget _listItem({required _TabInfo tab}) {
-    return Obx(() {
-      bool selected = tab.key == selectedTab.value;
-      return SizedBox(
-        width: _kTabWidth,
-        height: _kTabHeight,
-        child: InkWell(
-          onTap: () {
-            if (selectedTab.value != tab.key) {
-              int index = DesktopSettingPage.tabKeys.indexOf(tab.key);
-              if (index == -1) {
-                return;
-              }
-              controller.jumpToPage(index);
-            }
-            selectedTab.value = tab.key;
-          },
-          child: Row(children: [
-            Container(
-              width: 4,
-              height: _kTabHeight * 0.7,
-              color: selected ? _accentColor : null,
-            ),
-            Icon(
-              selected ? tab.selected : tab.unselected,
-              color: selected ? _accentColor : null,
-              size: 20,
-            ).marginOnly(left: 13, right: 10),
-            Text(
-              translate(tab.label),
-              style: TextStyle(
-                  color: selected ? _accentColor : null,
-                  fontWeight: FontWeight.w400,
-                  fontSize: _kContentFontSize),
-            ),
-          ]),
-        ),
-      );
-    });
   }
 }
 
@@ -902,6 +866,7 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         controller: scrollController,
         child: Column(
           children: [
+            _settingsTabSubtitle(context, SettingsTabKey.safety),
             _lock(locked, 'Unlock Security Settings', () {
               locked = false;
               setState(() => {});
@@ -1620,6 +1585,7 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     super.build(context);
     return ListView(controller: scrollController, children: [
+      _settingsTabSubtitle(context, SettingsTabKey.network),
       _lock(locked, 'Unlock Network Settings', () {
         locked = false;
         setState(() => {});
@@ -1813,6 +1779,7 @@ class _DisplayState extends State<_Display> {
   Widget build(BuildContext context) {
     final scrollController = ScrollController();
     return ListView(controller: scrollController, children: [
+      _settingsTabSubtitle(context, SettingsTabKey.display),
       viewStyle(context),
       scrollStyle(context),
       imageQuality(context),
@@ -2237,7 +2204,10 @@ class _PluginState extends State<_Plugin> {
       child: Consumer<PluginManager>(builder: (context, model, child) {
         return ListView(
           controller: scrollController,
-          children: model.plugins.map((entry) => pluginCard(entry)).toList(),
+          children: [
+            _settingsTabSubtitle(context, SettingsTabKey.plugin),
+            ...model.plugins.map((entry) => pluginCard(entry)).toList(),
+          ],
         ).marginOnly(bottom: _kListViewBottomMargin);
       }),
     );
@@ -2277,6 +2247,7 @@ class __PrinterState extends State<_Printer> {
   Widget build(BuildContext context) {
     final scrollController = ScrollController();
     return ListView(controller: scrollController, children: [
+      _settingsTabSubtitle(context, SettingsTabKey.printer),
       outgoing(context),
       incoming(context),
     ]).marginOnly(bottom: _kListViewBottomMargin);
@@ -2517,6 +2488,47 @@ class _AboutState extends State<_About> {
 
 //#region components
 
+String? _settingsTabSubtitleKey(SettingsTabKey key) {
+  switch (key) {
+    case SettingsTabKey.safety:
+      return 'Control permissions, passwords, and who can connect to this device.';
+    case SettingsTabKey.display:
+      return 'Choose default image quality, codec, and how the remote screen is shown.';
+    case SettingsTabKey.network:
+      return 'Set relay servers, proxy, and other connection options.';
+    case SettingsTabKey.plugin:
+      return 'Manage plugins and advanced integrations.';
+    case SettingsTabKey.printer:
+      return 'Configure printers for remote print jobs.';
+    default:
+      return null;
+  }
+}
+
+Widget _settingsTabSubtitle(BuildContext context, SettingsTabKey key) {
+  final subtitleKey = _settingsTabSubtitleKey(key);
+  if (subtitleKey == null) {
+    return const SizedBox.shrink();
+  }
+  return Align(
+    alignment: AlignmentDirectional.centerStart,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: _kSettingsContentMaxWidth),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(
+            _kCardLeftMargin + _kContentHMargin, 12, _kContentHMargin, 4),
+        child: Text(
+          translate(subtitleKey),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 // ignore: non_constant_identifier_names
 Widget _Card(
     {required String title,
@@ -2525,8 +2537,9 @@ Widget _Card(
   return Row(
     children: [
       Flexible(
-        child: SizedBox(
-          width: _kCardFixedWidth,
+        child: ConstrainedBox(
+          constraints:
+              const BoxConstraints(maxWidth: _kSettingsContentMaxWidth),
           child: Card(
             child: Column(
               children: [
@@ -2879,8 +2892,9 @@ Widget _lock(
       child: Row(
         children: [
           Flexible(
-            child: SizedBox(
-              width: _kCardFixedWidth,
+            child: ConstrainedBox(
+              constraints:
+                  const BoxConstraints(maxWidth: _kSettingsContentMaxWidth),
               child: Card(
                 child: ElevatedButton(
                   child: SizedBox(
