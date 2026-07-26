@@ -373,12 +373,54 @@ class MyTheme {
   );
 
   static ThemeData lightTheme = buildRaatikLightTheme().copyWith(
+    scrollbarTheme: scrollbarTheme,
+    tooltipTheme: tooltipTheme(),
+    splashColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+    highlightColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+    splashFactory: (isDesktop || isWebDesktop) ? NoSplash.splashFactory : null,
+    textButtonTheme: (isDesktop || isWebDesktop)
+        ? TextButtonThemeData(
+            style: TextButton.styleFrom(
+              splashFactory: NoSplash.splashFactory,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18.0),
+              ),
+            ),
+          )
+        : mobileTextButtonTheme,
+    switchTheme: switchTheme(),
+    radioTheme: radioTheme(),
+    menuBarTheme: MenuBarThemeData(
+        style:
+            MenuStyle(backgroundColor: MaterialStatePropertyAll(Colors.white))),
     extensions: <ThemeExtension<dynamic>>[
       ColorThemeExtension.light,
       TabbarTheme.light,
     ],
   );
   static ThemeData darkTheme = buildRaatikDarkTheme().copyWith(
+    scrollbarTheme: scrollbarThemeDark,
+    tooltipTheme: tooltipTheme(),
+    splashColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+    highlightColor: (isDesktop || isWebDesktop) ? Colors.transparent : null,
+    splashFactory: (isDesktop || isWebDesktop) ? NoSplash.splashFactory : null,
+    textButtonTheme: (isDesktop || isWebDesktop)
+        ? TextButtonThemeData(
+            style: TextButton.styleFrom(
+              splashFactory: NoSplash.splashFactory,
+              disabledForegroundColor: Colors.white70,
+              foregroundColor: Colors.white70,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18.0),
+              ),
+            ),
+          )
+        : mobileTextButtonTheme,
+    switchTheme: switchTheme(),
+    radioTheme: radioTheme(),
+    menuBarTheme: MenuBarThemeData(
+        style: MenuStyle(
+            backgroundColor: MaterialStatePropertyAll(Color(0xFF121212)))),
     extensions: <ThemeExtension<dynamic>>[
       ColorThemeExtension.dark,
       TabbarTheme.dark,
