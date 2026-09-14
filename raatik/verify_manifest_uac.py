@@ -20,6 +20,7 @@ can prompt.
 import argparse
 import re
 import sys
+import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 # The manifest is embedded as plain UTF-8 XML in the RT_MANIFEST resource.
@@ -42,6 +43,15 @@ def check_sources(root: Path) -> list[str]:
             errors.append(f"missing runner source: {relative}")
             continue
         text = path.read_text(encoding="utf-8")
+        if relative.endswith(".manifest"):
+            # mt.exe reports a malformed manifest only as "LNK1327: failure during
+            # running mt.exe", 30 minutes into the build, with no parse detail. Catch
+            # it here instead. A double hyphen inside an XML comment is the easy way
+            # to trip this while writing a note about the cm command-line flag.
+            try:
+                ElementTree.fromstring(text)
+            except ElementTree.ParseError as exc:
+                errors.append(f"{relative} is not well-formed XML: {exc}")
         # Strip comments so the explanatory note in CMakeLists.txt does not trip the gate.
         stripped = "\n".join(
             line for line in text.splitlines() if not line.lstrip().startswith(("#", "<!--"))

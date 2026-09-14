@@ -18,6 +18,6 @@
     </application>
   </compatibility>
   <!-- No trustInfo block on purpose: this executable must run asInvoker, or the
-       LocalSystem service cannot launch the connection manager (--cm) in the user's
-       session. See the note in CMakeLists.txt and raatik/verify_manifest_uac.py. -->
+       LocalSystem service cannot launch the connection manager in the user's session.
+       See the note in CMakeLists.txt and raatik/verify_manifest_uac.py. -->
 </assembly>

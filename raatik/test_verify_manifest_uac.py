@@ -64,6 +64,17 @@ class CheckSourcesTests(unittest.TestCase):
         self._write_sources("# do NOT mark this requireAdministrator\n" + CMAKE_CLEAN)
         self.assertEqual(check_sources(self.root), [])
 
+    def test_malformed_manifest_xml_is_rejected(self) -> None:
+        # A double hyphen inside an XML comment is illegal and makes mt.exe fail the
+        # link with a bare LNK1327, half an hour into the Windows build.
+        self._write_sources(
+            CMAKE_CLEAN,
+            "<assembly><!-- launches the cm process (--cm) --><compatibility/></assembly>\n",
+        )
+        errors = check_sources(self.root)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("is not well-formed XML", errors[0])
+
     def test_missing_source_reports_error(self) -> None:
         errors = check_sources(self.root)
         self.assertIn(
