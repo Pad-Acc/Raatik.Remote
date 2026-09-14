@@ -42,6 +42,14 @@ jobs:
       - name: Verify Windows icon sources
         run: python raatik/verify_windows_icons.py
 
+      - name: Verify UAC manifest sources (asInvoker)
+        run: python raatik/verify_manifest_uac.py
+
+      - name: Raatik gate self-tests
+        run: |
+          python raatik/test_verify_windows_icons.py
+          python raatik/test_verify_manifest_uac.py
+
   # The root crate only compiles with --features flutter if src/bridge_generated.rs
   # exists (src/lib.rs gates `mod bridge_generated` on cfg(feature = "flutter")), but
   # that file is gitignored and generated at build time. Mirrors raatik-windows.yml's

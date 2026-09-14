@@ -239,7 +239,7 @@ class _FakeSettingsPageState extends State<FakeSettingsPage> {
             const Text('RaatikDesk'),
             const SizedBox(height: 4),
             Text(
-              _isFa ? 'نسخه ۲۰۲۶.۰۷.۰۱' : 'Version 2026.08.01',
+              _isFa ? 'نسخه ۲۰۲۶.۰۹.۱۵' : 'Version 2026.09.15',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),

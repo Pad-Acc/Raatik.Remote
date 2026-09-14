@@ -17,6 +17,7 @@
       <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/>
     </application>
   </compatibility>
-  <!-- Elevation is set via LINK_FLAGS /MANIFESTUAC in CMakeLists.txt.
-       Putting trustInfo here makes Flutter's mt.exe fail with LNK1327. -->
+  <!-- No trustInfo block on purpose: this executable must run asInvoker, or the
+       LocalSystem service cannot launch the connection manager (--cm) in the user's
+       session. See the note in CMakeLists.txt and raatik/verify_manifest_uac.py. -->
 </assembly>

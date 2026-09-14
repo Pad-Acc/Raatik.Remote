@@ -12,7 +12,7 @@ env:
   LLVM_VERSION: "15.0.6"
   FLUTTER_VERSION: "3.24.5"
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
-  VERSION: "2026.08.01"
+  VERSION: "2026.09.15"
   # flutter_rust_bridge codegen inputs (see .github/workflows/bridge.yml) — the Windows
   # build consumes src/bridge_generated.rs and flutter/lib/generated_bridge.dart, which are
   # gitignored and must be generated in CI, not shipped in the tree.
@@ -178,6 +178,13 @@ jobs:
       - name: Verify runtime icons
         run: |
           python3 raatik/verify_windows_icons.py --release-dir ./flutter/build/windows/x64/runner/Release
+
+      # A requireAdministrator manifest stops the LocalSystem service from launching
+      # the connection manager (--cm), which kills every incoming session after ~10s
+      # and hides the accept prompt entirely. Gate the shipped binary, not just source.
+      - name: Verify UAC manifest (asInvoker)
+        run: |
+          python3 raatik/verify_manifest_uac.py --exe ./flutter/build/windows/x64/runner/Release/raatikdesk.exe
 
       - name: Brand-leak gate
         shell: bash

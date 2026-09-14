@@ -36,10 +36,16 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
-# Force UAC elevation. Do not put requireAdministrator in runner.exe.manifest —
-# Flutter's Windows link step then fails with LNK1327 (mt.exe).
-set_target_properties(${BINARY_NAME} PROPERTIES LINK_FLAGS
-  "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS")
+# NOTE: do NOT mark this executable requireAdministrator (neither here via
+# /MANIFESTUAC nor in runner.exe.manifest). The installed Windows service runs
+# --server as LocalSystem and starts the connection manager with
+# run_as_user(["--cm"]) -> CreateProcessAsUserW using explorer.exe's filtered,
+# medium-integrity token. CreateProcessAsUser never elevates, so an image that
+# requires administrator fails with ERROR_ELEVATION_REQUIRED (740): the accept
+# prompt never appears and start_ipc tears every incoming session down after
+# ~10s via Data::CmErr. Upstream RustDesk ships asInvoker and elevates on demand
+# through elevate()/run_uac(). The installer (libs/portable, res/manifest.xml)
+# is a separate binary and does still require administrator.
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
