@@ -207,7 +207,20 @@ mod test {
     #[test]
     fn test_farsi_has_no_empty_values() {
         for (k, v) in super::fa::T.iter() {
-            assert!(!v.is_empty(), "untranslated Farsi key: {k}");
+            if v.is_empty() {
+                // An empty value in en.rs is a deliberately suppressed string, not a
+                // missing translation: the key stays in the table (upstream UI code
+                // still looks it up) but is meant to render as nothing. `setup_server_tip`
+                // is the shipped case -- RaatikDesk drops the "set up your own server"
+                // banner, so both en.rs and fa.rs blank it. Without this carve-out the
+                // only way to suppress a string would be to delete the key, which makes
+                // translate() fall back to printing the raw key name in the UI.
+                assert_eq!(
+                    super::en::T.get(k),
+                    Some(&""),
+                    "untranslated Farsi key: {k}"
+                );
+            }
         }
     }
 
