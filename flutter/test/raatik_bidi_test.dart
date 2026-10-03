@@ -93,6 +93,9 @@ void main() {
     final expectedId = formatIDForDisplay('123456789');
     expect(find.text(expectedId), findsWidgets);
 
+    final idWidget = tester.widget<Text>(find.text(expectedId).first);
+    expect(idWidget.style?.fontFamily, isNot('IRANSansXFaNum'));
+
     // Credential value Text must sit under an LTR Directionality ancestor.
     final idText = find.text(expectedId).first;
     final dirs = tester.widgetList<Directionality>(

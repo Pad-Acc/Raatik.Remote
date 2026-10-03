@@ -3,6 +3,8 @@ import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
+import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
+import 'package:flutter_hbb/raatik/theme/text_styles.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 /// Preview home using production [RaatikHomeLayout] and [RaatikServiceGate].
@@ -97,7 +99,7 @@ class _FakeReceivePanel extends StatelessWidget {
           const SizedBox(height: 20),
           _CredentialRow(
             label: isFa ? 'شناسه من' : 'My ID',
-            value: formatIDForDisplay('123456789'),
+            value: '123456789',
             actions: [
               IconButton(
                 onPressed: () {},
@@ -109,7 +111,8 @@ class _FakeReceivePanel extends StatelessWidget {
           const SizedBox(height: 12),
           _CredentialRow(
             label: isFa ? 'رمز یک‌بارمصرف' : 'One-time password',
-            value: ltrIsolate('842915'),
+            value: '842915',
+            group: false,
             actions: [
               IconButton(
                 onPressed: () {},
@@ -259,10 +262,12 @@ class _CredentialRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.actions,
+    this.group = true,
   });
 
   final String label;
   final String value;
+  final bool group;
   final List<Widget> actions;
 
   @override
@@ -284,12 +289,10 @@ class _CredentialRow extends StatelessWidget {
                 Text(label, style: TextStyle(fontSize: 14, color: muted)),
                 const SizedBox(height: 4),
                 ltrTextDirection(
-                  child: Text(
+                  child: RaatikIdentifierText(
                     value,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    group: group,
+                    style: RaatikTextStyles.displayId(context),
                   ),
                 ),
               ],

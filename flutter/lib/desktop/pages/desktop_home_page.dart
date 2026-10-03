@@ -6,6 +6,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/common/widgets/animated_rotation_widget.dart';
 import 'package:flutter_hbb/common/widgets/custom_password.dart';
 import 'package:flutter_hbb/consts.dart';
@@ -17,9 +18,10 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/plugin/ui_manager.dart';
-import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
+import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
+import 'package:flutter_hbb/raatik/theme/text_styles.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
@@ -312,8 +314,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: () {
-            final id = model.serverId.text.trim();
-            final pwd = model.serverPasswd.text.trim();
+            final id = identifierClipboardText(model.serverId.text);
+            final pwd = identifierClipboardText(model.serverPasswd.text);
             final text = pwd.isEmpty ? id : '$id\n$pwd';
             if (text.isEmpty) return;
             Clipboard.setData(ClipboardData(text: text));
@@ -366,23 +368,22 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                   ),
                   GestureDetector(
                     onDoubleTap: () {
-                      Clipboard.setData(
-                          ClipboardData(text: model.serverId.text));
+                      Clipboard.setData(ClipboardData(
+                          text: identifierClipboardText(model.serverId.text)));
                       showToast(translate("Copied"));
                     },
-                    child: ltrTextDirection(
-                      child: TextFormField(
-                        controller: model.serverId,
-                        readOnly: true,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsetsDirectional.only(
-                              top: 10, bottom: 10, start: 4),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 22,
-                        ),
-                      ).workaroundFreezeLinuxMint(),
+                    child: RaatikIdentifierField(
+                      controller: model.serverId,
+                      readOnly: true,
+                      textAlign: TextAlign.start,
+                      style: RaatikTextStyles.displayId(context),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsetsDirectional.only(
+                            top: RaatikTokens.space2,
+                            bottom: RaatikTokens.space2,
+                            start: RaatikTokens.space1),
+                      ),
                     ),
                   )
                 ],
@@ -463,22 +464,25 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                         child: GestureDetector(
                           onDoubleTap: () {
                             if (showOneTime) {
-                              Clipboard.setData(
-                                  ClipboardData(text: model.serverPasswd.text));
+                              Clipboard.setData(ClipboardData(
+                                  text: identifierClipboardText(
+                                      model.serverPasswd.text)));
                               showToast(translate("Copied"));
                             }
                           },
-                          child: ltrTextDirection(
-                            child: TextFormField(
-                              controller: model.serverPasswd,
-                              readOnly: true,
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsetsDirectional.only(
-                                    top: 14, bottom: 10, start: 4),
-                              ),
-                              style: const TextStyle(fontSize: 15),
-                            ).workaroundFreezeLinuxMint(),
+                          child: RaatikIdentifierField(
+                            controller: model.serverPasswd,
+                            readOnly: true,
+                            textAlign: TextAlign.start,
+                            style: RaatikTextStyles.identifier(context,
+                                fontSize: 16),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsetsDirectional.only(
+                                  top: RaatikTokens.space3,
+                                  bottom: RaatikTokens.space2,
+                                  start: RaatikTokens.space1),
+                            ),
                           ),
                         ),
                       ),
