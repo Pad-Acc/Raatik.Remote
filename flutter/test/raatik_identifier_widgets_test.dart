@@ -31,6 +31,43 @@ void main() {
     expect(tester.widget<Text>(find.byType(Text)).data, '\u2066842915\u2069');
   });
 
+  testWidgets(
+      'RaatikIdentifierText keeps the Latin face when the caller passes a theme text style',
+      (tester) async {
+    late TextStyle themeTitleSmall;
+    await tester.pumpWidget(_rtlApp(Builder(builder: (context) {
+      themeTitleSmall = Theme.of(context).textTheme.titleSmall!;
+      return RaatikIdentifierText(
+        '107292347',
+        style: themeTitleSmall,
+      );
+    })));
+    final text = tester.widget<Text>(find.byType(Text));
+    expect(text.style?.fontFamily, kRaatikIdentifierFontFamily);
+    expect(text.style?.fontFamilyFallback, kRaatikIdentifierFontFallback);
+    expect(text.style?.fontFeatures,
+        contains(const FontFeature.tabularFigures()));
+  });
+
+  testWidgets(
+      'RaatikIdentifierField keeps the Latin face when the caller passes a theme text style',
+      (tester) async {
+    late TextStyle themeTitleSmall;
+    final controller = IDTextEditingController();
+    await tester.pumpWidget(_rtlApp(Builder(builder: (context) {
+      themeTitleSmall = Theme.of(context).textTheme.titleSmall!;
+      return RaatikIdentifierField(
+        controller: controller,
+        style: themeTitleSmall,
+      );
+    })));
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.style?.fontFamily, kRaatikIdentifierFontFamily);
+    expect(field.style?.fontFamilyFallback, kRaatikIdentifierFontFallback);
+    expect(field.style?.fontFeatures,
+        contains(const FontFeature.tabularFigures()));
+  });
+
   testWidgets('RaatikIdentifierField is an LTR island with an RTL hint',
       (tester) async {
     final controller = IDTextEditingController();

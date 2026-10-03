@@ -5,6 +5,20 @@ import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/theme/text_styles.dart';
 
+/// Re-applies the Latin-digit identifier face after merging the caller's
+/// [style]. `TextStyle.merge` returns the caller's style wholesale when it
+/// was built with `inherit: false` (e.g. `Theme.of(context).textTheme.*`),
+/// which drops the Latin-digit family, fallback and tabular figures. Used by
+/// both [RaatikIdentifierText] and [RaatikIdentifierField] so the identifier
+/// face survives regardless of what style the caller passes.
+TextStyle _identifierStyle(BuildContext context, TextStyle? style) {
+  return RaatikTextStyles.identifier(context).merge(style).copyWith(
+    fontFamily: kRaatikIdentifierFontFamily,
+    fontFamilyFallback: kRaatikIdentifierFontFallback,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+}
+
 /// Read-only identifier (ID, password, version, IP) rendered as an LTR island
 /// in the Latin-digit identifier style. [group] applies 3-3-3 grouping; pass
 /// false for secrets, versions and addresses.
@@ -31,7 +45,7 @@ class RaatikIdentifierText extends StatelessWidget {
     final shown = group ? formatID(value) : value;
     return Text(
       ltrIsolate(shown),
-      style: RaatikTextStyles.identifier(context).merge(style),
+      style: _identifierStyle(context, style),
       textAlign: textAlign,
       overflow: overflow,
       maxLines: maxLines ?? 1,
@@ -90,7 +104,7 @@ class RaatikIdentifierField extends StatelessWidget {
       keyboardType: TextInputType.visiblePassword,
       textAlign: textAlign,
       maxLines: 1,
-      style: RaatikTextStyles.identifier(context).merge(style),
+      style: _identifierStyle(context, style),
       inputFormatters: inputFormatters,
       decoration: base.copyWith(
         hintText: hintText ?? base.hintText,

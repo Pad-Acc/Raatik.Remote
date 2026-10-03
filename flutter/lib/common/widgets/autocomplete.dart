@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import '../../../models/platform_model.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/common.dart';
@@ -357,29 +356,42 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                           child: Column(
                                             children: [
                                               Container(
-                                                  margin:
-                                                      const EdgeInsets.only(top: 2),
+                                                  margin: const EdgeInsets.only(
+                                                      top: 2),
                                                   child: Row(children: [
                                                     getOnline(
                                                         8, widget.peer.online),
                                                     Expanded(
-                                                        child: Text(
-                                                      widget.peer.alias.isEmpty
-                                                          ? formatIDForDisplay(
-                                                              widget.peer.id)
-                                                          : widget.peer.alias,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleSmall,
-                                                    )),
+                                                        child: widget.peer.alias
+                                                                .isEmpty
+                                                            ? RaatikIdentifierText(
+                                                                widget.peer.id,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                style: Theme.of(
+                                                                        context)
+                                                                    .textTheme
+                                                                    .titleSmall,
+                                                              )
+                                                            : Text(
+                                                                widget
+                                                                    .peer.alias,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                style: Theme.of(
+                                                                        context)
+                                                                    .textTheme
+                                                                    .titleSmall,
+                                                              )),
                                                     widget.peer.alias.isNotEmpty
                                                         ? Padding(
                                                             padding:
                                                                 const EdgeInsetsDirectional
                                                                     .symmetric(
-                                                                    horizontal: 5),
+                                                                    horizontal:
+                                                                        5),
                                                             child:
                                                                 RaatikIdentifierText(
                                                               widget.peer.id,
@@ -391,8 +403,8 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                                         : Container(),
                                                   ])),
                                               Align(
-                                                alignment:
-                                                    AlignmentDirectional.centerStart,
+                                                alignment: AlignmentDirectional
+                                                    .centerStart,
                                                 child: Text(
                                                   ltrIsolate(name),
                                                   style: greyStyle,
