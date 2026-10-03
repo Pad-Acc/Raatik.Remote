@@ -36,7 +36,7 @@ String stripBidiControls(String input) {
       input.codeUnits.where((c) => !_bidiControls.contains(c)));
 }
 
-final RegExp _idSeparators = RegExp(r'[\s   \-]');
+final RegExp _idSeparators = RegExp(r'[\s\u00A0\u202F\u2009\-]');
 final RegExp _numericIdWithSuffix = RegExp(r'^\d+([\\/]r)?$');
 
 /// Prepares typed or pasted text for the remote-ID field.

@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart';
+﻿import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
@@ -19,8 +19,8 @@ void main() {
 
   group('stripBidiControls', () {
     test('removes isolates, embeddings and marks', () {
-      expect(stripBidiControls('⁦107 292 347⁩'), '107 292 347');
-      expect(stripBidiControls('‪abc‬‎‏؜'), 'abc');
+      expect(stripBidiControls('\u2066107 292 347\u2069'), '107 292 347');
+      expect(stripBidiControls('\u202Aabc\u202C\u200E\u200F\u061C'), 'abc');
     });
   });
 
@@ -28,7 +28,7 @@ void main() {
     test('strips hyphens and spaces when the rest is a numeric ID', () {
       expect(normalizeIdentifierInput('107-292-347'), '107292347');
       expect(normalizeIdentifierInput('107 292 347\n'), '107292347');
-      expect(normalizeIdentifierInput('⁦107 292 347⁩'),
+      expect(normalizeIdentifierInput('\u2066107\u00A0292\u202F347\u2069'),
           '107292347');
     });
     test('normalises Persian digits', () {
@@ -87,11 +87,11 @@ void main() {
 
   group('identifierClipboardText', () {
     test('returns raw digits without space or isolates', () {
-      expect(identifierClipboardText('⁦231 339 258⁩'), '231339258');
+      expect(identifierClipboardText('\u2066231 339 258\u2069'), '231339258');
       expect(identifierClipboardText('۲۳۱ ۳۳۹ ۲۵۸'), '231339258');
     });
     test('keeps non-ID text intact apart from bidi controls', () {
-      expect(identifierClipboardText('⁦remote.raatik.ir⁩'),
+      expect(identifierClipboardText('\u2066remote.raatik.ir\u2069'),
           'remote.raatik.ir');
     });
   });
