@@ -255,14 +255,12 @@ class _ConnectionPageState extends State<ConnectionPage>
                           normalizeDigits(textEditingValue.text).toLowerCase();
                       _autocompleteOpts = _allPeersLoader.peers
                           .where((peer) =>
-                              peer.id.toLowerCase().contains(textToFind) ||
-                              peer.username
-                                  .toLowerCase()
-                                  .contains(textToFind) ||
-                              peer.hostname
-                                  .toLowerCase()
-                                  .contains(textToFind) ||
-                              peer.alias.toLowerCase().contains(textToFind))
+                              digitAgnosticContains(peer.id, textToFind) ||
+                              digitAgnosticContains(
+                                  peer.username, textToFind) ||
+                              digitAgnosticContains(
+                                  peer.hostname, textToFind) ||
+                              digitAgnosticContains(peer.alias, textToFind))
                           .toList();
                       _allPeersLoader.queryOnlines(_autocompleteOpts);
                     }

@@ -17,6 +17,24 @@ void main() {
     });
   });
 
+  group('digitAgnosticContains', () {
+    test('matches a Persian needle in a Persian haystack', () {
+      expect(digitAgnosticContains('دفتر ۲', '۲'), isTrue);
+    });
+    test('matches a Latin needle in a Persian haystack', () {
+      expect(digitAgnosticContains('دفتر ۲', '2'), isTrue);
+    });
+    test('matches a Persian needle in a Latin haystack', () {
+      expect(digitAgnosticContains('office 2', '۲'), isTrue);
+    });
+    test('is case-insensitive', () {
+      expect(digitAgnosticContains('Office-2', 'OFFICE'), isTrue);
+    });
+    test('returns false when the needle is absent', () {
+      expect(digitAgnosticContains('office 2', '3'), isFalse);
+    });
+  });
+
   group('stripBidiControls', () {
     test('removes isolates, embeddings and marks', () {
       expect(stripBidiControls('\u2066107 292 347\u2069'), '107 292 347');

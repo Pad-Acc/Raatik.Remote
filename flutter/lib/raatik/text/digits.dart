@@ -25,6 +25,18 @@ String normalizeDigits(String input) {
   return out.toString();
 }
 
+/// Digit- and case-insensitive substring match. Normalises Persian and
+/// Arabic-Indic digits in both [haystack] and [needle] (and lowercases both)
+/// before comparing, so a Persian-digit search matches a Latin-digit field
+/// and vice versa. Use for peer search and autocomplete filtering, where the
+/// field being searched (id, alias, note, hostname, username) may contain
+/// either digit script regardless of what the user types.
+bool digitAgnosticContains(String haystack, String needle) {
+  return normalizeDigits(haystack)
+      .toLowerCase()
+      .contains(normalizeDigits(needle).toLowerCase());
+}
+
 const Set<int> _bidiControls = {
   0x2066, 0x2067, 0x2068, 0x2069, // LRI RLI FSI PDI
   0x202A, 0x202B, 0x202C, 0x202D, 0x202E, // LRE RLE PDF LRO RLO

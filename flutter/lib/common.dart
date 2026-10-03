@@ -12,6 +12,7 @@ import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/desktop/widgets/refresh_wrapper.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/raatik/dialogs/dialog_style.dart';
+import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 import 'package:flutter_hbb/raatik/theme/my_theme_merge.dart' as my_theme_merge;
 import 'package:flutter_hbb/main.dart';
@@ -1524,18 +1525,18 @@ Future<bool> matchPeer(
   if (searchText.isEmpty) {
     return true;
   }
-  if (peer.id.toLowerCase().contains(searchText)) {
+  if (digitAgnosticContains(peer.id, searchText)) {
     return true;
   }
-  if (peer.hostname.toLowerCase().contains(searchText) ||
-      peer.username.toLowerCase().contains(searchText)) {
+  if (digitAgnosticContains(peer.hostname, searchText) ||
+      digitAgnosticContains(peer.username, searchText)) {
     return true;
   }
-  if (peer.alias.toLowerCase().contains(searchText)) {
+  if (digitAgnosticContains(peer.alias, searchText)) {
     return true;
   }
   if (peerTabShowNote(peerTabIndex) &&
-      peer.note.toLowerCase().contains(searchText)) {
+      digitAgnosticContains(peer.note, searchText)) {
     return true;
   }
   return false;
