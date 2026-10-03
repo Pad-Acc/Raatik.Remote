@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
@@ -73,5 +74,51 @@ void main() {
     ));
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.decoration?.hintTextDirection, TextDirection.ltr);
+  });
+
+  // Direct ancestor between the LTR Directionality island this widget creates
+  // and its TextField: Material's own internals may contain unrelated
+  // ExcludeSemantics widgets elsewhere in the tree, so this narrows to the one
+  // our wrapper would introduce.
+  Finder wrapperExcludeSemantics(WidgetTester tester) {
+    final directionality = find.ancestor(
+      of: find.byType(TextField),
+      matching: find.byType(Directionality),
+    );
+    final ltrIsland = tester
+        .widgetList<Directionality>(directionality)
+        .where((d) => d.textDirection == TextDirection.ltr);
+    expect(ltrIsland, isNotEmpty);
+    return find.descendant(
+      of: find.byWidget(ltrIsland.first),
+      matching: find.ancestor(
+        of: find.byType(TextField),
+        matching: find.byType(ExcludeSemantics),
+      ),
+    );
+  }
+
+  testWidgets(
+      'RaatikIdentifierField excludes TextField semantics on Linux (Mint freeze workaround)',
+      (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    try {
+      await tester.pumpWidget(_rtlApp(RaatikIdentifierField(
+        controller: TextEditingController(),
+      )));
+      expect(wrapperExcludeSemantics(tester), findsOneWidget);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets(
+      'RaatikIdentifierField does not exclude TextField semantics on the default test platform',
+      (tester) async {
+    await tester.pumpWidget(_rtlApp(RaatikIdentifierField(
+      controller: TextEditingController(),
+    )));
+    expect(wrapperExcludeSemantics(tester), findsNothing);
   });
 }

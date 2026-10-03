@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
@@ -78,29 +79,35 @@ class RaatikIdentifierField extends StatelessWidget {
     // Captured outside the LTR island so the Persian hint stays RTL.
     final hintDirection = Directionality.of(context);
     final base = decoration ?? const InputDecoration();
-    return ltrTextDirection(
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        readOnly: readOnly,
-        obscureText: obscureText,
-        autofocus: autofocus,
-        autocorrect: false,
-        enableSuggestions: false,
-        keyboardType: TextInputType.visiblePassword,
-        textAlign: textAlign,
-        maxLines: 1,
-        style: RaatikTextStyles.identifier(context).merge(style),
-        inputFormatters: inputFormatters,
-        decoration: base.copyWith(
-          hintText: hintText ?? base.hintText,
-          hintTextDirection: hintDirection,
-          counterText: '',
-        ),
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
-        onTap: onTap,
+    final field = TextField(
+      controller: controller,
+      focusNode: focusNode,
+      readOnly: readOnly,
+      obscureText: obscureText,
+      autofocus: autofocus,
+      autocorrect: false,
+      enableSuggestions: false,
+      keyboardType: TextInputType.visiblePassword,
+      textAlign: textAlign,
+      maxLines: 1,
+      style: RaatikTextStyles.identifier(context).merge(style),
+      inputFormatters: inputFormatters,
+      decoration: base.copyWith(
+        hintText: hintText ?? base.hintText,
+        hintTextDirection: hintDirection,
+        counterText: '',
       ),
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      onTap: onTap,
+    );
+    // https://github.com/flutter/flutter/issues/153560 - Linux Mint semantics-bridge
+    // freeze workaround for TextField/TextFormField, mirrored from
+    // common.dart's WorkaroundFreezeLinuxMint extension (not imported here: it pulls
+    // models/* into this widget).
+    final isLinux = !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;
+    return ltrTextDirection(
+      child: isLinux ? ExcludeSemantics(child: field) : field,
     );
   }
 }
