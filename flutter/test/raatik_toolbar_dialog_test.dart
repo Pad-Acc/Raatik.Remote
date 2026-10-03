@@ -117,9 +117,9 @@ void main() {
       expect(action.height, RaatikRemoteToolbarBar.actionSize);
     });
 
-    testWidgets('800px hides brand and keeps More/Disconnect outside scroll',
+    testWidgets('600px hides brand and keeps More/Disconnect outside scroll',
         (tester) async {
-      await _pumpToolbar(tester, 800);
+      await _pumpToolbar(tester, 600);
 
       expect(find.text('RaatikDesk'), findsNothing);
       expect(find.byKey(const Key('toolbar-more')), findsOneWidget);
