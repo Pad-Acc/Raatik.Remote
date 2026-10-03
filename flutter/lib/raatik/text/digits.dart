@@ -2,6 +2,8 @@
 /// See DESIGN-SYSTEM.md section 1.11.
 library raatik_digits;
 
+import 'package:flutter/services.dart';
+
 const int _persianZero = 0x06F0;
 const int _arabicIndicZero = 0x0660;
 const int _asciiZero = 0x30;
@@ -50,4 +52,34 @@ String normalizeIdentifierInput(String input) {
   final candidate = cleaned.replaceAll(_idSeparators, '');
   if (_numericIdWithSuffix.hasMatch(candidate)) return candidate;
   return cleaned;
+}
+
+/// Accepts only ASCII digits after normalising Persian and Arabic-Indic ones.
+/// Use for 2FA codes, ports, resolutions and other short numeric fields.
+/// Order matters: this must be the first formatter in the list.
+class RaatikDigitsInputFormatter extends TextInputFormatter {
+  RaatikDigitsInputFormatter({this.maxLength, this.maxValue});
+
+  final int? maxLength;
+  final int? maxValue;
+
+  static final RegExp _nonDigit = RegExp(r'[^0-9]');
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    var text = normalizeDigits(newValue.text).replaceAll(_nonDigit, '');
+    if (maxLength != null && text.length > maxLength!) {
+      text = text.substring(0, maxLength!);
+    }
+    if (maxValue != null && text.isNotEmpty) {
+      final parsed = int.tryParse(text);
+      if (parsed == null || parsed > maxValue!) return oldValue;
+    }
+    if (text == newValue.text) return newValue;
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 }

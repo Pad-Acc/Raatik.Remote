@@ -12,6 +12,8 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/plugin/widgets/desc_ui.dart';
 import 'package:flutter_hbb/plugin/common.dart';
+import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
+import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
@@ -2347,20 +2349,21 @@ class _ResolutionsMenuState extends State<_ResolutionsMenu> {
   }
 
   Widget _resolutionInput(TextEditingController controller) {
-    return TextField(
-      decoration: InputDecoration(
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.fromLTRB(3, 3, 3, 3),
-      ),
-      keyboardType: TextInputType.number,
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(4),
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-      ],
-      controller: controller,
-    ).workaroundFreezeLinuxMint();
+    return ltrTextDirection(
+      child: TextField(
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.all(RaatikTokens.space1),
+        ),
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        inputFormatters: <TextInputFormatter>[
+          RaatikDigitsInputFormatter(maxLength: 4),
+        ],
+        controller: controller,
+      ).workaroundFreezeLinuxMint(),
+    );
   }
 
   List<Widget> _supportedResolutionMenuButtons() => resolutions

@@ -95,4 +95,41 @@ void main() {
           'remote.raatik.ir');
     });
   });
+
+  group('RaatikDigitsInputFormatter', () {
+    TextEditingValue apply(RaatikDigitsInputFormatter f, String text) =>
+        f.formatEditUpdate(
+          const TextEditingValue(text: ''),
+          TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          ),
+        );
+
+    test('accepts Persian digits as ASCII', () {
+      expect(apply(RaatikDigitsInputFormatter(), '\u06f1\u06f2\u06f3\u06f4\u06f5\u06f6').text, '123456');
+    });
+    test('drops non-digits', () {
+      expect(apply(RaatikDigitsInputFormatter(), '12a-3 4').text, '1234');
+    });
+    test('enforces maxLength', () {
+      expect(apply(RaatikDigitsInputFormatter(maxLength: 4), '192000').text,
+          '1920');
+    });
+    test('rejects values above maxValue by keeping the old value', () {
+      final f = RaatikDigitsInputFormatter(maxLength: 5, maxValue: 65535);
+      final v = f.formatEditUpdate(
+        const TextEditingValue(text: '6553'),
+        const TextEditingValue(
+            text: '65536', selection: TextSelection.collapsed(offset: 5)),
+      );
+      expect(v.text, '6553');
+      expect(apply(f, '65535').text, '65535');
+    });
+    test('places the caret at the end of the cleaned text', () {
+      final v = apply(RaatikDigitsInputFormatter(), '\u06f1\u06f2x\u06f3');
+      expect(v.text, '123');
+      expect(v.selection.extentOffset, 3);
+    });
+  });
 }

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/shared_state.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/consts.dart';
+import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/peer_tab_model.dart';
@@ -311,8 +312,8 @@ Future<String> changeDirectAccessPort(
                                 icon: const Icon(Icons.clear, size: 16),
                                 onPressed: () => controller.clear())),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(
-                              r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
+                          RaatikDigitsInputFormatter(
+                              maxLength: 5, maxValue: 65535),
                         ],
                         controller: controller,
                         autofocus: true)
@@ -359,8 +360,8 @@ Future<String> changeAutoDisconnectTimeout(String old) async {
                                 icon: const Icon(Icons.clear, size: 16),
                                 onPressed: () => controller.clear())),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(
-                              r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
+                          RaatikDigitsInputFormatter(
+                              maxLength: 5, maxValue: 65535),
                         ],
                         controller: controller,
                         autofocus: true)
@@ -508,9 +509,7 @@ class Dialog2FaField extends ValidationField {
       readyCallback: readyCallback,
       onChanged: _onChanged,
       keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-      ],
+      inputFormatters: [RaatikDigitsInputFormatter()],
     );
   }
 

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
+import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
+import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:get/get.dart';
 
 customImageQualityWidget(
@@ -311,20 +313,25 @@ class TrackpadSpeedWidgetState extends State<TrackpadSpeedWidget> {
               children: [
                 SizedBox(
                   width: 56,
-                  child: TextField(
-                    controller: _controller,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    onSubmitted: (text) {
-                      int? v = int.tryParse(text);
-                      if (v != null) {
-                        updateValue(v);
-                      }
-                    },
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                  child: ltrTextDirection(
+                    child: TextField(
+                      controller: _controller,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        RaatikDigitsInputFormatter(maxLength: 4)
+                      ],
+                      textAlign: TextAlign.center,
+                      onSubmitted: (text) {
+                        int? v = int.tryParse(text);
+                        if (v != null) {
+                          updateValue(v);
+                        }
+                      },
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 8.0, horizontal: 12.0),
+                      ),
                     ),
                   ),
                 ).marginOnly(right: 8.0),
