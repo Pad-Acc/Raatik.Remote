@@ -56,6 +56,12 @@ void main() {
       expect(normalizeIdentifierInput('123 456 789/r'), '123456789/r');
       expect(normalizeIdentifierInput(r'123456789\r'), r'123456789\r');
     });
+    test('strips zero-width space and BOM alongside bidi controls', () {
+      expect(
+          normalizeIdentifierInput(
+              '\u200B107\uFEFF 292\u200B 347\uFEFF'),
+          '107292347');
+    });
     test('passes hostnames and ip:port through untouched', () {
       expect(normalizeIdentifierInput('192.168.1.5:21118'), '192.168.1.5:21118');
       expect(normalizeIdentifierInput('my-host.local'), 'my-host.local');
