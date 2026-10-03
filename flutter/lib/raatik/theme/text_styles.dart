@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 /// Latin-digit faces. An explicit [TextStyle.fontFamily] overrides the
@@ -58,16 +56,22 @@ class RaatikTextStyles {
       );
 
   static TextStyle titleLg(BuildContext context) => _base(context).copyWith(
-      fontSize: 18, fontWeight: FontWeight.w700, height: 1.4, color: _strong(context));
+      fontSize: 18,
+      fontWeight: FontWeight.w700,
+      height: 1.4,
+      color: _strong(context));
 
   static TextStyle titleMd(BuildContext context) => _base(context).copyWith(
-      fontSize: 16, fontWeight: FontWeight.w600, height: 1.4, color: _strong(context));
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      height: 1.4,
+      color: _strong(context));
 
-  static TextStyle body(BuildContext context) =>
-      _base(context).copyWith(fontSize: 14, fontWeight: FontWeight.w400, height: 1.6);
+  static TextStyle body(BuildContext context) => _base(context)
+      .copyWith(fontSize: 14, fontWeight: FontWeight.w400, height: 1.6);
 
-  static TextStyle label(BuildContext context) =>
-      _base(context).copyWith(fontSize: 13, fontWeight: FontWeight.w500, height: 1.4);
+  static TextStyle label(BuildContext context) => _base(context)
+      .copyWith(fontSize: 13, fontWeight: FontWeight.w500, height: 1.4);
 
   static TextStyle caption(BuildContext context) => _base(context).copyWith(
       fontSize: 12,

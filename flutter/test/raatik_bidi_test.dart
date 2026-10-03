@@ -7,6 +7,7 @@ import 'package:flutter_hbb/preview_main.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
+import 'package:flutter_hbb/raatik/theme/text_styles.dart';
 
 void main() {
   test('formatID keeps logical groups', () {
@@ -94,7 +95,7 @@ void main() {
     expect(find.text(expectedId), findsWidgets);
 
     final idWidget = tester.widget<Text>(find.text(expectedId).first);
-    expect(idWidget.style?.fontFamily, isNot('IRANSansXFaNum'));
+    expect(idWidget.style?.fontFamily, kRaatikIdentifierFontFamily);
 
     // Credential value Text must sit under an LTR Directionality ancestor.
     final idText = find.text(expectedId).first;
