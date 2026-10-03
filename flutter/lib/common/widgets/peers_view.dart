@@ -17,6 +17,7 @@ import '../../common.dart';
 import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
 import 'peer_card.dart';
+import 'package:flutter_hbb/raatik/text/digits.dart';
 
 typedef PeerFilter = bool Function(Peer peer);
 typedef PeerCardBuilder = Widget Function(Peer peer);
@@ -392,7 +393,7 @@ class _PeersViewState extends State<_PeersView>
       }
     }
 
-    searchText = searchText.trim();
+    searchText = normalizeDigits(searchText).trim();
     if (searchText.isEmpty) {
       return peers;
     }

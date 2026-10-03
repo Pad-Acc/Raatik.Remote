@@ -8,6 +8,7 @@ import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/peer_card.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
+import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
 
 @visibleForTesting
 List<Peer> mergeAutocompletePeers({
@@ -379,9 +380,9 @@ class AutocompletePeerTileState extends State<AutocompletePeerTile> {
                                                                 const EdgeInsetsDirectional
                                                                     .symmetric(
                                                                     horizontal: 5),
-                                                            child: Text(
-                                                              ltrIsolate(
-                                                                  "(${widget.peer.id})"),
+                                                            child:
+                                                                RaatikIdentifierText(
+                                                              widget.peer.id,
                                                               style: greyStyle,
                                                               overflow:
                                                                   TextOverflow

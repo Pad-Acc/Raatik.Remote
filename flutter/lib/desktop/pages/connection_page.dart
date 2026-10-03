@@ -16,7 +16,10 @@ import '../../common/widgets/peer_tab_page.dart';
 import '../../common/widgets/autocomplete.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
-import '../../raatik/bidi/ltr_isolate.dart';
+import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
+import 'package:flutter_hbb/raatik/text/digits.dart';
+import 'package:flutter_hbb/raatik/theme/text_styles.dart';
+import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {
@@ -240,14 +243,16 @@ class _ConnectionPageState extends State<ConnectionPage>
                       _autocompleteOpts = [emptyPeer];
                     } else {
                       String textWithoutSpaces =
-                          textEditingValue.text.replaceAll(" ", "");
+                          normalizeDigits(textEditingValue.text)
+                              .replaceAll(" ", "");
                       if (int.tryParse(textWithoutSpaces) != null) {
                         textEditingValue = TextEditingValue(
                           text: textWithoutSpaces,
                           selection: textEditingValue.selection,
                         );
                       }
-                      String textToFind = textEditingValue.text.toLowerCase();
+                      String textToFind =
+                          normalizeDigits(textEditingValue.text).toLowerCase();
                       _autocompleteOpts = _allPeersLoader.peers
                           .where((peer) =>
                               peer.id.toLowerCase().contains(textToFind) ||
@@ -273,36 +278,26 @@ class _ConnectionPageState extends State<ConnectionPage>
                   ) {
                     updateTextAndPreserveSelection(
                         fieldTextEditingController, _idController.text);
-                    return Obx(() => ltrTextDirection(
-                          child: TextField(
-                            autocorrect: false,
-                            enableSuggestions: false,
-                            keyboardType: TextInputType.visiblePassword,
-                            focusNode: fieldFocusNode,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              height: 1.4,
-                            ),
-                            maxLines: 1,
-                            cursorColor:
-                                Theme.of(context).textTheme.titleLarge?.color,
-                            decoration: InputDecoration(
-                                filled: false,
-                                counterText: '',
-                                hintText: _idInputFocused.value
-                                    ? null
-                                    : translate('Enter Remote ID'),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 15, vertical: 13)),
-                            controller: fieldTextEditingController,
-                            inputFormatters: [IDTextInputFormatter()],
-                            onChanged: (v) {
-                              _idController.id = v;
-                            },
-                            onSubmitted: (_) {
-                              onConnect();
-                            },
-                          ).workaroundFreezeLinuxMint(),
+                    return Obx(() => RaatikIdentifierField(
+                          controller: fieldTextEditingController,
+                          focusNode: fieldFocusNode,
+                          style: RaatikTextStyles.displayId(context),
+                          hintText: _idInputFocused.value
+                              ? null
+                              : translate('Enter Remote ID'),
+                          inputFormatters: [IDTextInputFormatter()],
+                          decoration: const InputDecoration(
+                            filled: false,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: RaatikTokens.space4,
+                                vertical: RaatikTokens.space3),
+                          ),
+                          onChanged: (v) {
+                            _idController.id = v;
+                          },
+                          onSubmitted: (_) {
+                            onConnect();
+                          },
                         ));
                   },
                   onSelected: (option) {

@@ -16,6 +16,7 @@ import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../desktop/widgets/popup_menu.dart';
 import '../../raatik/bidi/ltr_isolate.dart';
 import '../../raatik/flags.dart';
+import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
 import 'dart:math' as math;
 
 typedef PopupMenuEntryBuilder = Future<List<mod_menu.PopupMenuEntry<String>>>
@@ -189,13 +190,19 @@ class _PeerCardState extends State<_PeerCard>
                       Row(children: [
                         getOnline(isPortrait ? 4 : 8, peer.online),
                         Expanded(
-                            child: Text(
-                          peer.alias.isEmpty
-                              ? formatIDForDisplay(peer.id)
-                              : peer.alias,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        )),
+                            child: peer.alias.isEmpty
+                                ? RaatikIdentifierText(
+                                    peer.id,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
+                                  )
+                                : Text(
+                                    peer.alias,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
+                                  )),
                       ]).marginOnly(top: isPortrait ? 0 : 2),
                       Row(
                         children: [
@@ -378,13 +385,19 @@ class _PeerCardState extends State<_PeerCard>
                           child: Row(children: [
                         getOnline(8, peer.online),
                         Expanded(
-                            child: Text(
-                          peer.alias.isEmpty
-                              ? formatIDForDisplay(peer.id)
-                              : peer.alias,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        )),
+                            child: peer.alias.isEmpty
+                                ? RaatikIdentifierText(
+                                    peer.id,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
+                                  )
+                                : Text(
+                                    peer.alias,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
+                                  )),
                       ]).paddingSymmetric(vertical: 8)),
                       checkBoxOrActionMoreLandscape(peer, isTile: false),
                     ],

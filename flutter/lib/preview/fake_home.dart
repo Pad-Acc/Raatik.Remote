@@ -184,10 +184,11 @@ class _FakeConnectPanel extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: isFa ? 'شناسه مقصد' : 'Remote ID',
-                    ),
+                  child: RaatikIdentifierField(
+                    controller: TextEditingController(),
+                    style: RaatikTextStyles.displayId(context),
+                    hintText: isFa ? 'شناسه مقصد' : 'Remote ID',
+                    inputFormatters: [IDTextInputFormatter()],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -216,15 +217,15 @@ class _FakeConnectPanel extends StatelessWidget {
               padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
               children: [
                 _PeerTile(
-                  id: formatIDForDisplay('123456789'),
+                  id: '123456789',
                   label: isFa ? 'دفتر مرکزی' : 'Head office',
                 ),
                 _PeerTile(
-                  id: formatIDForDisplay('987654321'),
+                  id: '987654321',
                   label: isFa ? 'لپ‌تاپ پشتیبانی' : 'Support laptop',
                 ),
                 _PeerTile(
-                  id: formatIDForDisplay('551122334'),
+                  id: '551122334',
                   label: isFa ? 'سیستم مشتری' : 'Customer PC',
                 ),
               ],
@@ -332,7 +333,7 @@ class _PeerTile extends StatelessWidget {
               children: [
                 Text(label,
                     style: const TextStyle(fontWeight: FontWeight.w500)),
-                Text(id, style: const TextStyle(fontSize: 12)),
+                RaatikIdentifierText(id, style: const TextStyle(fontSize: 12)),
               ],
             ),
           ),
