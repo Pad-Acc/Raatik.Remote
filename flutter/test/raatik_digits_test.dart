@@ -1,4 +1,4 @@
-﻿import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
