@@ -72,8 +72,8 @@ Future<void> _pumpHome(
 
 void main() {
   group('RaatikHomeLayout viewport', () {
-    testWidgets('800x600 uses compact stacked layout', (tester) async {
-      await _pumpHome(tester, 800, 600);
+    testWidgets('600x600 uses compact stacked layout', (tester) async {
+      await _pumpHome(tester, 600, 600);
 
       expect(_isCompactLayout(tester), isTrue);
       expect(_isTwoColumnLayout(tester), isFalse);
@@ -114,8 +114,8 @@ void main() {
       expect(receive.width, closeTo(layout.width - 32, 1));
     });
 
-    testWidgets('omits connect panel in compact layout at 800', (tester) async {
-      await _pumpHome(tester, 800, 600, showConnectPanel: false);
+    testWidgets('omits connect panel in compact layout at 600', (tester) async {
+      await _pumpHome(tester, 600, 600, showConnectPanel: false);
 
       expect(find.byKey(_connectKey), findsNothing);
       expect(_isCompactLayout(tester), isFalse);

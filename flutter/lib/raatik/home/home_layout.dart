@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/tokens.dart';
 
 class RaatikHomeLayout extends StatelessWidget {
   const RaatikHomeLayout({
@@ -19,7 +20,7 @@ class RaatikHomeLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 900;
+          final compact = constraints.maxWidth < RaatikTokens.compactMax;
           final Widget panels;
           if (!showConnectPanel) {
             panels = receivePanel;

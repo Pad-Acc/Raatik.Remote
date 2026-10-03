@@ -38,7 +38,7 @@ class RaatikSettingsShell<T> extends StatelessWidget {
   final String title;
   final Widget? leading;
 
-  static const compactBreakpoint = 900.0;
+  static const compactBreakpoint = RaatikTokens.compactMax;
   static const sidebarWidth = 232.0;
   static const compactHeaderHeight = 56.0;
 

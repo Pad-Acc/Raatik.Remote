@@ -73,10 +73,10 @@ Future<void> _pumpShell(
 
 void main() {
   group('RaatikSettingsShell layout', () {
-    testWidgets('800px uses compact dropdown header', (tester) async {
+    testWidgets('600px uses compact dropdown header', (tester) async {
       await _pumpShell(
         tester,
-        800,
+        600,
         600,
         selected: _TestKey.general,
         onSelected: (_) {},
@@ -109,7 +109,7 @@ void main() {
       _TestKey? picked;
       await _pumpShell(
         tester,
-        800,
+        600,
         600,
         selected: _TestKey.general,
         onSelected: (key) => picked = key,
