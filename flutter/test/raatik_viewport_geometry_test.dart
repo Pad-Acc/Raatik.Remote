@@ -177,6 +177,109 @@ void main() {
     );
   });
 
+  test('scrollbar image scroll is not applied a second time', () {
+    const remote = Size(400, 800);
+    const local = Offset(10, 130);
+    const scrollY = 120 / 800;
+    final point = remotePointFromScrollbarImage(
+      localPosition: local,
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      scrollX: 0,
+      scrollY: scrollY,
+    );
+    _expectRemote(point, local);
+    expect(point!.dy, isNot(closeTo(local.dy + remote.height * scrollY, 1e-6)));
+    expect(
+      remotePointFromScrollbarImage(
+        localPosition: const Offset(-1, 10),
+        scale: 1,
+        remoteOrigin: Offset.zero,
+        remoteSize: remote,
+        scrollX: 0.25,
+        scrollY: scrollY,
+      ),
+      isNull,
+    );
+    expect(
+      remotePointFromScrollbarImage(
+        localPosition: const Offset(10, 801),
+        scale: 1,
+        remoteOrigin: Offset.zero,
+        remoteSize: remote,
+        scrollX: 0,
+        scrollY: scrollY,
+      ),
+      isNull,
+    );
+  });
+
+  test('measured move retargets another window without toolbar inset', () {
+    const others = [
+      MeasuredWindowSpan(
+        relativeOffset: Offset(800, 0),
+        size: Size(800, 600),
+      ),
+    ];
+    final hit = retargetMeasuredPointer(
+      isMove: true,
+      x: 900,
+      y: 40,
+      currentWindow: const Size(800, 600),
+      others: others,
+      devicePixelRatio: 1,
+      windowsPhysicalOffsets: false,
+    );
+    expect(hit, isNotNull);
+    expect(hit!.index, 0);
+    expect(hit.x, closeTo(100, 1e-9));
+    expect(hit.y, closeTo(40, 1e-9));
+
+    expect(
+      retargetMeasuredPointer(
+        isMove: true,
+        x: 100,
+        y: 40,
+        currentWindow: const Size(800, 600),
+        others: others,
+        devicePixelRatio: 1,
+        windowsPhysicalOffsets: false,
+      ),
+      isNull,
+    );
+    expect(
+      retargetMeasuredPointer(
+        isMove: false,
+        x: 900,
+        y: 40,
+        currentWindow: const Size(800, 600),
+        others: others,
+        devicePixelRatio: 1,
+        windowsPhysicalOffsets: false,
+      ),
+      isNull,
+    );
+
+    final windows = retargetMeasuredPointer(
+      isMove: true,
+      x: 900,
+      y: 40,
+      currentWindow: const Size(800, 600),
+      others: const [
+        MeasuredWindowSpan(
+          relativeOffset: Offset(1600, 0),
+          size: Size(1600, 1200),
+        ),
+      ],
+      devicePixelRatio: 2,
+      windowsPhysicalOffsets: true,
+    );
+    expect(windows, isNotNull);
+    expect(windows!.x, closeTo(100, 1e-9));
+    expect(windows.y, closeTo(40, 1e-9));
+  });
+
   test('measurement apply order ignores unusable sizes', () async {
     final log = <String>[];
     Future<void> apply(Size size) {

@@ -139,6 +139,89 @@ void main() {
       expect(closeBox.right, greaterThan(moreBox.right));
     });
 
+    testWidgets('side dock stays inside the 48px strip', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(48, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildRaatikLightTheme(),
+          home: Scaffold(
+            body: SizedBox(
+              width: RaatikRemoteToolbarBar.barHeight,
+              height: 720,
+              child: RaatikRemoteToolbarBar(
+                width: 720,
+                edge: RaatikToolbarEdge.left,
+                brandLabel: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('RaatikDesk'),
+                    SizedBox(width: 6),
+                    Text('peer-with-a-long-name'),
+                  ],
+                ),
+                primaryItems: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(64, 32),
+                    ),
+                    onPressed: () {},
+                    child: const Text('Menu'),
+                  ),
+                  for (var i = 0; i < 12; i++)
+                    SizedBox(
+                      key: Key('side-action-$i'),
+                      width: 64,
+                      height: 32,
+                      child: const ColoredBox(color: Color(0x33FFFFFF)),
+                    ),
+                ],
+                moreMenu: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.more_horiz, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text('More'),
+                  ],
+                ),
+                closeMenu: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.close, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text('Disconnect'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+
+      final bar = tester.getRect(find.byType(RaatikRemoteToolbarBar));
+      expect(bar.width, lessThanOrEqualTo(RaatikRemoteToolbarBar.barHeight + 0.01));
+      final scroll = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(scroll.scrollDirection, Axis.vertical);
+
+      void visit(RenderObject object) {
+        if (object is RenderBox && object.hasSize && object.attached) {
+          final paint = MatrixUtils.transformRect(
+            object.getTransformTo(null),
+            Offset.zero & object.size,
+          );
+          expect(paint.left, greaterThanOrEqualTo(bar.left - 0.5));
+          expect(paint.right, lessThanOrEqualTo(bar.right + 0.5));
+        }
+        object.visitChildren(visit);
+      }
+
+      visit(tester.renderObject(find.byType(RaatikRemoteToolbarBar)));
+    });
+
     testWidgets('900px shows RaatikDesk brand label', (tester) async {
       await _pumpToolbar(tester, 900);
 

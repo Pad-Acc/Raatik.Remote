@@ -109,6 +109,94 @@ Offset? remotePointFromViewport({
   return remoteOrigin + (localPosition - imageOffset) / scale;
 }
 
+/// Scrollbar overflow listens on the image, so [localPosition] is already
+/// content space. [scrollX] and [scrollY] are not added again. A point outside
+/// the image returns null.
+Offset? remotePointFromScrollbarImage({
+  required Offset localPosition,
+  required double scale,
+  required Offset remoteOrigin,
+  required Size remoteSize,
+  double scrollX = 0,
+  double scrollY = 0,
+}) {
+  if (!scrollX.isFinite || !scrollY.isFinite) return null;
+  return remotePointFromViewport(
+    localPosition: localPosition,
+    imageOffset: Offset.zero,
+    scale: scale,
+    remoteOrigin: remoteOrigin,
+    remoteSize: remoteSize,
+  );
+}
+
+/// Another remote window, in the same coordinate space as the pointer probe.
+class MeasuredWindowSpan {
+  const MeasuredWindowSpan({
+    required this.relativeOffset,
+    required this.size,
+  });
+
+  final Offset relativeOffset;
+  final Size size;
+}
+
+/// Pointer moved from the current window into [index] without toolbar inset.
+class MeasuredPointerRetarget {
+  const MeasuredPointerRetarget({
+    required this.x,
+    required this.y,
+    required this.index,
+  });
+
+  final double x;
+  final double y;
+  final int index;
+}
+
+/// Retarget a captured move that has left the current window.
+/// Coordinates stay in the caller's space. Toolbar chrome is not subtracted.
+MeasuredPointerRetarget? retargetMeasuredPointer({
+  required bool isMove,
+  required double x,
+  required double y,
+  required Size currentWindow,
+  required List<MeasuredWindowSpan> others,
+  required double devicePixelRatio,
+  required bool windowsPhysicalOffsets,
+}) {
+  if (!isMove || others.isEmpty) return null;
+  if (!x.isFinite || !y.isFinite) return null;
+  if (x >= 0 &&
+      y >= 0 &&
+      x <= currentWindow.width &&
+      y <= currentWindow.height) {
+    return null;
+  }
+  final scalePhysical = windowsPhysicalOffsets &&
+      devicePixelRatio.isFinite &&
+      devicePixelRatio > 0;
+  final scale = scalePhysical ? devicePixelRatio : 1.0;
+  final px = scalePhysical ? x * scale : x;
+  final py = scalePhysical ? y * scale : y;
+  for (var i = 0; i < others.length; i++) {
+    final window = others[i];
+    final right = window.relativeOffset.dx + window.size.width;
+    final bottom = window.relativeOffset.dy + window.size.height;
+    if (px >= window.relativeOffset.dx &&
+        py >= window.relativeOffset.dy &&
+        px <= right &&
+        py <= bottom) {
+      return MeasuredPointerRetarget(
+        x: x - window.relativeOffset.dx / scale,
+        y: y - window.relativeOffset.dy / scale,
+        index: i,
+      );
+    }
+  }
+  return null;
+}
+
 /// Applies one changed measurement. Unusable sizes are ignored.
 /// Call order is image size, viewport size, view style, then one refresh.
 Future<void> applyMeasuredViewportSize({

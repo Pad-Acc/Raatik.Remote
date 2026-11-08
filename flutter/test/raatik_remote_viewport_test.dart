@@ -151,6 +151,7 @@ Future<void> _pump(
   String viewStyle = 'adaptive',
   double customScale = 1,
   Offset remoteOrigin = Offset.zero,
+  Widget toolbar = const SizedBox.expand(),
 }) async {
   tester.view.devicePixelRatio = devicePixelRatio;
   tester.view.physicalSize = Size(
@@ -175,7 +176,7 @@ Future<void> _pump(
             toolbarShown: toolbarShown,
             fullscreen: fullscreen,
             relativeMouse: relativeMouse,
-            toolbar: const SizedBox.expand(),
+            toolbar: toolbar,
             image: _ImageProbe(
               spy: spy,
               remoteSize: _remote,
@@ -380,6 +381,97 @@ void main() {
     await tester.pump();
     expect(custom.absolute.single.dx, closeTo(800, 1));
     expect(custom.absolute.single.dy, closeTo(372, 1));
+  });
+
+  testWidgets('scrolled scrollbar image maps the content point', (tester) async {
+    const remote = Size(400, 800);
+    final points = <Offset?>[];
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 400,
+          height: 300,
+          child: SingleChildScrollView(
+            controller: controller,
+            child: GestureDetector(
+              onTapDown: (details) {
+                final metrics = controller.position;
+                final total = metrics.extentBefore +
+                    metrics.extentInside +
+                    metrics.extentAfter;
+                final scrollY = total == 0 ? 0.0 : metrics.extentBefore / total;
+                points.add(
+                  remotePointFromScrollbarImage(
+                    localPosition: details.localPosition,
+                    scale: 1,
+                    remoteOrigin: Offset.zero,
+                    remoteSize: remote,
+                    scrollX: 0,
+                    scrollY: scrollY,
+                  ),
+                );
+              },
+              child: const ColoredBox(
+                color: Color(0xFF0284C7),
+                child: SizedBox(width: 400, height: 800),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    controller.jumpTo(120);
+    await tester.pump();
+    final viewportTopLeft = tester.getTopLeft(find.byType(SingleChildScrollView));
+    await tester.tapAt(viewportTopLeft + const Offset(10, 10));
+    await tester.pump();
+
+    expect(points, hasLength(1));
+    final scrollY = controller.offset / remote.height;
+    _expectNear(points.single!, Offset(10, 10 + controller.offset));
+    expect(
+      points.single!.dy,
+      isNot(closeTo(10 + controller.offset + remote.height * scrollY, 0.5)),
+    );
+  });
+
+  testWidgets('hidden toolbar slot can show the bar again', (tester) async {
+    final spy = _InputSpy();
+    var shown = false;
+    await _pump(
+      tester,
+      spy: spy,
+      window: _window,
+      toolbarShown: false,
+      toolbar: TextButton(
+        key: const Key('raatik-toolbar-show'),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(20, 20),
+          padding: EdgeInsets.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: () => shown = true,
+        child: const Text('Show'),
+      ),
+    );
+    final viewport = tester.getSize(
+      find.byKey(RaatikRemoteViewportLayout.imageViewportKey),
+    );
+    expect(
+      viewport.height,
+      closeTo(720 - RaatikRemoteToolbarBar.collapseExtent, 0.01),
+    );
+    expect(viewport.height, isNot(closeTo(720 - RaatikRemoteToolbarBar.barHeight, 0.01)));
+    final slot = find.byKey(RaatikRemoteViewportLayout.collapseSlotKey);
+    expect(
+      find.descendant(of: slot, matching: find.byKey(const Key('raatik-toolbar-show'))),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('raatik-toolbar-show')));
+    await tester.pump();
+    expect(shown, isTrue);
   });
 
   testWidgets('relative mode and wheel skip absolute mapping', (tester) async {

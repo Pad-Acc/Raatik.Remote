@@ -1937,23 +1937,35 @@ class InputModel {
         CanvasCoords.fromCanvasModel(parent.target!.canvasModel);
     Rect? rect = ffiModel.rect;
 
-    if (isMove && !viewportLocal) {
-      if (_remoteWindowCoords.isNotEmpty &&
-          _windowRect != null &&
-          !_isInCurrentWindow(x, y)) {
-        final coords =
-            findRemoteCoords(x, y, _remoteWindowCoords, devicePixelRatio);
-        if (coords != null) {
-          isMove = false;
-          canvas = coords.canvas;
-          rect = coords.remoteRect;
-          x -= isWindows
-              ? coords.relativeOffset.dx / devicePixelRatio
-              : coords.relativeOffset.dx;
-          y -= isWindows
-              ? coords.relativeOffset.dy / devicePixelRatio
-              : coords.relativeOffset.dy;
-        }
+    if (isMove && _remoteWindowCoords.isNotEmpty && _windowRect != null) {
+      final windowWidth = isWindows
+          ? _windowRect!.width / devicePixelRatio
+          : _windowRect!.width;
+      final windowHeight = isWindows
+          ? _windowRect!.height / devicePixelRatio
+          : _windowRect!.height;
+      final retarget = retargetMeasuredPointer(
+        isMove: true,
+        x: x,
+        y: y,
+        currentWindow: Size(windowWidth, windowHeight),
+        others: [
+          for (final coords in _remoteWindowCoords)
+            MeasuredWindowSpan(
+              relativeOffset: coords.relativeOffset,
+              size: coords.windowRect.size,
+            ),
+        ],
+        devicePixelRatio: devicePixelRatio,
+        windowsPhysicalOffsets: isWindows,
+      );
+      if (retarget != null) {
+        isMove = false;
+        final coords = _remoteWindowCoords[retarget.index];
+        canvas = coords.canvas;
+        rect = coords.remoteRect;
+        x = retarget.x;
+        y = retarget.y;
       }
     }
 
@@ -1967,6 +1979,32 @@ class InputModel {
         scale: canvas.scale,
         remoteOrigin: rect.topLeft,
         remoteSize: rect.size,
+      );
+      if (mapped == null) return null;
+      if (isMove) {
+        final canvasModel = parent.target!.canvasModel;
+        if (edgeScroll) {
+          canvasModel.edgeScrollMouse(x, y);
+        } else if (moveCanvas) {
+          canvasModel.moveDesktopMouse(x, y);
+        }
+        canvasModel.updateLocalCursor(x, y);
+      }
+      return InputModel.getPointInRemoteRect(
+          true, peerPlatform, kind, evtType, mapped.dx, mapped.dy, rect,
+          buttons: buttons);
+    } else if (viewportLocal &&
+        rect != null &&
+        canvas.scrollStyle == ScrollStyle.scrollbar &&
+        (canvas.x < 0 || canvas.y < 0)) {
+      // The overflow listener is the image, so localPosition is content space.
+      final mapped = remotePointFromScrollbarImage(
+        localPosition: Offset(x, y),
+        scale: canvas.scale,
+        remoteOrigin: rect.topLeft,
+        remoteSize: rect.size,
+        scrollX: canvas.scrollX,
+        scrollY: canvas.scrollY,
       );
       if (mapped == null) return null;
       if (isMove) {
@@ -2005,16 +2043,6 @@ class InputModel {
       onExit: onExit,
       buttons: buttons,
     );
-  }
-
-  bool _isInCurrentWindow(double x, double y) {
-    var w = _windowRect!.width;
-    var h = _windowRect!.height;
-    if (isWindows) {
-      w /= devicePixelRatio;
-      h /= devicePixelRatio;
-    }
-    return x >= 0 && y >= 0 && x <= w && y <= h;
   }
 
   static RemoteWindowCoords? findRemoteCoords(double x, double y,

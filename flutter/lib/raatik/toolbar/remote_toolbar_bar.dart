@@ -30,19 +30,19 @@ EdgeInsets raatikToolbarImageInset({
   }
 }
 
-/// Collapse control hitbox shown when the bar itself is hidden.
+/// Hosts the show/hide control in the reserved collapse band.
 class RaatikToolbarCollapseTarget extends StatelessWidget {
-  const RaatikToolbarCollapseTarget({super.key});
+  const RaatikToolbarCollapseTarget({super.key, required this.child});
+
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return const SizedBox.expand();
-  }
+  Widget build(BuildContext context) => child;
 }
 
 /// Keeps the toolbar band outside the image [LayoutBuilder].
 /// [previewEdge] is the in-drag ghost and does not change the inset.
-class RaatikRemoteViewportLayout extends StatelessWidget {
+class RaatikRemoteViewportLayout extends StatefulWidget {
   const RaatikRemoteViewportLayout({
     super.key,
     required this.edge,
@@ -67,49 +67,56 @@ class RaatikRemoteViewportLayout extends StatelessWidget {
   final Widget toolbar;
 
   @override
+  State<RaatikRemoteViewportLayout> createState() =>
+      _RaatikRemoteViewportLayoutState();
+}
+
+class _RaatikRemoteViewportLayoutState
+    extends State<RaatikRemoteViewportLayout> {
+  final _toolbarKey = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
+    final edge = widget.edge;
+    final previewEdge = widget.previewEdge;
     assert(
       previewEdge == null || true,
       'Drag preview $previewEdge does not resize the image; committed edge is $edge.',
     );
     final padding = raatikToolbarImageInset(
       edge: edge,
-      toolbarShown: toolbarShown,
-      fullscreen: fullscreen,
-      relativeMouse: relativeMouse,
+      toolbarShown: widget.toolbarShown,
+      fullscreen: widget.fullscreen,
+      relativeMouse: widget.relativeMouse,
     );
-    final reserve = !fullscreen && !relativeMouse;
-    final showCollapse = reserve && !toolbarShown;
+    final reserve = !widget.fullscreen && !widget.relativeMouse;
+    final showCollapse = reserve && !widget.toolbarShown;
+    final toolbar = KeyedSubtree(key: _toolbarKey, child: widget.toolbar);
     return Stack(
       fit: StackFit.expand,
       children: [
         Padding(
           padding: padding,
           child: KeyedSubtree(
-            key: imageViewportKey,
-            child: image,
+            key: RaatikRemoteViewportLayout.imageViewportKey,
+            child: widget.image,
           ),
         ),
-        if (!relativeMouse)
-          Positioned.fill(
-            child: Offstage(
-              offstage: showCollapse,
-              child: toolbar,
-            ),
-          ),
-        if (!relativeMouse && !showCollapse)
+        if (!widget.relativeMouse && !showCollapse)
+          Positioned.fill(child: toolbar),
+        if (!widget.relativeMouse && !showCollapse)
           _band(
-            key: toolbarSlotKey,
+            key: RaatikRemoteViewportLayout.toolbarSlotKey,
             edge: edge,
             extent: RaatikRemoteToolbarBar.barHeight,
             child: const IgnorePointer(child: SizedBox.expand()),
           ),
         if (showCollapse)
           _band(
-            key: collapseSlotKey,
+            key: RaatikRemoteViewportLayout.collapseSlotKey,
             edge: edge,
             extent: RaatikRemoteToolbarBar.collapseExtent,
-            child: const RaatikToolbarCollapseTarget(),
+            child: RaatikToolbarCollapseTarget(child: toolbar),
           ),
       ],
     );
@@ -192,10 +199,23 @@ class RaatikRemoteToolbarBar extends StatelessWidget {
   final double elevation;
 
   bool get _showBrand =>
+      !_vertical &&
       raatikWindowClassFor(width) != RaatikWindowClass.compact;
 
   bool get _vertical =>
       edge == RaatikToolbarEdge.left || edge == RaatikToolbarEdge.right;
+
+  Widget _fitCrossAxis(Widget child) {
+    if (!_vertical) return child;
+    return SizedBox(
+      width: barHeight,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,15 +223,17 @@ class RaatikRemoteToolbarBar extends StatelessWidget {
     return Material(
       elevation: elevation,
       color: barColor,
+      clipBehavior: _vertical ? Clip.hardEdge : Clip.none,
       child: SizedBox(
         width: _vertical ? barHeight : double.infinity,
         height: _vertical ? double.infinity : barHeight,
         child: Flex(
           direction: axis,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(width: _vertical ? 0 : 8, height: _vertical ? 8 : 0),
             if (_showBrand) ...[
-              brandLabel,
+              _fitCrossAxis(brandLabel),
               SizedBox(width: _vertical ? 0 : 8, height: _vertical ? 8 : 0),
             ],
             Expanded(
@@ -220,12 +242,15 @@ class RaatikRemoteToolbarBar extends StatelessWidget {
                 child: Flex(
                   direction: axis,
                   mainAxisSize: MainAxisSize.min,
-                  children: primaryItems,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    for (final item in primaryItems) _fitCrossAxis(item),
+                  ],
                 ),
               ),
             ),
-            moreMenu,
-            closeMenu,
+            _fitCrossAxis(moreMenu),
+            _fitCrossAxis(closeMenu),
             SizedBox(width: _vertical ? 0 : 8, height: _vertical ? 8 : 0),
           ],
         ),

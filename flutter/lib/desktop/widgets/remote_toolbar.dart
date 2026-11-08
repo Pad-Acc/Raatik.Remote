@@ -730,12 +730,18 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
           !_dockingOptionsInitialized.value) {
         return const SizedBox.shrink();
       }
-      // If toolbar is hidden, return empty widget
-      if (hide.value) {
-        return const SizedBox.shrink();
-      }
       // Committed edge only. Drag preview must not move this bar or the image inset.
       final edge = _edge.value;
+      if (hide.value || collapse.value) {
+        return Align(
+          alignment: _alignmentForEdge(edge, _fraction.value),
+          child: _buildDraggableCollapse(
+            context,
+            edge,
+            _isHorizontalEdge(edge),
+          ),
+        );
+      }
       return Align(
         alignment: _alignmentForEdge(edge, 0.5),
         child: KeyedSubtree(
@@ -858,7 +864,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Theme(
-          data: themeData(),
+          data: themeData(vertical: !isHorizontal),
           child: RaatikRemoteToolbarBar(
             width: _isHorizontalEdge(edge)
                 ? constraints.maxWidth
@@ -866,8 +872,16 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
             edge: _publicToolbarEdge(edge),
             brandLabel: _buildBrandLabel(),
             primaryItems: primaryItems,
-            moreMenu: _MoreMenu(id: widget.id, ffi: widget.ffi),
-            closeMenu: _CloseMenu(id: widget.id, ffi: widget.ffi),
+            moreMenu: _MoreMenu(
+              id: widget.id,
+              ffi: widget.ffi,
+              iconOnly: !isHorizontal,
+            ),
+            closeMenu: _CloseMenu(
+              id: widget.id,
+              ffi: widget.ffi,
+              iconOnly: !isHorizontal,
+            ),
             barColor: _ToolbarTheme.barColor,
             elevation: _ToolbarTheme.elevation,
           ),
@@ -924,11 +938,13 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     return widget.id;
   }
 
-  ThemeData themeData() {
+  ThemeData themeData({bool vertical = false}) {
     return Theme.of(context).copyWith(
       menuButtonTheme: MenuButtonThemeData(
         style: ButtonStyle(
-          minimumSize: MaterialStatePropertyAll(Size(64, 32)),
+          minimumSize: MaterialStatePropertyAll(
+            vertical ? const Size(32, 32) : const Size(64, 32),
+          ),
           textStyle: MaterialStatePropertyAll(
             TextStyle(fontWeight: FontWeight.normal),
           ),
@@ -977,8 +993,13 @@ class _PinMenu extends StatelessWidget {
 class _MoreMenu extends StatelessWidget {
   final String id;
   final FFI ffi;
-  const _MoreMenu({Key? key, required this.id, required this.ffi})
-      : super(key: key);
+  final bool iconOnly;
+  const _MoreMenu({
+    Key? key,
+    required this.id,
+    required this.ffi,
+    this.iconOnly = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -1059,18 +1080,24 @@ class _MoreMenu extends StatelessWidget {
             color: _ToolbarTheme.chipColor,
             borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.more_horiz, color: Colors.white, size: 22),
-                  const SizedBox(width: 4),
-                  Text(
-                    translate('More'),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                ],
-              ),
+              padding: iconOnly
+                  ? const EdgeInsets.all(8)
+                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: iconOnly
+                  ? const Icon(Icons.more_horiz, color: Colors.white, size: 22)
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.more_horiz,
+                            color: Colors.white, size: 22),
+                        const SizedBox(width: 4),
+                        Text(
+                          translate('More'),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -2887,8 +2914,13 @@ class _RecordMenu extends StatelessWidget {
 class _CloseMenu extends StatelessWidget {
   final String id;
   final FFI ffi;
-  const _CloseMenu({Key? key, required this.id, required this.ffi})
-      : super(key: key);
+  final bool iconOnly;
+  const _CloseMenu({
+    Key? key,
+    required this.id,
+    required this.ffi,
+    this.iconOnly = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -2928,29 +2960,39 @@ class _CloseMenu extends StatelessWidget {
                             )
                           : null,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              'assets/close.svg',
-                              colorFilter: const ColorFilter.mode(
-                                  Colors.white, BlendMode.srcIn),
-                              width: 20,
-                              height: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              translate('Disconnect'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                        padding: iconOnly
+                            ? const EdgeInsets.all(8)
+                            : const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                        child: iconOnly
+                            ? SvgPicture.asset(
+                                'assets/close.svg',
+                                colorFilter: const ColorFilter.mode(
+                                    Colors.white, BlendMode.srcIn),
+                                width: 20,
+                                height: 20,
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/close.svg',
+                                    colorFilter: const ColorFilter.mode(
+                                        Colors.white, BlendMode.srcIn),
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    translate('Disconnect'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     );
                   },
@@ -3593,12 +3635,22 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
                 ),
               )),
         buttonWrapper(
-          () => setState(() {
-            widget.toolbarState.switchCollapse(widget.sessionId);
-          }),
+          () {
+            final state = widget.toolbarState;
+            final wasHidden = state.hide.value;
+            final wasCollapsed = state.collapse.value;
+            if (wasHidden) {
+              state.switchHide(widget.sessionId);
+            }
+            if (wasCollapsed || !wasHidden) {
+              state.switchCollapse(widget.sessionId);
+            }
+          },
           Obx((() => Tooltip(
                 message: translate(
-                    collapse.isFalse ? 'Hide Toolbar' : 'Show Toolbar'),
+                    collapse.isFalse && widget.toolbarState.hide.isFalse
+                        ? 'Hide Toolbar'
+                        : 'Show Toolbar'),
                 child: Icon(
                   _toolbarCollapseIcon(widget.edge.value, collapse.isTrue),
                   size: iconSize,
