@@ -512,17 +512,21 @@ void main() {
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
     expect(writes, ['21119']);
+    expect(
+      tester.widget<ElevatedButton>(find.byKey(saveKey)).onPressed,
+      isNull,
+    );
 
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
-    expect(writes, ['21119', '21119']);
+    expect(writes, ['21119']);
 
     gate.complete();
     await tester.pump();
 
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
-    expect(writes, ['21119', '21119']);
+    expect(writes, ['21119']);
     expect(tester.takeException(), isNull);
   });
 
@@ -532,6 +536,7 @@ void main() {
     var fail = true;
     const fieldKey = ValueKey('retry-explicit-field');
     const saveKey = ValueKey('retry-explicit-save');
+    const errorKey = ValueKey('retry-explicit-error');
     await _pump(
       tester,
       RaatikExplicitOption(
@@ -540,6 +545,7 @@ void main() {
         initialValue: '10',
         fieldKey: fieldKey,
         saveKey: saveKey,
+        errorKey: errorKey,
         onSave: (value) {
           writes.add(value);
           if (fail) {
@@ -556,19 +562,72 @@ void main() {
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
     expect(writes, ['12']);
+    expect(find.textContaining('write failed'), findsOneWidget);
+    final field = tester.getRect(find.byKey(fieldKey));
+    final error = tester.getRect(find.byKey(errorKey));
+    expect(error.top, greaterThanOrEqualTo(field.bottom - 1));
 
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
     expect(writes, ['12', '12']);
+    expect(find.textContaining('write failed'), findsOneWidget);
 
     fail = false;
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
     expect(writes, ['12', '12', '12']);
+    expect(find.byKey(errorKey), findsNothing);
 
     await tester.tap(find.byKey(saveKey));
     await tester.pump();
     expect(writes, ['12', '12', '12']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tab activates the immediate option from the keyboard once',
+      (tester) async {
+    final writes = <String>[];
+    await _pump(
+      tester,
+      Column(
+        children: [
+          const TextField(),
+          RaatikImmediateOption(
+            optionKey: 'enable-keyboard',
+            label: 'Enable keyboard/mouse',
+            value: false,
+            onChanged: (value) => writes.add('enable-keyboard:$value'),
+          ),
+        ],
+      ),
+      const Size(800, 400),
+      locale: const Locale('en'),
+    );
+
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+    final fieldFocus =
+        tester.widget<EditableText>(find.byType(EditableText)).focusNode;
+    expect(fieldFocus.hasFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(fieldFocus.hasFocus, isFalse);
+    final primary = FocusManager.instance.primaryFocus;
+    expect(primary, isNotNull);
+    expect(
+      primary!.context!.findAncestorWidgetOfExactType<Checkbox>(),
+      isNull,
+    );
+    expect(
+      primary.context!.findAncestorWidgetOfExactType<RaatikImmediateOption>(),
+      isNotNull,
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(writes, ['enable-keyboard:true']);
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 

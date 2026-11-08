@@ -7,6 +7,8 @@ import 'raatik_test_app.dart';
 
 enum _TestKey { general, safety, display, about }
 
+enum _WideOrder { plugin, account, printer, about }
+
 const _selectorKey = ValueKey('raatik-settings-section-selector');
 const _contentKey = ValueKey('raatik-settings-content');
 
@@ -329,6 +331,82 @@ void main() {
       final selector = tester.getRect(find.byKey(_selectorKey));
       expect(selector.right, closeTo(shell.right, 0.5));
       expect(selector.width, 200);
+    });
+
+    testWidgets(
+        'wide list with account stays plugin, account, printer, about',
+        (tester) async {
+      const destinations = [
+        RaatikSettingsDestination<_WideOrder>(
+          keyValue: _WideOrder.plugin,
+          label: 'Plugin',
+          group: 'For support',
+          icon: Icons.extension_outlined,
+        ),
+        RaatikSettingsDestination<_WideOrder>(
+          keyValue: _WideOrder.account,
+          label: 'Account',
+          group: 'Account',
+          icon: Icons.person_outline,
+        ),
+        RaatikSettingsDestination<_WideOrder>(
+          keyValue: _WideOrder.printer,
+          label: 'Printer',
+          group: 'For support',
+          icon: Icons.print_outlined,
+        ),
+        RaatikSettingsDestination<_WideOrder>(
+          keyValue: _WideOrder.about,
+          label: 'About',
+          group: 'About',
+          icon: Icons.info_outline,
+        ),
+      ];
+      const size = Size(1366, 768);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        testApp(
+          RaatikSettingsShell<_WideOrder>(
+            destinations: destinations,
+            selected: _WideOrder.plugin,
+            onSelected: (_) {},
+            content: const SizedBox.shrink(),
+          ),
+          size: size,
+          locale: const Locale('en'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final labels = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byKey(_selectorKey),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((text) => text.data)
+          .where(
+            (data) =>
+                data == 'Plugin' ||
+                data == 'Account' ||
+                data == 'Printer' ||
+                data == 'About',
+          )
+          .toList();
+      expect(labels.indexOf('Plugin'), greaterThanOrEqualTo(0));
+      expect(labels.indexOf('Account'), greaterThan(labels.indexOf('Plugin')));
+      expect(labels.indexOf('Printer'), greaterThan(labels.indexOf('Account')));
+      expect(labels.indexOf('About'), greaterThan(labels.indexOf('Printer')));
+
+      double top(_WideOrder key) =>
+          tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+      expect(top(_WideOrder.plugin), lessThan(top(_WideOrder.account)));
+      expect(top(_WideOrder.account), lessThan(top(_WideOrder.printer)));
+      expect(top(_WideOrder.printer), lessThan(top(_WideOrder.about)));
+      expect(tester.getSize(find.byKey(_selectorKey)).width, 200);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('content stays centered beside the wide list', (tester) async {

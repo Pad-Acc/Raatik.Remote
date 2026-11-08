@@ -515,9 +515,35 @@ class _SectionList<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final groups = <String>[];
+    final items = <Widget>[];
+    String? previousGroup;
     for (final destination in destinations) {
-      if (!groups.contains(destination.group)) groups.add(destination.group);
+      if (destination.group != previousGroup) {
+        previousGroup = destination.group;
+        if (destination.group.isNotEmpty) {
+          items.add(
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 4),
+              child: Text(
+                destination.group,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.6,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }
+      }
+      items.add(
+        _SectionButton<T>(
+          destination: destination,
+          selected: destination.keyValue == selected,
+          onTap: () => onSelected(destination.keyValue),
+        ),
+      );
     }
     return SizedBox(
       key: raatikSettingsSelectorKey,
@@ -549,35 +575,7 @@ class _SectionList<T> extends StatelessWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsetsDirectional.only(bottom: 12),
-              children: [
-                for (final group in groups) ...[
-                  if (group.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        12,
-                        12,
-                        4,
-                      ),
-                      child: Text(
-                        group,
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.6,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  for (final destination in destinations)
-                    if (destination.group == group)
-                      _SectionButton<T>(
-                        destination: destination,
-                        selected: destination.keyValue == selected,
-                        onTap: () => onSelected(destination.keyValue),
-                      ),
-                ],
-              ],
+              children: items,
             ),
           ),
         ],
@@ -697,11 +695,13 @@ class RaatikImmediateOption extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ExcludeSemantics(
-                  child: IgnorePointer(
-                    child: Checkbox(
-                      value: value,
-                      onChanged: enabled ? (_) {} : null,
+                ExcludeFocus(
+                  child: ExcludeSemantics(
+                    child: IgnorePointer(
+                      child: Checkbox(
+                        value: value,
+                        onChanged: enabled ? (_) {} : null,
+                      ),
                     ),
                   ),
                 ),
@@ -764,6 +764,11 @@ class RaatikImmediateOption extends StatelessWidget {
   }
 }
 
+String _explicitSaveFailure(Object error) {
+  final message = error.toString().trim();
+  return message.isEmpty ? 'Save failed' : message;
+}
+
 class RaatikExplicitOption extends StatefulWidget {
   const RaatikExplicitOption({
     super.key,
@@ -814,6 +819,8 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
   late final FocusNode _saveFocus;
   late String _baseline;
   String? _error;
+  bool _saving = false;
+  int _applyEpoch = 0;
 
   @override
   void initState() {
@@ -843,7 +850,7 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
   }
 
   Future<void> _commit() async {
-    if (!widget.enabled) return;
+    if (!widget.enabled || _saving) return;
     final value = _controller.text;
     final failure = widget.validator?.call(value);
     if (failure != null) {
@@ -854,14 +861,30 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
       setState(() => _error = null);
       return;
     }
-    setState(() => _error = null);
+    final epoch = ++_applyEpoch;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    Object? failureError;
     try {
       await widget.onSave(value);
-    } catch (_) {
+    } catch (error) {
+      failureError = error;
+    }
+    if (!mounted || epoch != _applyEpoch) return;
+    if (failureError != null) {
+      final message = _explicitSaveFailure(failureError);
+      setState(() {
+        _saving = false;
+        _error = message;
+      });
       return;
     }
-    if (!mounted) return;
-    setState(() => _baseline = value);
+    setState(() {
+      _saving = false;
+      _baseline = value;
+    });
   }
 
   @override
@@ -942,7 +965,9 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
             child: ElevatedButton(
               key: widget.saveKey,
               focusNode: _saveFocus,
-              onPressed: widget.enabled ? () => unawaited(_commit()) : null,
+              onPressed: widget.enabled && !_saving
+                  ? () => unawaited(_commit())
+                  : null,
               child: Text(widget.saveLabel),
             ),
           ),
