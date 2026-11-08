@@ -572,6 +572,7 @@ class _RemotePageState extends State<RemotePage>
       _ffi.inputModel.tryMoveEdgeOnExit(
         evt.localPosition,
         viewportLocal: true,
+        windowPosition: evt.position,
       );
     }
 

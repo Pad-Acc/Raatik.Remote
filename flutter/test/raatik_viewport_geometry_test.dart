@@ -273,41 +273,49 @@ void main() {
     );
   });
 
-  test('overflow image listener keeps content and edge-scrolls in viewport space',
-      () {
-    const remote = Size(400, 800);
-    const local = Offset(10, 130);
-    const canvas = Offset(0, -120);
-    final edge = mapMeasuredAbsolutePointer(
-      imageOverflow: true,
-      scrollStyle: 'scrolledge',
-      localPosition: local,
-      scale: 1,
-      remoteOrigin: Offset.zero,
-      remoteSize: remote,
-      canvasX: canvas.dx,
-      canvasY: canvas.dy,
-    );
-    _expectRemote(edge.remote, local);
-    expect(edge.viewportPosition, local + canvas);
-    expect(
-      edge.remote!.dy,
-      isNot(closeTo(local.dy + remote.height * (120 / 800), 1e-6)),
-    );
-
-    const shifted = Offset(-40, -120);
+  test('overflow image listener pans from the scroll position', () {
+    const origin = Offset(1920, 0);
+    const wideLocal = Offset(150, 20);
+    const wideViewport = Size(400, 300);
+    const wideImage = Size(800, 300);
     final bar = mapMeasuredAbsolutePointer(
       imageOverflow: true,
       scrollStyle: 'scrollbar',
-      localPosition: local,
+      localPosition: wideLocal,
       scale: 1,
-      remoteOrigin: const Offset(1920, 0),
-      remoteSize: remote,
-      canvasX: shifted.dx,
-      canvasY: shifted.dy,
+      remoteOrigin: origin,
+      remoteSize: wideImage,
+      canvasX: (wideViewport.width - wideImage.width) / 2,
+      canvasY: (wideViewport.height - wideImage.height) / 2,
+      viewportSize: wideViewport,
+      scrollX: 0.125,
+      scrollY: 0,
     );
-    _expectRemote(bar.remote, const Offset(1920, 0) + local);
-    expect(bar.viewportPosition, local + shifted);
+    _expectRemote(bar.remote, origin + wideLocal);
+    expect(bar.viewportPosition, const Offset(50, 20));
+    expect(bar.viewportPosition.dx, inInclusiveRange(0, wideViewport.width));
+    expect(bar.viewportPosition.dy, inInclusiveRange(0, wideViewport.height));
+
+    const tallLocal = Offset(10, 150);
+    const tallViewport = Size(800, 400);
+    const tallImage = Size(400, 800);
+    final edge = mapMeasuredAbsolutePointer(
+      imageOverflow: true,
+      scrollStyle: 'scrolledge',
+      localPosition: tallLocal,
+      scale: 1,
+      remoteOrigin: origin,
+      remoteSize: tallImage,
+      canvasX: (tallViewport.width - tallImage.width) / 2,
+      canvasY: (tallViewport.height - tallImage.height) / 2,
+      viewportSize: tallViewport,
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    _expectRemote(edge.remote, origin + tallLocal);
+    expect(edge.viewportPosition, const Offset(210, 50));
+    expect(edge.viewportPosition.dx, inInclusiveRange(0, tallViewport.width));
+    expect(edge.viewportPosition.dy, inInclusiveRange(0, tallViewport.height));
     expect(
       mapMeasuredAbsolutePointer(
         imageOverflow: true,
@@ -315,9 +323,12 @@ void main() {
         localPosition: const Offset(10, 801),
         scale: 1,
         remoteOrigin: Offset.zero,
-        remoteSize: remote,
-        canvasX: canvas.dx,
-        canvasY: canvas.dy,
+        remoteSize: tallImage,
+        canvasX: 0,
+        canvasY: -200,
+        viewportSize: tallViewport,
+        scrollX: 0,
+        scrollY: 0,
       ).remote,
       isNull,
     );
@@ -465,6 +476,71 @@ void main() {
     expect(windows, isNotNull);
     expect(windows!.x, closeTo(100, 1e-9));
     expect(windows.y, closeTo(40, 1e-9));
+  });
+
+  test('measured input retargets from the window position', () {
+    const others = [
+      MeasuredWindowSpan(
+        relativeOffset: Offset(800, 0),
+        size: Size(800, 600),
+      ),
+    ];
+    const window = Size(800, 600);
+    const measuredLocal = Offset(12, 34);
+
+    MeasuredPointerDecision decide({
+      required bool viewportLocal,
+      required double windowX,
+      required double windowY,
+      bool hasWindowPosition = true,
+      bool isMove = true,
+    }) {
+      return decideMeasuredPointer(
+        viewportLocal: viewportLocal,
+        isMove: isMove,
+        hasWindowPosition: hasWindowPosition,
+        windowX: windowX,
+        windowY: windowY,
+        measuredLocal: measuredLocal,
+        currentWindow: window,
+        others: others,
+        devicePixelRatio: 1,
+        windowsPhysicalOffsets: false,
+      );
+    }
+
+    final outside = decide(viewportLocal: true, windowX: 900, windowY: 40);
+    expect(outside.retarget, isNotNull);
+    expect(outside.retarget!.index, 0);
+    expect(outside.useMeasuredLocal, isFalse);
+    expect(outside.x, closeTo(100, 1e-9));
+    expect(outside.y, closeTo(40, 1e-9));
+    expect(outside.x, isNot(measuredLocal.dx));
+    expect(outside.y, isNot(measuredLocal.dy));
+
+    final inside = decide(viewportLocal: true, windowX: 100, windowY: 40);
+    expect(inside.retarget, isNull);
+    expect(inside.useMeasuredLocal, isTrue);
+    expect(inside.x, measuredLocal.dx);
+    expect(inside.y, measuredLocal.dy);
+
+    final unmeasured = decide(viewportLocal: false, windowX: 100, windowY: 40);
+    expect(unmeasured.retarget, isNull);
+    expect(unmeasured.useMeasuredLocal, isFalse);
+    expect(unmeasured.x, 100);
+    expect(unmeasured.y, 40);
+    expect(unmeasured.x, isNot(measuredLocal.dx));
+
+    final refresh = decide(
+      viewportLocal: true,
+      windowX: 900,
+      windowY: 40,
+      hasWindowPosition: false,
+    );
+    expect(refresh.retarget, isNull);
+    expect(refresh.useMeasuredLocal, isTrue);
+    expect(refresh.x, measuredLocal.dx);
+    expect(refresh.y, measuredLocal.dy);
   });
 
   test('measurement apply order ignores unusable sizes', () async {

@@ -173,7 +173,8 @@ class MeasuredAbsolutePointer {
   final Offset? remote;
 
   /// Viewport space (`0..size`) for edge scroll and canvas pan.
-  /// Image-listener content plus the canvas translation, or the viewport-local point.
+  /// Image-listener content converted from the scroll fraction or the integer
+  /// spacer. Every other listener uses the viewport-local point.
   final Offset viewportPosition;
 
   /// Same mapping as [remote], including a point outside the image.
@@ -181,10 +182,37 @@ class MeasuredAbsolutePointer {
   final Offset? unbounded;
 }
 
+/// Visible point of one image-listener axis.
+///
+/// A scrolled axis subtracts `imageExtent * scrollFraction`. An unfilled axis
+/// adds the integer spacer `((viewportExtent - imageExtent) ~/ 2)`.
+/// The centering inset is not an input.
+double viewportAxisFromImageListener({
+  required double local,
+  required double viewportExtent,
+  required double imageExtent,
+  required double scrollFraction,
+}) {
+  if (!local.isFinite ||
+      !viewportExtent.isFinite ||
+      !imageExtent.isFinite ||
+      imageExtent < 0) {
+    return local;
+  }
+  if (viewportExtent < imageExtent) {
+    final fraction = scrollFraction.isFinite ? scrollFraction : 0.0;
+    return local - imageExtent * fraction;
+  }
+  final spacer = ((viewportExtent - imageExtent) ~/ 2).toDouble();
+  return local + spacer;
+}
+
 /// Maps one measured absolute pointer in the listener's coordinate space.
 ///
 /// The listener is the scrolled image only when [imageOverflow] is true and
-/// [scrollStyle] is not `scrollauto`. Every other measured pointer, including
+/// [scrollStyle] is not `scrollauto`. That path maps
+/// `remoteOrigin + local / scale` and converts the visible point with
+/// [viewportAxisFromImageListener]. Every other measured pointer, including
 /// scroll-auto, is viewport-local and keeps [canvasX] / [canvasY] as the image offset.
 MeasuredAbsolutePointer mapMeasuredAbsolutePointer({
   required bool imageOverflow,
@@ -195,12 +223,30 @@ MeasuredAbsolutePointer mapMeasuredAbsolutePointer({
   required Size remoteSize,
   required double canvasX,
   required double canvasY,
+  Size viewportSize = Size.zero,
+  double scrollX = 0,
+  double scrollY = 0,
 }) {
   final imageListener = imageOverflow && scrollStyle != 'scrollauto';
   final canvasOffset = Offset(canvasX, canvasY);
   final imageOffset = imageListener ? Offset.zero : canvasOffset;
-  final viewportPosition =
-      imageListener ? localPosition + canvasOffset : localPosition;
+  final imageExtent = Size(remoteSize.width * scale, remoteSize.height * scale);
+  final viewportPosition = imageListener
+      ? Offset(
+          viewportAxisFromImageListener(
+            local: localPosition.dx,
+            viewportExtent: viewportSize.width,
+            imageExtent: imageExtent.width,
+            scrollFraction: scrollX,
+          ),
+          viewportAxisFromImageListener(
+            local: localPosition.dy,
+            viewportExtent: viewportSize.height,
+            imageExtent: imageExtent.height,
+            scrollFraction: scrollY,
+          ),
+        )
+      : localPosition;
   if (!canvasX.isFinite || !canvasY.isFinite) {
     return MeasuredAbsolutePointer(
       remote: null,
@@ -312,6 +358,86 @@ MeasuredPointerRetarget? retargetMeasuredPointer({
     }
   }
   return null;
+}
+
+/// Which coordinates a measured absolute pointer should follow.
+class MeasuredPointerDecision {
+  const MeasuredPointerDecision({
+    required this.useMeasuredLocal,
+    required this.x,
+    required this.y,
+    this.retarget,
+  });
+
+  /// True when [x] and [y] are the in-window measured local point.
+  final bool useMeasuredLocal;
+
+  /// Measured local point, or window coordinates for the non-measured path.
+  final double x;
+  final double y;
+
+  /// Another session window hit by the window position.
+  final MeasuredPointerRetarget? retarget;
+}
+
+/// Retarget from the window position before measured mapping.
+///
+/// A hit on another session wins, including when [viewportLocal] is true, and
+/// [useMeasuredLocal] is then false. A window position still inside this
+/// window uses [measuredLocal] only when [viewportLocal] is true. Refresh has
+/// no pointer event: [hasWindowPosition] is false, so this does not retarget.
+MeasuredPointerDecision decideMeasuredPointer({
+  required bool viewportLocal,
+  required bool isMove,
+  required bool hasWindowPosition,
+  required double windowX,
+  required double windowY,
+  required Offset measuredLocal,
+  required Size currentWindow,
+  required List<MeasuredWindowSpan> others,
+  required double devicePixelRatio,
+  required bool windowsPhysicalOffsets,
+}) {
+  if (!hasWindowPosition || !windowX.isFinite || !windowY.isFinite) {
+    return MeasuredPointerDecision(
+      useMeasuredLocal: viewportLocal,
+      x: viewportLocal ? measuredLocal.dx : windowX,
+      y: viewportLocal ? measuredLocal.dy : windowY,
+    );
+  }
+  final retarget = retargetMeasuredPointer(
+    isMove: isMove,
+    x: windowX,
+    y: windowY,
+    currentWindow: currentWindow,
+    others: others,
+    devicePixelRatio: devicePixelRatio,
+    windowsPhysicalOffsets: windowsPhysicalOffsets,
+  );
+  if (retarget != null) {
+    return MeasuredPointerDecision(
+      useMeasuredLocal: false,
+      x: retarget.x,
+      y: retarget.y,
+      retarget: retarget,
+    );
+  }
+  final inside = windowX >= 0 &&
+      windowY >= 0 &&
+      windowX <= currentWindow.width &&
+      windowY <= currentWindow.height;
+  if (viewportLocal && inside) {
+    return MeasuredPointerDecision(
+      useMeasuredLocal: true,
+      x: measuredLocal.dx,
+      y: measuredLocal.dy,
+    );
+  }
+  return MeasuredPointerDecision(
+    useMeasuredLocal: false,
+    x: windowX,
+    y: windowY,
+  );
 }
 
 /// Applies one changed measurement. Unusable sizes are ignored.

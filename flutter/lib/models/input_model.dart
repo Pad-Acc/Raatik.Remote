@@ -1315,7 +1315,8 @@ class InputModel {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
         handleMouse(_getMouseEvent(e, _kMouseEventMove), canvasPosition,
             edgeScroll: useEdgeScroll,
-            viewportLocal: _pointerUsesMeasuredViewport);
+            viewportLocal: _pointerUsesMeasuredViewport,
+            windowPosition: _windowPositionForRetarget(e));
       }
     }
   }
@@ -1557,7 +1558,8 @@ class InputModel {
       } else {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
         handleMouse(_getMouseEvent(e, _kMouseEventDown), canvasPosition,
-            viewportLocal: _pointerUsesMeasuredViewport);
+            viewportLocal: _pointerUsesMeasuredViewport,
+            windowPosition: _windowPositionForRetarget(e));
       }
     }
   }
@@ -1581,7 +1583,8 @@ class InputModel {
       } else {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
         handleMouse(_getMouseEvent(e, _kMouseEventUp), canvasPosition,
-            viewportLocal: _pointerUsesMeasuredViewport);
+            viewportLocal: _pointerUsesMeasuredViewport,
+            windowPosition: _windowPositionForRetarget(e));
       }
     }
   }
@@ -1606,7 +1609,8 @@ class InputModel {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
         handleMouse(_getMouseEvent(e, _kMouseEventMove), canvasPosition,
             edgeScroll: useEdgeScroll,
-            viewportLocal: _pointerUsesMeasuredViewport);
+            viewportLocal: _pointerUsesMeasuredViewport,
+            windowPosition: _windowPositionForRetarget(e));
       }
     }
   }
@@ -1644,6 +1648,13 @@ class InputModel {
       event.localPosition.dx - mediaData.padding.left,
       event.localPosition.dy - mediaData.padding.top - adjustY,
     );
+  }
+
+  /// Window position for session retarget after the viewport is measured.
+  /// Unmeasured pointers already carry that position. Refresh has no event.
+  Offset? _windowPositionForRetarget(PointerEvent event) {
+    if (!_pointerUsesMeasuredViewport) return null;
+    return event.position;
   }
 
   static Future<Rect?> fillRemoteCoordsAndGetCurFrame(
@@ -1725,9 +1736,14 @@ class InputModel {
         'type': _kMouseEventMove,
       }, lastMousePos,
           edgeScroll: useEdgeScroll,
-          viewportLocal: _pointerUsesMeasuredViewport);
+          viewportLocal: _pointerUsesMeasuredViewport,
+          probeWindow: false);
 
-  void tryMoveEdgeOnExit(Offset pos, {bool viewportLocal = false}) =>
+  void tryMoveEdgeOnExit(
+    Offset pos, {
+    bool viewportLocal = false,
+    Offset? windowPosition,
+  }) =>
       handleMouse(
         {
           'buttons': 0,
@@ -1736,6 +1752,7 @@ class InputModel {
         pos,
         onExit: true,
         viewportLocal: viewportLocal,
+        windowPosition: windowPosition,
       );
 
   static double tryGetNearestRange(double v, double min, double max, double n) {
@@ -1836,6 +1853,8 @@ class InputModel {
     bool moveCanvas = true,
     bool edgeScroll = false,
     bool viewportLocal = false,
+    Offset? windowPosition,
+    bool? probeWindow,
   }) {
     if (isViewCamera) return null;
     double x = offset.dx;
@@ -1879,6 +1898,8 @@ class InputModel {
       moveCanvas: moveCanvas,
       edgeScroll: edgeScroll,
       viewportLocal: viewportLocal,
+      windowPosition: windowPosition,
+      probeWindow: probeWindow,
     );
     if (pos == null) {
       return null;
@@ -1913,12 +1934,16 @@ class InputModel {
     bool moveCanvas = true,
     bool edgeScroll = false,
     bool viewportLocal = false,
+    Offset? windowPosition,
+    bool? probeWindow,
   }) {
     final evtToPeer = processEventToPeer(evt, offset,
         onExit: onExit,
         moveCanvas: moveCanvas,
         edgeScroll: edgeScroll,
-        viewportLocal: viewportLocal);
+        viewportLocal: viewportLocal,
+        windowPosition: windowPosition,
+        probeWindow: probeWindow);
     if (evtToPeer != null) {
       bind.sessionSendMouse(
           sessionId: sessionId, msg: json.encode(modify(evtToPeer)));
@@ -1937,28 +1962,33 @@ class InputModel {
     bool moveCanvas = true,
     bool edgeScroll = false,
     bool viewportLocal = false,
+    Offset? windowPosition,
+    bool? probeWindow,
   }) {
     final ffiModel = parent.target!.ffiModel;
     CanvasCoords canvas =
         CanvasCoords.fromCanvasModel(parent.target!.canvasModel);
     Rect? rect = ffiModel.rect;
 
-    // Window-position probes only. Viewport-local and image-local points are
-    // not in this coordinate space.
-    if (!viewportLocal &&
-        isMove &&
-        _remoteWindowCoords.isNotEmpty &&
-        _windowRect != null) {
+    // Window position is the retarget probe, including when the in-window
+    // point is measured. Refresh passes probeWindow false and does not retarget.
+    final shouldProbe =
+        (probeWindow ?? (windowPosition != null || !viewportLocal)) &&
+            _windowRect != null;
+    if (shouldProbe) {
       final windowWidth = isWindows
           ? _windowRect!.width / devicePixelRatio
           : _windowRect!.width;
       final windowHeight = isWindows
           ? _windowRect!.height / devicePixelRatio
           : _windowRect!.height;
-      final retarget = retargetMeasuredPointer(
-        isMove: true,
-        x: x,
-        y: y,
+      final decision = decideMeasuredPointer(
+        viewportLocal: viewportLocal,
+        isMove: isMove,
+        hasWindowPosition: true,
+        windowX: windowPosition?.dx ?? x,
+        windowY: windowPosition?.dy ?? y,
+        measuredLocal: Offset(x, y),
         currentWindow: Size(windowWidth, windowHeight),
         others: [
           for (final coords in _remoteWindowCoords)
@@ -1970,13 +2000,21 @@ class InputModel {
         devicePixelRatio: devicePixelRatio,
         windowsPhysicalOffsets: isWindows,
       );
-      if (retarget != null) {
+      if (decision.retarget != null) {
         isMove = false;
-        final coords = _remoteWindowCoords[retarget.index];
+        final coords = _remoteWindowCoords[decision.retarget!.index];
         canvas = coords.canvas;
         rect = coords.remoteRect;
-        x = retarget.x;
-        y = retarget.y;
+        x = decision.x;
+        y = decision.y;
+        viewportLocal = false;
+      } else if (decision.useMeasuredLocal) {
+        x = decision.x;
+        y = decision.y;
+      } else {
+        x = decision.x;
+        y = decision.y;
+        viewportLocal = false;
       }
     }
 
@@ -1993,6 +2031,9 @@ class InputModel {
         remoteSize: rect.size,
         canvasX: canvas.x,
         canvasY: canvas.y,
+        viewportSize: canvas.size,
+        scrollX: canvas.scrollX,
+        scrollY: canvas.scrollY,
       );
       final raw = onExit ? sample.unbounded : sample.remote;
       if (raw == null) return null;
