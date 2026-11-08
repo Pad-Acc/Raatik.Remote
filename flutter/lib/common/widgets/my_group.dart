@@ -8,6 +8,7 @@ import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 
 import '../../common.dart';
+import '../../raatik/home/parent_scroll.dart';
 
 class MyGroup extends StatefulWidget {
   final EdgeInsets? menuPadding;
@@ -35,23 +36,29 @@ class _MyGroupState extends State<MyGroup> {
             child: ElevatedButton(
                 onPressed: loginDialog, child: Text(translate("Login"))));
       } else if (gFFI.userModel.networkError.isNotEmpty) {
-        return netWorkErrorWidget();
+        final error = netWorkErrorWidget();
+        if (RaatikParentScroll.of(context)) {
+          return SizedBox(height: 160, child: error);
+        }
+        return error;
       } else if (gFFI.groupModel.groupLoading.value && gFFI.groupModel.emtpy) {
         return const Center(
           child: CircularProgressIndicator(),
         );
       }
+      final embed = RaatikParentScroll.of(context);
+      final body = Obx(() => stateGlobal.isPortrait.isTrue || embed
+          ? _buildPortrait()
+          : _buildLandscape());
       return Column(
+        mainAxisSize: embed ? MainAxisSize.min : MainAxisSize.max,
         children: [
           buildErrorBanner(context,
               loading: gFFI.groupModel.groupLoading,
               err: gFFI.groupModel.groupLoadError,
               retry: null,
               close: () => gFFI.groupModel.groupLoadError.value = ''),
-          Expanded(
-              child: Obx(() => stateGlobal.isPortrait.isTrue
-                  ? _buildPortrait()
-                  : _buildLandscape())),
+          if (embed) body else Expanded(child: body),
         ],
       );
     });
@@ -94,7 +101,14 @@ class _MyGroupState extends State<MyGroup> {
   }
 
   Widget _buildPortrait() {
+    final embed = RaatikParentScroll.of(context);
+    final peers = Align(
+        alignment: Alignment.topLeft,
+        child: MyGroupPeerView(
+          menuPadding: widget.menuPadding,
+        ));
     return Column(
+      mainAxisSize: embed ? MainAxisSize.min : MainAxisSize.max,
       children: [
         Container(
           decoration: BoxDecoration(
@@ -114,13 +128,7 @@ class _MyGroupState extends State<MyGroup> {
             ),
           ),
         ).marginOnly(bottom: 12.0),
-        Expanded(
-          child: Align(
-              alignment: Alignment.topLeft,
-              child: MyGroupPeerView(
-                menuPadding: widget.menuPadding,
-              )),
-        )
+        if (embed) peers else Expanded(child: peers),
       ],
     );
   }
@@ -178,13 +186,15 @@ class _MyGroupState extends State<MyGroup> {
         }
         return true;
       }).toList();
-      listView(bool isPortrait) => ListView.builder(
-          shrinkWrap: isPortrait,
+      listView(bool shrink) => ListView.builder(
+          shrinkWrap: shrink,
+          physics: shrink ? const NeverScrollableScrollPhysics() : null,
           itemCount: deviceGroupItems.length + userItems.length,
           itemBuilder: (context, index) => index < deviceGroupItems.length
               ? _buildDeviceGroupItem(deviceGroupItems[index])
               : _buildUserItem(userItems[index - deviceGroupItems.length],
                   displayNameCount));
+      if (RaatikParentScroll.of(context)) return listView(true);
       var maxHeight = max(MediaQuery.of(context).size.height / 6, 100.0);
       return Obx(() => stateGlobal.isPortrait.isFalse
           ? listView(false)
@@ -196,10 +206,9 @@ class _MyGroupState extends State<MyGroup> {
     final username = user.name;
     final dn = user.displayNameOrName;
     final isDuplicate = (displayNameCount[dn] ?? 0) > 1;
-    final displayName =
-        isDuplicate && user.displayName.trim().isNotEmpty
-            ? '${user.displayName} (@$username)'
-            : dn;
+    final displayName = isDuplicate && user.displayName.trim().isNotEmpty
+        ? '${user.displayName} (@$username)'
+        : dn;
     return InkWell(onTap: () {
       isSelectedDeviceGroup.value = false;
       if (selectedAccessibleItemName.value != username) {

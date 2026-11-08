@@ -17,6 +17,7 @@ import '../../common.dart';
 import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
 import 'peer_card.dart';
+import 'package:flutter_hbb/raatik/home/parent_scroll.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
 
 typedef PeerFilter = bool Function(Peer peer);
@@ -188,27 +189,27 @@ class _PeersViewState extends State<_PeersView>
       child: Consumer<Peers>(builder: (context, peers, child) {
         if (peers.peers.isEmpty) {
           gFFI.peerTabModel.setCurrentTabCachedPeers([]);
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.sentiment_very_dissatisfied_rounded,
-                  color: Theme.of(context).tabBarTheme.labelColor,
-                  size: 40,
-                ).paddingOnly(bottom: 10),
-                Text(
-                  translate(
-                    _emptyMessages[widget.peers.loadEvent] ?? 'Empty',
-                  ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).tabBarTheme.labelColor,
-                  ),
+          final empty = Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.sentiment_very_dissatisfied_rounded,
+                color: Theme.of(context).tabBarTheme.labelColor,
+                size: 40,
+              ).paddingOnly(bottom: 10),
+              Text(
+                translate(
+                  _emptyMessages[widget.peers.loadEvent] ?? 'Empty',
                 ),
-              ],
-            ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).tabBarTheme.labelColor,
+                ),
+              ),
+            ],
           );
+          if (RaatikParentScroll.of(context)) return empty;
+          return Center(child: empty);
         } else {
           return _buildPeersView(peers);
         }
@@ -264,33 +265,59 @@ class _PeersViewState extends State<_PeersView>
             // We should avoid too many rebuilds. Win10(Some machines) on Flutter 3.19.6.
             // Continious rebuilds of `ListView.builder` will cause memory leak.
             // Simple demo can reproduce this issue.
-            final Widget child = Obx(() => stateGlobal.isPortrait.isTrue
-                ? ListView.builder(
-                    itemCount: peers.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return buildOnePeer(peers[index], true).marginOnly(
-                          top: index == 0 ? 0 : space / 2, bottom: space / 2);
-                    },
-                  )
-                : peerCardUiType.value == PeerUiType.list
-                    ? ListView.builder(
-                        controller: _scrollController,
-                        itemCount: peers.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return buildOnePeer(peers[index], false).marginOnly(
-                              right: space,
-                              top: index == 0 ? 0 : space / 2,
-                              bottom: space / 2);
-                        },
-                      )
-                    : DynamicGridView.builder(
-                        gridDelegate: SliverGridDelegateWithWrapping(
-                            mainAxisSpacing: space / 2,
-                            crossAxisSpacing: space),
-                        itemCount: peers.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return buildOnePeer(peers[index], false);
-                        }));
+            final Widget child = Obx(() {
+              if (RaatikParentScroll.of(context)) {
+                final portrait = stateGlobal.isPortrait.isTrue;
+                if (!portrait && peerCardUiType.value != PeerUiType.list) {
+                  return Wrap(
+                    spacing: space,
+                    runSpacing: space / 2,
+                    children: [
+                      for (final peer in peers) buildOnePeer(peer, false),
+                    ],
+                  );
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var index = 0; index < peers.length; index++)
+                      buildOnePeer(peers[index], portrait).marginOnly(
+                        right: portrait ? 0 : space,
+                        top: index == 0 ? 0 : space / 2,
+                        bottom: space / 2,
+                      ),
+                  ],
+                );
+              }
+              return stateGlobal.isPortrait.isTrue
+                  ? ListView.builder(
+                      itemCount: peers.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return buildOnePeer(peers[index], true).marginOnly(
+                            top: index == 0 ? 0 : space / 2, bottom: space / 2);
+                      },
+                    )
+                  : peerCardUiType.value == PeerUiType.list
+                      ? ListView.builder(
+                          controller: _scrollController,
+                          itemCount: peers.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return buildOnePeer(peers[index], false).marginOnly(
+                                right: space,
+                                top: index == 0 ? 0 : space / 2,
+                                bottom: space / 2);
+                          },
+                        )
+                      : DynamicGridView.builder(
+                          gridDelegate: SliverGridDelegateWithWrapping(
+                              mainAxisSpacing: space / 2,
+                              crossAxisSpacing: space),
+                          itemCount: peers.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return buildOnePeer(peers[index], false);
+                          });
+            });
 
             if (updateEvent == UpdateEvent.load) {
               _curPeers.clear();
@@ -299,6 +326,8 @@ class _PeersViewState extends State<_PeersView>
             }
             return child;
           } else {
+            const waiting = CircularProgressIndicator();
+            if (RaatikParentScroll.of(context)) return waiting;
             return const Center(
               child: CircularProgressIndicator(),
             );

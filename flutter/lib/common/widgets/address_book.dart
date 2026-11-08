@@ -21,6 +21,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import '../../common.dart';
 import 'dialog.dart';
 import 'login.dart';
+import '../../raatik/home/parent_scroll.dart';
 
 final hideAbTagsPanel = false.obs;
 
@@ -44,9 +45,18 @@ class _AddressBookState extends State<AddressBook> {
               child: ElevatedButton(
                   onPressed: loginDialog, child: Text(translate("Login"))));
         } else if (gFFI.userModel.networkError.isNotEmpty) {
-          return netWorkErrorWidget();
+          final error = netWorkErrorWidget();
+          if (RaatikParentScroll.of(context)) {
+            return SizedBox(height: 160, child: error);
+          }
+          return error;
         } else {
+          final embed = RaatikParentScroll.of(context);
+          final book = Obx(() => stateGlobal.isPortrait.isTrue || embed
+              ? _buildAddressBookPortrait()
+              : _buildAddressBookLandscape());
           return Column(
+            mainAxisSize: embed ? MainAxisSize.min : MainAxisSize.max,
             children: [
               // NOT use Offstage to wrap LinearProgressIndicator
               if (gFFI.abModel.currentAbLoading.value &&
@@ -62,11 +72,7 @@ class _AddressBookState extends State<AddressBook> {
                   err: gFFI.abModel.currentAbPushError,
                   retry: null, // remove retry
                   close: () => gFFI.abModel.currentAbPushError.value = ''),
-              Expanded(
-                child: Obx(() => stateGlobal.isPortrait.isTrue
-                    ? _buildAddressBookPortrait()
-                    : _buildAddressBookLandscape()),
-              ),
+              if (embed) book else Expanded(child: book),
             ],
           );
         }
@@ -111,7 +117,9 @@ class _AddressBookState extends State<AddressBook> {
 
   Widget _buildAddressBookPortrait() {
     const padding = 8.0;
+    final embed = RaatikParentScroll.of(context);
     return Column(
+      mainAxisSize: embed ? MainAxisSize.min : MainAxisSize.max,
       children: [
         Offstage(
             offstage: hideAbTagsPanel.value,
@@ -340,14 +348,16 @@ class _AddressBookState extends State<AddressBook> {
             showActionMenu: editPermission);
       }
 
-      gridView(bool isPortrait) => DynamicGridView.builder(
-          shrinkWrap: isPortrait,
+      gridView(bool shrink) => DynamicGridView.builder(
+          shrinkWrap: shrink,
+          physics: shrink ? const NeverScrollableScrollPhysics() : null,
           gridDelegate: SliverGridDelegateWithWrapping(),
           itemCount: tags.length,
           itemBuilder: (BuildContext context, int index) {
             final e = tags[index];
             return tagBuilder(e);
           });
+      if (RaatikParentScroll.of(context)) return gridView(true);
       final maxHeight = max(MediaQuery.of(context).size.height / 6, 100.0);
       return Obx(() => stateGlobal.isPortrait.isFalse
           ? gridView(false)
@@ -356,13 +366,13 @@ class _AddressBookState extends State<AddressBook> {
   }
 
   Widget _buildPeersViews() {
-    return Expanded(
-      child: Align(
-          alignment: Alignment.topLeft,
-          child: AddressBookPeersView(
-            menuPadding: widget.menuPadding,
-          )),
-    );
+    final peers = Align(
+        alignment: Alignment.topLeft,
+        child: AddressBookPeersView(
+          menuPadding: widget.menuPadding,
+        ));
+    if (RaatikParentScroll.of(context)) return peers;
+    return Expanded(child: peers);
   }
 
   @protected

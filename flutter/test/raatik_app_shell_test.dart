@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/flags.dart';
+import 'package:flutter_hbb/raatik/home/connect_overflow_button.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
 import 'package:flutter_hbb/raatik/navigation/app_shell.dart';
+import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 import 'raatik_test_app.dart';
@@ -211,13 +213,38 @@ void main() {
           child: Text('History'),
         ),
         onOpenHistory: () => destination.value = RaatikDestination.history,
-        recent: const Text('recent-devices'),
+        recent: TextButton(
+          key: const ValueKey('recent-connect'),
+          onPressed: () {},
+          child: const Text('recent-connect'),
+        ),
       ),
       size: const Size(1024, 600),
       locale: const Locale('en'),
     );
 
     expect(find.text('service-offline'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('recent-connect')));
+    expect(find.byKey(const ValueKey('recent-connect')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('recent-connect')).hitTestable(),
+      findsNothing,
+    );
+    final recentGate = tester.widget<AbsorbPointer>(
+      find.byKey(const ValueKey('raatik-recent-gate')),
+    );
+    expect(recentGate.absorbing, isTrue);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('raatik-recent-gate')),
+        matching: find.byKey(const ValueKey('open-history')),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('open-history')).hitTestable(),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('open-history')));
     await tester.pump();
     expect(find.byKey(_historyPageKey), findsOneWidget);
@@ -225,6 +252,116 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
     await tester.pump();
     expect(find.text('SETTINGS'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ready recent connect stays hittable in the shell',
+      (tester) async {
+    final destination = ValueNotifier(RaatikDestination.home);
+    addTearDown(destination.dispose);
+    await _pump(
+      tester,
+      _shell(
+        destination: destination,
+        recent: TextButton(
+          key: const ValueKey('recent-connect'),
+          onPressed: () {},
+          child: const Text('recent-connect'),
+        ),
+      ),
+      size: const Size(1024, 600),
+      locale: const Locale('en'),
+    );
+
+    await tester.ensureVisible(find.byKey(const ValueKey('recent-connect')));
+    expect(
+      find.byKey(const ValueKey('recent-connect')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<AbsorbPointer>(
+              find.byKey(const ValueKey('raatik-recent-gate')))
+          .absorbing,
+      isFalse,
+    );
+  });
+
+  testWidgets('recent devices use the home page scroll', (tester) async {
+    final destination = ValueNotifier(RaatikDestination.home);
+    addTearDown(destination.dispose);
+    await _pump(
+      tester,
+      _shell(
+        destination: destination,
+        recent: Column(
+          children: [
+            for (var i = 0; i < 40; i++)
+              SizedBox(
+                key: i == 0 ? const ValueKey('recent-row') : null,
+                height: 48,
+                child: Text('peer $i'),
+              ),
+          ],
+        ),
+      ),
+      size: const Size(1024, 600),
+      locale: const Locale('en'),
+    );
+
+    final vertical = tester
+        .widgetList<Scrollable>(find.descendant(
+      of: find.byType(RaatikHomeLayout),
+      matching: find.byType(Scrollable),
+    ))
+        .where((scrollable) {
+      final axis = scrollable.axisDirection == AxisDirection.down ||
+          scrollable.axisDirection == AxisDirection.up;
+      return axis && scrollable.physics is! NeverScrollableScrollPhysics;
+    }).length;
+    expect(vertical, 1);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('raatik-home-recent'))).height,
+      greaterThan(360),
+    );
+    final before = tester.getTopLeft(find.byKey(const ValueKey('recent-row')));
+    await tester.drag(
+      find.byKey(const ValueKey('recent-row')),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
+    final after = tester.getTopLeft(find.byKey(const ValueKey('recent-row')));
+    expect(after.dy, lessThan(before.dy - 40));
+    final scrollable = tester.state<ScrollableState>(find.descendant(
+      of: find.byKey(const ValueKey('raatik-home-content')),
+      matching: find.byType(Scrollable),
+    ));
+    expect(scrollable.position.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('connect overflow hit target is 44', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(MaterialApp(
+      theme: buildRaatikLightTheme(),
+      home: Scaffold(
+        body: Center(
+          child: RaatikConnectOverflowButton(
+            onTap: () => taps += 1,
+            icon: const Icon(Icons.more_horiz, size: 14),
+          ),
+        ),
+      ),
+    ));
+
+    final rect = tester.getRect(find.byKey(const ValueKey('connect-overflow')));
+    expect(
+      rect.size,
+      const Size(RaatikTokens.minTarget, RaatikTokens.minTarget),
+    );
+    await tester.tapAt(rect.topLeft + const Offset(1, 1));
+    await tester.pump();
+    expect(taps, 1);
     expect(tester.takeException(), isNull);
   });
 

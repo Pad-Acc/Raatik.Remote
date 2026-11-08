@@ -90,8 +90,10 @@ class RaatikHomeLayout extends StatelessWidget {
                       ),
                     ),
                   AbsorbPointer(
+                    key: const ValueKey('raatik-panels-gate'),
                     absorbing: blocked,
                     child: AnimatedOpacity(
+                      key: const ValueKey('raatik-panels-opacity'),
                       opacity: blocked ? .48 : 1,
                       duration: motion,
                       curve: RaatikTokens.curve,
@@ -116,7 +118,19 @@ class RaatikHomeLayout extends StatelessWidget {
                           ),
                       ],
                     ),
-                    recent!,
+                    AbsorbPointer(
+                      key: const ValueKey('raatik-recent-gate'),
+                      absorbing: blocked,
+                      child: AnimatedOpacity(
+                        opacity: blocked ? .48 : 1,
+                        duration: motion,
+                        curve: RaatikTokens.curve,
+                        child: KeyedSubtree(
+                          key: const ValueKey('raatik-home-recent'),
+                          child: recent!,
+                        ),
+                      ),
+                    ),
                   ],
                 ],
               ),

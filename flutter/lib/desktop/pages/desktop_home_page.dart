@@ -57,6 +57,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Timer? _updateTimer;
   Timer? _serviceStartTimeout;
   bool _serviceStartPending = false;
+  bool _pageVisible = true;
+  DateTime? _serviceStartDeadline;
+  Duration? _serviceStartRemaining;
+  Completer<void>? _serviceStartResume;
+  Completer<void>? _servicePollGate;
   String? _serviceStartError;
   bool isCardClosed = false;
 
@@ -84,9 +89,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final connectPanel = showConnect
         ? buildConnectToPeerPanel(context)
         : const SizedBox.shrink();
-    final recent = showConnect
-        ? const SizedBox(height: 360, child: PeerTabPage())
-        : null;
+    final recent =
+        showConnect ? const PeerTabPage(scrollsWithParent: true) : null;
 
     Widget homeLayout({
       required Widget serviceGate,
@@ -170,17 +174,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       _serviceStartPending = true;
       _serviceStartError = null;
     });
-    _serviceStartTimeout?.cancel();
-    _serviceStartTimeout = Timer(_serviceStartTimeoutDuration, () {
-      if (!mounted) return;
-      if (_serviceStartPending) {
-        debugPrint('[RaatikServiceGate] Service start timed out after 12s');
-        setState(() {
-          _serviceStartPending = false;
-          _serviceStartError = 'timeout';
-        });
-      }
-    });
+    _armServiceStartTimeout(_serviceStartTimeoutDuration);
     try {
       await start_service(true);
       await _waitUntilServiceReady();
@@ -195,22 +189,108 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     }
   }
 
+  void _armServiceStartTimeout(Duration duration) {
+    _serviceStartTimeout?.cancel();
+    final remaining = duration.isNegative ? Duration.zero : duration;
+    _serviceStartRemaining = remaining;
+    _serviceStartDeadline = DateTime.now().add(remaining);
+    if (!_pageVisible) return;
+    if (remaining == Duration.zero) {
+      _failServiceStartTimeout();
+      return;
+    }
+    _serviceStartTimeout = Timer(remaining, _failServiceStartTimeout);
+  }
+
+  void _failServiceStartTimeout() {
+    _serviceStartTimeout = null;
+    if (!mounted || !_serviceStartPending) return;
+    debugPrint('[RaatikServiceGate] Service start timed out after 12s');
+    setState(() {
+      _serviceStartPending = false;
+      _serviceStartError = 'timeout';
+    });
+  }
+
+  void _pauseServiceStartTimers() {
+    if (!_serviceStartPending) return;
+    final deadline = _serviceStartDeadline;
+    if (deadline != null) {
+      final left = deadline.difference(DateTime.now());
+      _serviceStartRemaining = left.isNegative ? Duration.zero : left;
+    }
+    _serviceStartTimeout?.cancel();
+    _serviceStartTimeout = null;
+    _interruptServiceStartPoll();
+  }
+
+  void _resumeServiceStartTimers() {
+    if (_serviceStartPending) {
+      final remaining = _serviceStartRemaining ?? Duration.zero;
+      if (remaining <= Duration.zero) {
+        _failServiceStartTimeout();
+      } else {
+        _armServiceStartTimeout(remaining);
+      }
+    }
+    _signalServiceStartResume();
+  }
+
+  void _interruptServiceStartPoll() {
+    final gate = _servicePollGate;
+    if (gate != null && !gate.isCompleted) gate.complete();
+  }
+
+  void _signalServiceStartResume() {
+    final resume = _serviceStartResume;
+    _serviceStartResume = null;
+    if (resume != null && !resume.isCompleted) resume.complete();
+  }
+
+  Future<void> _waitForServiceStartResume() {
+    if (_pageVisible) return Future<void>.value();
+    final resume = _serviceStartResume ??= Completer<void>();
+    return resume.future;
+  }
+
+  Future<void> _delayServiceStartPoll() async {
+    final gate = Completer<void>();
+    _servicePollGate = gate;
+    final timer = Timer(const Duration(milliseconds: 500), () {
+      if (!gate.isCompleted) gate.complete();
+    });
+    try {
+      await gate.future;
+    } finally {
+      timer.cancel();
+      if (identical(_servicePollGate, gate)) _servicePollGate = null;
+    }
+  }
+
   Future<void> _waitUntilServiceReady() async {
     while (mounted && _serviceStartPending) {
+      if (!_pageVisible) {
+        await _waitForServiceStartResume();
+        continue;
+      }
       await _pollConnectStatus();
+      if (!mounted || !_serviceStartPending || !_pageVisible) continue;
       final stopped = await mainGetBoolOption(kOptionStopService);
+      if (!mounted || !_serviceStartPending || !_pageVisible) continue;
       if (stopped != svcStopped.value) {
         svcStopped.value = stopped;
       }
       if (!stopped && stateGlobal.svcStatus.value == SvcStatus.ready) {
         _serviceStartTimeout?.cancel();
+        _serviceStartTimeout = null;
+        if (!mounted) return;
         setState(() {
           _serviceStartPending = false;
           _serviceStartError = null;
         });
         return;
       }
-      await Future.delayed(const Duration(milliseconds: 500));
+      await _delayServiceStartPoll();
     }
   }
 
@@ -502,8 +582,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                       ),
                       if (showOneTime)
                         Padding(
-                          padding: const EdgeInsetsDirectional.only(
-                              end: 8, top: 4),
+                          padding:
+                              const EdgeInsetsDirectional.only(end: 8, top: 4),
                           child: AnimatedRotationWidget(
                             onPressed: () => bind.mainUpdateTemporaryPassword(),
                             child: Tooltip(
@@ -908,12 +988,17 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   void _applyPageVisibility(bool visible) {
+    final becameHidden = _pageVisible && !visible;
+    final becameShown = !_pageVisible && visible;
+    _pageVisible = visible;
     if (!visible) {
       _updateTimer?.cancel();
       _updateTimer = null;
+      if (becameHidden) _pauseServiceStartTimers();
       return;
     }
     _startPolling();
+    if (becameShown) _resumeServiceStartTimers();
   }
 
   @override
@@ -1059,6 +1144,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     Get.delete<RxBool>(tag: 'stop-service');
     _updateTimer?.cancel();
     _serviceStartTimeout?.cancel();
+    _serviceStartPending = false;
+    _interruptServiceStartPoll();
+    _signalServiceStartResume();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
