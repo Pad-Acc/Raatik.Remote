@@ -12,6 +12,8 @@ import '../../consts.dart';
 import '../../common/widgets/overlay.dart';
 import '../../common/widgets/remote_input.dart';
 import '../../common.dart';
+import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
+import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/toolbar.dart';
 import '../../models/model.dart';
@@ -422,69 +424,75 @@ class _RemotePageState extends State<RemotePage>
         );
 
     bodyWidget() {
-      return Stack(
-        children: [
-          Container(
-              color: kColorCanvas,
-              child: RawKeyFocusScope(
-                  focusNode: _rawKeyFocusNode,
-                  onFocusChange: (bool imageFocused) {
-                    debugPrint(
-                        "onFocusChange(window active:${!_isWindowBlur}) $imageFocused");
-                    // See [onWindowBlur].
-                    if (isWindows) {
-                      if (_isWindowBlur) {
-                        imageFocused = false;
-                        Future.delayed(Duration.zero, () {
-                          _rawKeyFocusNode.unfocus();
-                        });
-                      }
-                      if (imageFocused) {
-                        _ffi.inputModel.enterOrLeave(true);
-                      } else {
-                        _ffi.inputModel.enterOrLeave(false);
-                      }
+      return Obx(() {
+        final relative = _ffi.inputModel.relativeMouseMode.value;
+        final toolbarShown = !widget.toolbarState.hide.value &&
+            !widget.toolbarState.collapse.value;
+        final fullscreen = stateGlobal.fullscreen.value;
+        final toolbarChild = relative
+            ? const SizedBox.shrink()
+            : _ffi.ffiModel.pi.isSet.isTrue
+                ? Overlay(initialEntries: [
+                    OverlayEntry(builder: remoteToolbar),
+                  ])
+                : remoteToolbar(context);
+        return Stack(
+          children: [
+            RaatikRemoteViewportLayout(
+              edge: widget.toolbarState.dockEdge.value,
+              toolbarShown: toolbarShown,
+              fullscreen: fullscreen,
+              relativeMouse: relative,
+              toolbar: toolbarChild,
+              image: Container(
+                  color: kColorCanvas,
+                  child: RawKeyFocusScope(
+                      focusNode: _rawKeyFocusNode,
+                      onFocusChange: (bool imageFocused) {
+                        debugPrint(
+                            "onFocusChange(window active:${!_isWindowBlur}) $imageFocused");
+                        // See [onWindowBlur].
+                        if (isWindows) {
+                          if (_isWindowBlur) {
+                            imageFocused = false;
+                            Future.delayed(Duration.zero, () {
+                              _rawKeyFocusNode.unfocus();
+                            });
+                          }
+                          if (imageFocused) {
+                            _ffi.inputModel.enterOrLeave(true);
+                          } else {
+                            _ffi.inputModel.enterOrLeave(false);
+                          }
+                        }
+                      },
+                      inputModel: _ffi.inputModel,
+                      child: getBodyForDesktop(context))),
+            ),
+            _ffi.ffiModel.pi.isSet.isTrue &&
+                    _ffi.ffiModel.waitForFirstImage.isTrue
+                ? emptyOverlay()
+                : () {
+                    if (!_ffi.ffiModel.isPeerAndroid) {
+                      return Offstage();
+                    } else {
+                      return Obx(() => Offstage(
+                            offstage: _ffi.dialogManager
+                                .mobileActionsOverlayVisible.isFalse,
+                            child: Overlay(initialEntries: [
+                              makeMobileActionsOverlayEntry(
+                                () => _ffi.dialogManager
+                                    .setMobileActionsOverlayVisible(false),
+                                ffi: _ffi,
+                              )
+                            ]),
+                          ));
                     }
-                  },
-                  inputModel: _ffi.inputModel,
-                  child: getBodyForDesktop(context))),
-          Stack(
-            children: [
-              _ffi.ffiModel.pi.isSet.isTrue &&
-                      _ffi.ffiModel.waitForFirstImage.isTrue
-                  ? emptyOverlay()
-                  : () {
-                      if (!_ffi.ffiModel.isPeerAndroid) {
-                        return Offstage();
-                      } else {
-                        return Obx(() => Offstage(
-                              offstage: _ffi.dialogManager
-                                  .mobileActionsOverlayVisible.isFalse,
-                              child: Overlay(initialEntries: [
-                                makeMobileActionsOverlayEntry(
-                                  () => _ffi.dialogManager
-                                      .setMobileActionsOverlayVisible(false),
-                                  ffi: _ffi,
-                                )
-                              ]),
-                            ));
-                      }
-                    }(),
-              // Use Overlay to enable rebuild every time on menu button click.
-              // Hide toolbar when relative mouse mode is active to prevent
-              // cursor from escaping to toolbar area.
-              Obx(() => _ffi.inputModel.relativeMouseMode.value
-                  ? const Offstage()
-                  : _ffi.ffiModel.pi.isSet.isTrue
-                      ? Overlay(initialEntries: [
-                          OverlayEntry(builder: remoteToolbar)
-                        ])
-                      : remoteToolbar(context)),
-              _ffi.ffiModel.pi.isSet.isFalse ? emptyOverlay() : Offstage(),
-            ],
-          ),
-        ],
-      );
+                  }(),
+            _ffi.ffiModel.pi.isSet.isFalse ? emptyOverlay() : Offstage(),
+          ],
+        );
+      });
     }
 
     return Scaffold(
@@ -706,30 +714,40 @@ class _ViewStyleUpdaterState extends State<_ViewStyleUpdater> {
   bool _callbackScheduled = false;
 
   @override
+  void dispose() {
+    widget.canvasModel.clearViewportSize();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final maxHeight = constraints.maxHeight;
-        // Guard against infinite constraints (e.g., unconstrained ancestor).
-        if (!maxWidth.isFinite || !maxHeight.isFinite) {
+        final newSize = Size(constraints.maxWidth, constraints.maxHeight);
+        // Ignore zero, NaN, and infinity. Apply only the latest size after layout.
+        if (!isUsableViewportSize(newSize)) {
           return widget.child;
         }
-        final newSize = Size(maxWidth, maxHeight);
         if (_lastSize != newSize) {
           _lastSize = newSize;
-          // Schedule the update for after the current frame to avoid setState during build.
-          // Use _callbackScheduled flag to prevent accumulating multiple callbacks
-          // when size changes rapidly before any callback executes.
           if (!_callbackScheduled) {
             _callbackScheduled = true;
-            SchedulerBinding.instance.addPostFrameCallback((_) {
+            SchedulerBinding.instance.addPostFrameCallback((_) async {
               _callbackScheduled = false;
               final currentSize = _lastSize;
-              if (mounted && currentSize != null) {
-                widget.canvasModel.updateViewStyle();
-                widget.inputModel.updateImageWidgetSize(currentSize);
-              }
+              if (!mounted || currentSize == null) return;
+              await applyMeasuredViewportSize(
+                size: currentSize,
+                updateImageWidgetSize: widget.inputModel.updateImageWidgetSize,
+                updateViewportSize: widget.canvasModel.updateViewportSize,
+                updateViewStyle: () =>
+                    widget.canvasModel.updateViewStyle(refreshMousePos: false),
+                refresh: () {
+                  if (!isMobile) {
+                    widget.inputModel.refreshMousePos();
+                  }
+                },
+              );
             });
           }
         }

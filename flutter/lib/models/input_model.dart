@@ -20,6 +20,7 @@ import 'input_modifier_utils.dart';
 import 'relative_mouse_model.dart';
 import '../common.dart';
 import '../consts.dart';
+import '../raatik/remote/viewport_geometry.dart';
 
 /// Mouse button enum.
 enum MouseButtons { left, right, wheel, back, forward }
@@ -1309,7 +1310,8 @@ class InputModel {
       if (!_relativeMouse.handleRelativeMouseMove(e.localPosition)) {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
         handleMouse(_getMouseEvent(e, _kMouseEventMove), canvasPosition,
-            edgeScroll: useEdgeScroll);
+            edgeScroll: useEdgeScroll,
+            viewportLocal: _pointerUsesMeasuredViewport);
       }
     }
   }
@@ -1550,7 +1552,8 @@ class InputModel {
             .sendRelativeMouseButton(_getMouseEvent(e, _kMouseEventDown));
       } else {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
-        handleMouse(_getMouseEvent(e, _kMouseEventDown), canvasPosition);
+        handleMouse(_getMouseEvent(e, _kMouseEventDown), canvasPosition,
+            viewportLocal: _pointerUsesMeasuredViewport);
       }
     }
   }
@@ -1573,7 +1576,8 @@ class InputModel {
             .sendRelativeMouseButton(_getMouseEvent(e, _kMouseEventUp));
       } else {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
-        handleMouse(_getMouseEvent(e, _kMouseEventUp), canvasPosition);
+        handleMouse(_getMouseEvent(e, _kMouseEventUp), canvasPosition,
+            viewportLocal: _pointerUsesMeasuredViewport);
       }
     }
   }
@@ -1597,10 +1601,15 @@ class InputModel {
       if (!_relativeMouse.handleRelativeMouseMove(e.localPosition)) {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
         handleMouse(_getMouseEvent(e, _kMouseEventMove), canvasPosition,
-            edgeScroll: useEdgeScroll);
+            edgeScroll: useEdgeScroll,
+            viewportLocal: _pointerUsesMeasuredViewport);
       }
     }
   }
+
+  bool get _pointerUsesMeasuredViewport =>
+      (isDesktop || isWebDesktop) &&
+      (parent.target?.canvasModel.hasMeasuredViewport ?? false);
 
   /// Convert pointer coordinates into the visible remote canvas space.
   ///
@@ -1614,9 +1623,13 @@ class InputModel {
   /// we subtract both the mobile safe-area padding and the current canvas
   /// adjustment before passing the position into mouse mapping.
   ///
-  /// Desktop and web desktop continue to use the global position directly
-  /// because their pointer mapping is window-based.
+  /// Desktop uses [PointerEvent.localPosition] after the image viewport is
+  /// measured, so toolbar chrome is not subtracted again. Until then, desktop
+  /// keeps the window position.
   Offset _pointerPositionForRemoteCanvas(PointerEvent event) {
+    if (_pointerUsesMeasuredViewport) {
+      return event.localPosition;
+    }
     if (isDesktop || isWebDesktop) {
       return event.position;
     }
@@ -1706,7 +1719,9 @@ class InputModel {
   void refreshMousePos() => handleMouse({
         'buttons': 0,
         'type': _kMouseEventMove,
-      }, lastMousePos, edgeScroll: useEdgeScroll);
+      }, lastMousePos,
+          edgeScroll: useEdgeScroll,
+          viewportLocal: _pointerUsesMeasuredViewport);
 
   void tryMoveEdgeOnExit(Offset pos) => handleMouse(
         {
@@ -1814,6 +1829,7 @@ class InputModel {
     bool onExit = false,
     bool moveCanvas = true,
     bool edgeScroll = false,
+    bool viewportLocal = false,
   }) {
     if (isViewCamera) return null;
     double x = offset.dx;
@@ -1856,6 +1872,7 @@ class InputModel {
       buttons: evt['buttons'],
       moveCanvas: moveCanvas,
       edgeScroll: edgeScroll,
+      viewportLocal: viewportLocal,
     );
     if (pos == null) {
       return null;
@@ -1889,9 +1906,13 @@ class InputModel {
     bool onExit = false,
     bool moveCanvas = true,
     bool edgeScroll = false,
+    bool viewportLocal = false,
   }) {
     final evtToPeer = processEventToPeer(evt, offset,
-        onExit: onExit, moveCanvas: moveCanvas, edgeScroll: edgeScroll);
+        onExit: onExit,
+        moveCanvas: moveCanvas,
+        edgeScroll: edgeScroll,
+        viewportLocal: viewportLocal);
     if (evtToPeer != null) {
       bind.sessionSendMouse(
           sessionId: sessionId, msg: json.encode(modify(evtToPeer)));
@@ -1909,13 +1930,14 @@ class InputModel {
     int buttons = kPrimaryMouseButton,
     bool moveCanvas = true,
     bool edgeScroll = false,
+    bool viewportLocal = false,
   }) {
     final ffiModel = parent.target!.ffiModel;
     CanvasCoords canvas =
         CanvasCoords.fromCanvasModel(parent.target!.canvasModel);
     Rect? rect = ffiModel.rect;
 
-    if (isMove) {
+    if (isMove && !viewportLocal) {
       if (_remoteWindowCoords.isNotEmpty &&
           _windowRect != null &&
           !_isInCurrentWindow(x, y)) {
@@ -1935,8 +1957,31 @@ class InputModel {
       }
     }
 
-    y -= CanvasModel.topToEdge;
-    x -= CanvasModel.leftToEdge;
+    if (!viewportLocal) {
+      y -= CanvasModel.topToEdge;
+      x -= CanvasModel.leftToEdge;
+    } else if (rect != null && canvas.scrollStyle == ScrollStyle.scrollauto) {
+      final mapped = remotePointFromViewport(
+        localPosition: Offset(x, y),
+        imageOffset: Offset(canvas.x, canvas.y),
+        scale: canvas.scale,
+        remoteOrigin: rect.topLeft,
+        remoteSize: rect.size,
+      );
+      if (mapped == null) return null;
+      if (isMove) {
+        final canvasModel = parent.target!.canvasModel;
+        if (edgeScroll) {
+          canvasModel.edgeScrollMouse(x, y);
+        } else if (moveCanvas) {
+          canvasModel.moveDesktopMouse(x, y);
+        }
+        canvasModel.updateLocalCursor(x, y);
+      }
+      return InputModel.getPointInRemoteRect(
+          true, peerPlatform, kind, evtType, mapped.dx, mapped.dy, rect,
+          buttons: buttons);
+    }
     if (isMove) {
       final canvasModel = parent.target!.canvasModel;
 

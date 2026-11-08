@@ -61,6 +61,19 @@ String _toolbarEdgeToString(_ToolbarEdge e) {
   }
 }
 
+RaatikToolbarEdge _publicToolbarEdge(_ToolbarEdge edge) {
+  switch (edge) {
+    case _ToolbarEdge.right:
+      return RaatikToolbarEdge.right;
+    case _ToolbarEdge.bottom:
+      return RaatikToolbarEdge.bottom;
+    case _ToolbarEdge.left:
+      return RaatikToolbarEdge.left;
+    case _ToolbarEdge.top:
+      return RaatikToolbarEdge.top;
+  }
+}
+
 bool _isHorizontalEdge(_ToolbarEdge e) =>
     e == _ToolbarEdge.top || e == _ToolbarEdge.bottom;
 
@@ -252,6 +265,13 @@ class ToolbarState {
 
   RxBool collapse = false.obs;
   RxBool hide = false.obs;
+  final Rx<RaatikToolbarEdge> dockEdge = RaatikToolbarEdge.top.obs;
+
+  void publishDockEdge(RaatikToolbarEdge edge) {
+    if (dockEdge.value != edge) {
+      dockEdge.value = edge;
+    }
+  }
 
   // Track initialization state to prevent flickering
   final RxBool initialized = false.obs;
@@ -598,6 +618,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       return;
     }
     _edge.value = nextEdge;
+    widget.state.publishDockEdge(_publicToolbarEdge(nextEdge));
     _fraction.value = nextFraction;
     _multiEdgeEnabled.value = multiEdgeEnabled;
     _dockingOptionsInitialized.value = true;
@@ -655,6 +676,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       _multiEdgeEnabled.value = multiEdgeEnabled;
       _dockingOptionsInitialized.value = true;
     }
+    widget.state.publishDockEdge(_publicToolbarEdge(_edge.value));
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _syncDockingOptions(force: cached == null || shouldResetToTop);
@@ -712,12 +734,13 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       if (hide.value) {
         return const SizedBox.shrink();
       }
-      // T1: persistent full-width top bar (no floating pin / multi-edge chrome).
+      // Committed edge only. Drag preview must not move this bar or the image inset.
+      final edge = _edge.value;
       return Align(
-        alignment: Alignment.topCenter,
+        alignment: _alignmentForEdge(edge, 0.5),
         child: KeyedSubtree(
           key: _toolbarKey,
-          child: _buildToolbar(context, _ToolbarEdge.top, true),
+          child: _buildToolbar(context, edge, _isHorizontalEdge(edge)),
         ),
       );
     });
@@ -837,7 +860,10 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
         return Theme(
           data: themeData(),
           child: RaatikRemoteToolbarBar(
-            width: constraints.maxWidth,
+            width: _isHorizontalEdge(edge)
+                ? constraints.maxWidth
+                : constraints.maxHeight,
+            edge: _publicToolbarEdge(edge),
             brandLabel: _buildBrandLabel(),
             primaryItems: primaryItems,
             moreMenu: _MoreMenu(id: widget.id, ffi: widget.ffi),
@@ -3440,6 +3466,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
     if (newEdge == null || frac == null) return;
     widget.edge.value = newEdge;
     widget.fraction.value = frac;
+    widget.toolbarState.publishDockEdge(_publicToolbarEdge(newEdge));
     _cacheToolbarDockingOptions(
       sessionId: widget.sessionId,
       edge: newEdge,

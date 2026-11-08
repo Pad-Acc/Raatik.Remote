@@ -46,6 +46,7 @@ import '../common/widgets/dialog.dart';
 import 'input_model.dart';
 import 'platform_model.dart';
 import 'package:flutter_hbb/utils/scale.dart';
+import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
 
 import 'package:flutter_hbb/generated_bridge.dart'
     if (dart.library.html) 'package:flutter_hbb/web/bridge.dart';
@@ -2130,13 +2131,12 @@ class ViewStyle {
   double get scale {
     double s = 1.0;
     if (style == kRemoteViewStyleAdaptive) {
-      if (width != 0 &&
-          height != 0 &&
-          displayWidth != 0 &&
-          displayHeight != 0) {
-        final s1 = width / displayWidth;
-        final s2 = height / displayHeight;
-        s = s1 < s2 ? s1 : s2;
+      final fitted = fitRemoteViewport(
+        Size(width, height),
+        Size(displayWidth.toDouble(), displayHeight.toDouble()),
+      );
+      if (fitted != null) {
+        s = fitted.scale;
       }
     } else if (style == kRemoteViewStyleCustom) {
       // Custom scale is session-scoped and applied in CanvasModel.updateViewStyle()
@@ -2208,6 +2208,7 @@ class CanvasModel with ChangeNotifier {
   double _scale = 1.0;
   double _devicePixelRatio = 1.0;
   Size _size = Size.zero;
+  Size? _measuredViewport;
   // the tabbar over the image
   // double tabBarHeight = 0.0;
   // the window border's width
@@ -2291,7 +2292,23 @@ class CanvasModel with ChangeNotifier {
   static double get bottomToEdge =>
       isDesktop ? windowBorderWidth + kDragToResizeAreaPadding.bottom : 0;
 
+  bool get hasMeasuredViewport => _measuredViewport != null;
+
+  /// Stores the image viewport. Does not notify; [updateViewStyle] refreshes.
+  void updateViewportSize(Size size) {
+    if (!isUsableViewportSize(size)) return;
+    _measuredViewport = size;
+  }
+
+  void clearViewportSize() {
+    _measuredViewport = null;
+  }
+
   Size getSize() {
+    final measured = _measuredViewport;
+    if (!isMobile && measured != null) {
+      return measured;
+    }
     final mediaData = MediaQueryData.fromView(ui.window);
     final size = mediaData.size;
     // If minimized, w or h may be negative here.
@@ -2402,6 +2419,20 @@ class CanvasModel with ChangeNotifier {
   }
 
   _resetCanvasOffset(int displayWidth, int displayHeight) {
+    if (_lastViewStyle.style == kRemoteViewStyleAdaptive) {
+      final fitted = fitRemoteViewport(
+        Size(size.width, size.height),
+        Size(displayWidth.toDouble(), displayHeight.toDouble()),
+      );
+      if (fitted != null) {
+        _x = fitted.offset.dx;
+        _y = fitted.offset.dy;
+        if (isMobile) {
+          _moveToCenterCursor();
+        }
+        return;
+      }
+    }
     _x = (size.width - displayWidth * _scale) / 2;
     _y = (size.height - displayHeight * _scale) / 2;
     if (isMobile) {
