@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -786,7 +787,7 @@ class RaatikExplicitOption extends StatefulWidget {
   });
 
   final String label;
-  final ValueChanged<String> onSave;
+  final FutureOr<void> Function(String value) onSave;
   final String? hint;
   final String initialValue;
   final bool obscureText;
@@ -841,7 +842,7 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
     super.dispose();
   }
 
-  void _commit() {
+  Future<void> _commit() async {
     if (!widget.enabled) return;
     final value = _controller.text;
     final failure = widget.validator?.call(value);
@@ -853,11 +854,14 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
       setState(() => _error = null);
       return;
     }
-    setState(() {
-      _error = null;
-      _baseline = value;
-    });
-    widget.onSave(value);
+    setState(() => _error = null);
+    try {
+      await widget.onSave(value);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _baseline = value);
   }
 
   @override
@@ -879,7 +883,7 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
         if (_error == null) return;
         setState(() => _error = widget.validator?.call(value));
       },
-      onSubmitted: widget.enabled ? (_) => _commit() : null,
+      onSubmitted: widget.enabled ? (_) => unawaited(_commit()) : null,
       decoration: InputDecoration(
         hintText: widget.placeholder,
         contentPadding: RaatikTokens.inputContentPadding,
@@ -938,7 +942,7 @@ class _RaatikExplicitOptionState extends State<RaatikExplicitOption> {
             child: ElevatedButton(
               key: widget.saveKey,
               focusNode: _saveFocus,
-              onPressed: widget.enabled ? _commit : null,
+              onPressed: widget.enabled ? () => unawaited(_commit()) : null,
               child: Text(widget.saveLabel),
             ),
           ),

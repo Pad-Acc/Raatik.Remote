@@ -1394,9 +1394,10 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                   r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
             ],
             fieldWrapper: (field) => field.workaroundFreezeLinuxMint(),
-            onSave: (value) {
-              bind.mainSetOption(key: kOptionDirectAccessPort, value: value);
-            },
+            onSave: (value) => bind.mainSetOption(
+              key: kOptionDirectAccessPort,
+              value: value,
+            ),
           ),
         );
       }(),
@@ -1530,10 +1531,10 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                   r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
             ],
             fieldWrapper: (field) => field.workaroundFreezeLinuxMint(),
-            onSave: (value) {
-              bind.mainSetOption(
-                  key: kOptionAutoDisconnectTimeout, value: value);
-            },
+            onSave: (value) => bind.mainSetOption(
+              key: kOptionAutoDisconnectTimeout,
+              value: value,
+            ),
           ),
         );
       }(),

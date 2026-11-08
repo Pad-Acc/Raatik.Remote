@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -481,6 +483,93 @@ void main() {
     await tester.pumpAndSettle();
     expect(writes, ['proxy-host:remote.example.test']);
     expect(find.byKey(const ValueKey('global-save-settings')), findsNothing);
+  });
+
+  testWidgets(
+      'explicit save is not saved until its future completes', (tester) async {
+    final gate = Completer<void>();
+    final writes = <String>[];
+    const fieldKey = ValueKey('async-explicit-field');
+    const saveKey = ValueKey('async-explicit-save');
+    await _pump(
+      tester,
+      RaatikExplicitOption(
+        label: 'Port',
+        saveLabel: 'Apply',
+        initialValue: '21118',
+        fieldKey: fieldKey,
+        saveKey: saveKey,
+        onSave: (value) {
+          writes.add(value);
+          return gate.future;
+        },
+      ),
+      const Size(1366, 768),
+      locale: const Locale('en'),
+    );
+
+    await tester.enterText(find.byKey(fieldKey), '21119');
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['21119']);
+
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['21119', '21119']);
+
+    gate.complete();
+    await tester.pump();
+
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['21119', '21119']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('thrown explicit save stays unsaved for a later try',
+      (tester) async {
+    final writes = <String>[];
+    var fail = true;
+    const fieldKey = ValueKey('retry-explicit-field');
+    const saveKey = ValueKey('retry-explicit-save');
+    await _pump(
+      tester,
+      RaatikExplicitOption(
+        label: 'Timeout',
+        saveLabel: 'Apply',
+        initialValue: '10',
+        fieldKey: fieldKey,
+        saveKey: saveKey,
+        onSave: (value) {
+          writes.add(value);
+          if (fail) {
+            return Future<void>.error(StateError('write failed'));
+          }
+          return Future<void>.value();
+        },
+      ),
+      const Size(1366, 768),
+      locale: const Locale('en'),
+    );
+
+    await tester.enterText(find.byKey(fieldKey), '12');
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['12']);
+
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['12', '12']);
+
+    fail = false;
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['12', '12', '12']);
+
+    await tester.tap(find.byKey(saveKey));
+    await tester.pump();
+    expect(writes, ['12', '12', '12']);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('disabled immediate option shows the reason and does not write',
