@@ -36,6 +36,7 @@ class CanvasCoords {
   double scrollX = 0;
   double scrollY = 0;
   ScrollStyle scrollStyle = ScrollStyle.scrollauto;
+  bool imageOverflow = false;
   Size size = Size.zero;
 
   CanvasCoords();
@@ -48,6 +49,7 @@ class CanvasCoords {
       'scrollX': scrollX,
       'scrollY': scrollY,
       'scrollStyle': scrollStyle.toJson(),
+      'imageOverflow': imageOverflow,
       'size': {
         'w': size.width,
         'h': size.height,
@@ -64,6 +66,7 @@ class CanvasCoords {
     model.scrollY = json['scrollY'];
     model.scrollStyle =
         ScrollStyle.fromJson(json['scrollStyle'], ScrollStyle.scrollauto);
+    model.imageOverflow = json['imageOverflow'] == true;
     model.size = Size(json['size']['w'], json['size']['h']);
     return model;
   }
@@ -76,6 +79,7 @@ class CanvasCoords {
     coords.scrollX = model.scrollX;
     coords.scrollY = model.scrollY;
     coords.scrollStyle = model.scrollStyle;
+    coords.imageOverflow = model.imageOverflow.value;
     coords.size = model.size;
     return coords;
   }
@@ -1723,13 +1727,15 @@ class InputModel {
           edgeScroll: useEdgeScroll,
           viewportLocal: _pointerUsesMeasuredViewport);
 
-  void tryMoveEdgeOnExit(Offset pos) => handleMouse(
+  void tryMoveEdgeOnExit(Offset pos, {bool viewportLocal = false}) =>
+      handleMouse(
         {
           'buttons': 0,
           'type': _kMouseEventMove,
         },
         pos,
         onExit: true,
+        viewportLocal: viewportLocal,
       );
 
   static double tryGetNearestRange(double v, double min, double max, double n) {
@@ -1937,7 +1943,12 @@ class InputModel {
         CanvasCoords.fromCanvasModel(parent.target!.canvasModel);
     Rect? rect = ffiModel.rect;
 
-    if (isMove && _remoteWindowCoords.isNotEmpty && _windowRect != null) {
+    // Window-position probes only. Viewport-local and image-local points are
+    // not in this coordinate space.
+    if (!viewportLocal &&
+        isMove &&
+        _remoteWindowCoords.isNotEmpty &&
+        _windowRect != null) {
       final windowWidth = isWindows
           ? _windowRect!.width / devicePixelRatio
           : _windowRect!.width;
@@ -1972,54 +1983,34 @@ class InputModel {
     if (!viewportLocal) {
       y -= CanvasModel.topToEdge;
       x -= CanvasModel.leftToEdge;
-    } else if (rect != null && canvas.scrollStyle == ScrollStyle.scrollauto) {
-      final mapped = remotePointFromViewport(
-        localPosition: Offset(x, y),
-        imageOffset: Offset(canvas.x, canvas.y),
-        scale: canvas.scale,
-        remoteOrigin: rect.topLeft,
-        remoteSize: rect.size,
-      );
-      if (mapped == null) return null;
-      if (isMove) {
-        final canvasModel = parent.target!.canvasModel;
-        if (edgeScroll) {
-          canvasModel.edgeScrollMouse(x, y);
-        } else if (moveCanvas) {
-          canvasModel.moveDesktopMouse(x, y);
-        }
-        canvasModel.updateLocalCursor(x, y);
-      }
-      return InputModel.getPointInRemoteRect(
-          true, peerPlatform, kind, evtType, mapped.dx, mapped.dy, rect,
-          buttons: buttons);
-    } else if (rect != null &&
-        canvas.scrollStyle != ScrollStyle.scrollauto) {
-      // Measured scrollbar and scrolledge listeners sit on the image, including
-      // a scrollbar session whose offset is still zero. x,y stay image-local
-      // for edge scroll and canvas pan. Do not add the scroll fraction or the
-      // centering inset a second time.
-      final mapped = remotePointFromMeasuredScrollImage(
+    } else if (rect != null) {
+      final sample = mapMeasuredAbsolutePointer(
+        imageOverflow: canvas.imageOverflow,
         scrollStyle: canvas.scrollStyle.toJson(),
         localPosition: Offset(x, y),
         scale: canvas.scale,
         remoteOrigin: rect.topLeft,
         remoteSize: rect.size,
-        scrollX: canvas.scrollX,
-        scrollY: canvas.scrollY,
         canvasX: canvas.x,
         canvasY: canvas.y,
-        canvasSize: canvas.size,
       );
-      if (mapped == null) return null;
+      final raw = onExit ? sample.unbounded : sample.remote;
+      if (raw == null) return null;
+      final mapped = onExit ? setNearestEdge(raw.dx, raw.dy, rect) : raw;
       if (isMove) {
         final canvasModel = parent.target!.canvasModel;
         if (edgeScroll) {
-          canvasModel.edgeScrollMouse(x, y);
+          canvasModel.edgeScrollMouse(
+            sample.viewportPosition.dx,
+            sample.viewportPosition.dy,
+          );
         } else if (moveCanvas) {
-          canvasModel.moveDesktopMouse(x, y);
+          canvasModel.moveDesktopMouse(
+            sample.viewportPosition.dx,
+            sample.viewportPosition.dy,
+          );
         }
-        canvasModel.updateLocalCursor(x, y);
+        canvasModel.updateLocalCursor(mapped.dx, mapped.dy);
       }
       return InputModel.getPointInRemoteRect(
           true, peerPlatform, kind, evtType, mapped.dx, mapped.dy, rect,

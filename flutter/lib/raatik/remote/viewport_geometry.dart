@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
+
 /// Fitted remote image inside one measured viewport.
 class RemoteViewportGeometry {
   const RemoteViewportGeometry({
@@ -159,6 +161,92 @@ Offset? remotePointFromMeasuredScrollImage({
   );
 }
 
+/// Remote point and the viewport-space position for edge scroll and canvas pan.
+class MeasuredAbsolutePointer {
+  const MeasuredAbsolutePointer({
+    required this.remote,
+    required this.viewportPosition,
+    required this.unbounded,
+  });
+
+  /// Null when the point is outside the image or the inputs cannot be mapped.
+  final Offset? remote;
+
+  /// Viewport space (`0..size`) for edge scroll and canvas pan.
+  /// Image-listener content plus the canvas translation, or the viewport-local point.
+  final Offset viewportPosition;
+
+  /// Same mapping as [remote], including a point outside the image.
+  /// Null only when the scale or positions are unusable.
+  final Offset? unbounded;
+}
+
+/// Maps one measured absolute pointer in the listener's coordinate space.
+///
+/// The listener is the scrolled image only when [imageOverflow] is true and
+/// [scrollStyle] is not `scrollauto`. Every other measured pointer, including
+/// scroll-auto, is viewport-local and keeps [canvasX] / [canvasY] as the image offset.
+MeasuredAbsolutePointer mapMeasuredAbsolutePointer({
+  required bool imageOverflow,
+  required String scrollStyle,
+  required Offset localPosition,
+  required double scale,
+  required Offset remoteOrigin,
+  required Size remoteSize,
+  required double canvasX,
+  required double canvasY,
+}) {
+  final imageListener = imageOverflow && scrollStyle != 'scrollauto';
+  final canvasOffset = Offset(canvasX, canvasY);
+  final imageOffset = imageListener ? Offset.zero : canvasOffset;
+  final viewportPosition =
+      imageListener ? localPosition + canvasOffset : localPosition;
+  if (!canvasX.isFinite || !canvasY.isFinite) {
+    return MeasuredAbsolutePointer(
+      remote: null,
+      viewportPosition: viewportPosition,
+      unbounded: null,
+    );
+  }
+  return MeasuredAbsolutePointer(
+    remote: remotePointFromViewport(
+      localPosition: localPosition,
+      imageOffset: imageOffset,
+      scale: scale,
+      remoteOrigin: remoteOrigin,
+      remoteSize: remoteSize,
+    ),
+    viewportPosition: viewportPosition,
+    unbounded: _unboundedRemotePoint(
+      localPosition: localPosition,
+      imageOffset: imageOffset,
+      scale: scale,
+      remoteOrigin: remoteOrigin,
+      remoteSize: remoteSize,
+    ),
+  );
+}
+
+Offset? _unboundedRemotePoint({
+  required Offset localPosition,
+  required Offset imageOffset,
+  required double scale,
+  required Offset remoteOrigin,
+  required Size remoteSize,
+}) {
+  if (!scale.isFinite || scale <= 0) return null;
+  if (!localPosition.dx.isFinite || !localPosition.dy.isFinite) return null;
+  if (!imageOffset.dx.isFinite || !imageOffset.dy.isFinite) return null;
+  if (!remoteOrigin.dx.isFinite || !remoteOrigin.dy.isFinite) return null;
+  if (!remoteSize.width.isFinite ||
+      !remoteSize.height.isFinite ||
+      remoteSize.width <= 0 ||
+      remoteSize.height <= 0) {
+    return null;
+  }
+  return remoteOrigin + (localPosition - imageOffset) / scale;
+}
+
 /// Another remote window, in the same coordinate space as the pointer probe.
 class MeasuredWindowSpan {
   const MeasuredWindowSpan({
@@ -228,12 +316,15 @@ MeasuredPointerRetarget? retargetMeasuredPointer({
 
 /// Applies one changed measurement. Unusable sizes are ignored.
 /// Call order is image size, viewport size, view style, then one refresh.
+/// [onChangeResolution] and [onChangeQuality] are not called.
 Future<void> applyMeasuredViewportSize({
   required Size size,
   required void Function(Size size) updateImageWidgetSize,
   required void Function(Size size) updateViewportSize,
   required Future<void> Function() updateViewStyle,
   required void Function() refresh,
+  VoidCallback? onChangeResolution,
+  VoidCallback? onChangeQuality,
 }) async {
   if (!isUsableViewportSize(size)) return;
   updateImageWidgetSize(size);

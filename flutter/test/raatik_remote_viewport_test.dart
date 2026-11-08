@@ -73,6 +73,8 @@ class _ImageProbeState extends State<_ImageProbe> {
         updateViewportSize: widget.spy.viewport,
         updateViewStyle: widget.spy.style,
         refresh: widget.spy.refresh,
+        onChangeResolution: widget.spy.changeResolution,
+        onChangeQuality: widget.spy.changeQuality,
       );
     });
   }

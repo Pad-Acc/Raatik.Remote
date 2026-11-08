@@ -215,53 +215,156 @@ void main() {
     );
   });
 
-  test('scrolledge stays image-local at any canvas offset', () {
+  test('fitted original and custom use the viewport listener', () {
+    const remote = Size(400, 300);
+    const origin = Offset(1920, 0);
+    const originalOffset = Offset(200, 150);
+    final original = mapMeasuredAbsolutePointer(
+      imageOverflow: false,
+      scrollStyle: 'scrollbar',
+      localPosition: originalOffset,
+      scale: 1,
+      remoteOrigin: origin,
+      remoteSize: remote,
+      canvasX: originalOffset.dx,
+      canvasY: originalOffset.dy,
+    );
+    _expectRemote(original.remote, origin);
+    expect(original.viewportPosition, originalOffset);
+    expect(
+      mapMeasuredAbsolutePointer(
+        imageOverflow: false,
+        scrollStyle: 'scrolledge',
+        localPosition: Offset.zero,
+        scale: 1,
+        remoteOrigin: origin,
+        remoteSize: remote,
+        canvasX: originalOffset.dx,
+        canvasY: originalOffset.dy,
+      ).remote,
+      isNull,
+    );
+
+    const customOffset = Offset(300, 225);
+    final custom = mapMeasuredAbsolutePointer(
+      imageOverflow: false,
+      scrollStyle: 'scrollbar',
+      localPosition: customOffset,
+      scale: 0.5,
+      remoteOrigin: origin,
+      remoteSize: remote,
+      canvasX: customOffset.dx,
+      canvasY: customOffset.dy,
+    );
+    _expectRemote(custom.remote, origin);
+    expect(custom.viewportPosition, customOffset);
+    expect(
+      mapMeasuredAbsolutePointer(
+        imageOverflow: false,
+        scrollStyle: 'scrolledge',
+        localPosition: const Offset(10, 10),
+        scale: 0.5,
+        remoteOrigin: origin,
+        remoteSize: remote,
+        canvasX: customOffset.dx,
+        canvasY: customOffset.dy,
+      ).remote,
+      isNull,
+    );
+  });
+
+  test('overflow image listener keeps content and edge-scrolls in viewport space',
+      () {
     const remote = Size(400, 800);
     const local = Offset(10, 130);
-    const scrollY = 120 / 800;
-    const canvas = Size(400, 300);
-    final atZero = remotePointFromMeasuredScrollImage(
+    const canvas = Offset(0, -120);
+    final edge = mapMeasuredAbsolutePointer(
+      imageOverflow: true,
       scrollStyle: 'scrolledge',
       localPosition: local,
       scale: 1,
       remoteOrigin: Offset.zero,
       remoteSize: remote,
-      scrollX: 0,
-      scrollY: scrollY,
-      canvasX: 0,
-      canvasY: 0,
-      canvasSize: canvas,
+      canvasX: canvas.dx,
+      canvasY: canvas.dy,
     );
-    final overflow = remotePointFromMeasuredScrollImage(
-      scrollStyle: 'scrolledge',
-      localPosition: local,
-      scale: 1,
-      remoteOrigin: Offset.zero,
-      remoteSize: remote,
-      scrollX: 0,
-      scrollY: scrollY,
-      canvasX: 0,
-      canvasY: -120,
-      canvasSize: canvas,
-    );
-    _expectRemote(atZero, local);
-    _expectRemote(overflow, local);
-    expect(atZero!.dy, isNot(closeTo(local.dy + remote.height * scrollY, 1e-6)));
+    _expectRemote(edge.remote, local);
+    expect(edge.viewportPosition, local + canvas);
     expect(
-      remotePointFromMeasuredScrollImage(
+      edge.remote!.dy,
+      isNot(closeTo(local.dy + remote.height * (120 / 800), 1e-6)),
+    );
+
+    const shifted = Offset(-40, -120);
+    final bar = mapMeasuredAbsolutePointer(
+      imageOverflow: true,
+      scrollStyle: 'scrollbar',
+      localPosition: local,
+      scale: 1,
+      remoteOrigin: const Offset(1920, 0),
+      remoteSize: remote,
+      canvasX: shifted.dx,
+      canvasY: shifted.dy,
+    );
+    _expectRemote(bar.remote, const Offset(1920, 0) + local);
+    expect(bar.viewportPosition, local + shifted);
+    expect(
+      mapMeasuredAbsolutePointer(
+        imageOverflow: true,
         scrollStyle: 'scrolledge',
         localPosition: const Offset(10, 801),
         scale: 1,
         remoteOrigin: Offset.zero,
         remoteSize: remote,
-        scrollX: 0.25,
-        scrollY: scrollY,
-        canvasX: -40,
-        canvasY: -120,
-        canvasSize: canvas,
-      ),
+        canvasX: canvas.dx,
+        canvasY: canvas.dy,
+      ).remote,
       isNull,
     );
+  });
+
+  test('scroll-auto measured samples stay on the viewport contract', () {
+    final wide =
+        fitRemoteViewport(const Size(1000, 600), const Size(1920, 1080))!;
+    const local = Offset(500, 300);
+    final center = mapMeasuredAbsolutePointer(
+      imageOverflow: false,
+      scrollStyle: 'scrollauto',
+      localPosition: local,
+      scale: wide.scale,
+      remoteOrigin: Offset.zero,
+      remoteSize: const Size(1920, 1080),
+      canvasX: wide.offset.dx,
+      canvasY: wide.offset.dy,
+    );
+    _expectRemote(center.remote, const Offset(960, 540));
+    expect(center.viewportPosition, local);
+
+    final origin = mapMeasuredAbsolutePointer(
+      imageOverflow: false,
+      scrollStyle: 'scrollauto',
+      localPosition: local,
+      scale: wide.scale,
+      remoteOrigin: const Offset(-1920, 0),
+      remoteSize: const Size(1920, 1080),
+      canvasX: wide.offset.dx,
+      canvasY: wide.offset.dy,
+    );
+    _expectRemote(origin.remote, const Offset(-960, 540));
+    expect(origin.viewportPosition, local);
+
+    final overflowAuto = mapMeasuredAbsolutePointer(
+      imageOverflow: true,
+      scrollStyle: 'scrollauto',
+      localPosition: Offset.zero,
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: const Size(1920, 1080),
+      canvasX: -640,
+      canvasY: -204,
+    );
+    _expectRemote(overflowAuto.remote, const Offset(640, 204));
+    expect(overflowAuto.viewportPosition, Offset.zero);
   });
 
   test('scrollbar at canvas offset zero stays image-local', () {
