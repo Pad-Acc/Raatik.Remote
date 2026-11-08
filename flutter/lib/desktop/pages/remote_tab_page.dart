@@ -8,7 +8,9 @@ import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/shared_state.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/input_model.dart';
+import 'package:flutter_hbb/models/model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
+import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_hbb/desktop/pages/remote_page.dart';
 import 'package:flutter_hbb/desktop/widgets/remote_toolbar.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
@@ -541,9 +543,22 @@ class _ConnectionTabPageState extends State<ConnectionTabPage> {
         }
         if (frame != null) {
           ffi.cursorModel.moveLocal(0, 0);
+          final toolbar = remotePage.toolbarState;
+          final inset = raatikToolbarImageInset(
+            edge: toolbar.dockEdge.value,
+            toolbarShown: !toolbar.hide.value && !toolbar.collapse.value,
+            fullscreen: stateGlobal.fullscreen.value,
+            relativeMouse: ffi.inputModel.relativeMouseMode.value,
+          );
+          final imageOrigin =
+              Offset(CanvasModel.leftToEdge, CanvasModel.topToEdge) +
+                  Offset(inset.left, inset.top);
           final coords = RemoteWindowCoords(
               frame,
-              CanvasCoords.fromCanvasModel(ffi.canvasModel),
+              CanvasCoords.fromCanvasModel(
+                ffi.canvasModel,
+                imageOrigin: imageOrigin,
+              ),
               CursorCoords.fromCursorModel(ffi.cursorModel),
               displayRect);
           returnValue = jsonEncode(coords.toJson());

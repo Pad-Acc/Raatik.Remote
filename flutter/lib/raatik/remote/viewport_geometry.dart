@@ -273,6 +273,42 @@ MeasuredAbsolutePointer mapMeasuredAbsolutePointer({
   );
 }
 
+/// Maps a point already in the destination window through that window's image.
+///
+/// The image-viewport point is `windowPoint - imageOrigin`. A viewport listener
+/// (scroll-auto or fitted) then maps
+/// `remoteOrigin + (windowPoint - imageOrigin - offset) / scale`.
+/// Overflow image listeners use [mapMeasuredAbsolutePointer]. A point outside
+/// the destination image leaves [MeasuredAbsolutePointer.remote] null.
+MeasuredAbsolutePointer mapRetargetedWindowPoint({
+  required Offset windowPoint,
+  required Offset imageOrigin,
+  required bool imageOverflow,
+  required String scrollStyle,
+  required double scale,
+  required Offset remoteOrigin,
+  required Size remoteSize,
+  required double canvasX,
+  required double canvasY,
+  Size viewportSize = Size.zero,
+  double scrollX = 0,
+  double scrollY = 0,
+}) {
+  return mapMeasuredAbsolutePointer(
+    imageOverflow: imageOverflow,
+    scrollStyle: scrollStyle,
+    localPosition: windowPoint - imageOrigin,
+    scale: scale,
+    remoteOrigin: remoteOrigin,
+    remoteSize: remoteSize,
+    canvasX: canvasX,
+    canvasY: canvasY,
+    viewportSize: viewportSize,
+    scrollX: scrollX,
+    scrollY: scrollY,
+  );
+}
+
 Offset? _unboundedRemotePoint({
   required Offset localPosition,
   required Offset imageOffset,

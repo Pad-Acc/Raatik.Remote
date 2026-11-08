@@ -39,6 +39,9 @@ class CanvasCoords {
   bool imageOverflow = false;
   Size size = Size.zero;
 
+  /// Image top-left in this window. Window chrome plus the toolbar inset.
+  Offset imageOrigin = Offset.zero;
+
   CanvasCoords();
 
   Map<String, dynamic> toJson() {
@@ -53,7 +56,11 @@ class CanvasCoords {
       'size': {
         'w': size.width,
         'h': size.height,
-      }
+      },
+      'imageOrigin': {
+        'x': imageOrigin.dx,
+        'y': imageOrigin.dy,
+      },
     };
   }
 
@@ -68,10 +75,24 @@ class CanvasCoords {
         ScrollStyle.fromJson(json['scrollStyle'], ScrollStyle.scrollauto);
     model.imageOverflow = json['imageOverflow'] == true;
     model.size = Size(json['size']['w'], json['size']['h']);
+    model.imageOrigin = _imageOriginFromJson(json['imageOrigin']);
     return model;
   }
 
-  static CanvasCoords fromCanvasModel(CanvasModel model) {
+  static Offset _imageOriginFromJson(dynamic json) {
+    if (json is! Map) return Offset.zero;
+    final x = json['x'];
+    final y = json['y'];
+    return Offset(
+      x is num ? x.toDouble() : 0,
+      y is num ? y.toDouble() : 0,
+    );
+  }
+
+  static CanvasCoords fromCanvasModel(
+    CanvasModel model, {
+    Offset? imageOrigin,
+  }) {
     final coords = CanvasCoords();
     coords.x = model.x;
     coords.y = model.y;
@@ -81,6 +102,8 @@ class CanvasCoords {
     coords.scrollStyle = model.scrollStyle;
     coords.imageOverflow = model.imageOverflow.value;
     coords.size = model.size;
+    coords.imageOrigin = imageOrigin ??
+        Offset(CanvasModel.leftToEdge, CanvasModel.topToEdge);
     return coords;
   }
 }
@@ -2001,13 +2024,29 @@ class InputModel {
         windowsPhysicalOffsets: isWindows,
       );
       if (decision.retarget != null) {
+        // The hit is the destination window. Do not pan or edge-scroll here.
         isMove = false;
         final coords = _remoteWindowCoords[decision.retarget!.index];
-        canvas = coords.canvas;
-        rect = coords.remoteRect;
-        x = decision.x;
-        y = decision.y;
-        viewportLocal = false;
+        final hitRect = coords.remoteRect;
+        final sample = mapRetargetedWindowPoint(
+          windowPoint: Offset(decision.x, decision.y),
+          imageOrigin: coords.canvas.imageOrigin,
+          imageOverflow: coords.canvas.imageOverflow,
+          scrollStyle: coords.canvas.scrollStyle.toJson(),
+          scale: coords.canvas.scale,
+          remoteOrigin: hitRect.topLeft,
+          remoteSize: hitRect.size,
+          canvasX: coords.canvas.x,
+          canvasY: coords.canvas.y,
+          viewportSize: coords.canvas.size,
+          scrollX: coords.canvas.scrollX,
+          scrollY: coords.canvas.scrollY,
+        );
+        final raw = sample.remote;
+        if (raw == null) return null;
+        return InputModel.getPointInRemoteRect(
+            true, peerPlatform, kind, evtType, raw.dx, raw.dy, hitRect,
+            buttons: buttons);
       } else if (decision.useMeasuredLocal) {
         x = decision.x;
         y = decision.y;

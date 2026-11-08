@@ -9,6 +9,7 @@ import 'package:flutter_hbb/common/shared_state.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/input_model.dart';
+import 'package:flutter_hbb/models/model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/desktop/pages/view_camera_page.dart';
 import 'package:flutter_hbb/desktop/widgets/remote_toolbar.dart';
@@ -507,7 +508,13 @@ class _ViewCameraTabPageState extends State<ViewCameraTabPage> {
           ffi.cursorModel.moveLocal(0, 0);
           final coords = RemoteWindowCoords(
               frame,
-              CanvasCoords.fromCanvasModel(ffi.canvasModel),
+              CanvasCoords.fromCanvasModel(
+                ffi.canvasModel,
+                imageOrigin: Offset(
+                  CanvasModel.leftToEdge,
+                  CanvasModel.topToEdge,
+                ),
+              ),
               CursorCoords.fromCursorModel(ffi.cursorModel),
               displayRect);
           returnValue = jsonEncode(coords.toJson());

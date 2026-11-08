@@ -543,6 +543,52 @@ void main() {
     expect(refresh.y, measuredLocal.dy);
   });
 
+  test('cross-window move maps through the destination image origin', () {
+    const scale = 1000 / 1920;
+    const offset = Offset(0, 18.75);
+    const remote = Size(1920, 1080);
+    const imageOrigin = Offset(0, 48);
+    const windowPoint = Offset(500, 348);
+    final mapped = mapRetargetedWindowPoint(
+      windowPoint: windowPoint,
+      imageOrigin: imageOrigin,
+      imageOverflow: false,
+      scrollStyle: 'scrollauto',
+      scale: scale,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: offset.dx,
+      canvasY: offset.dy,
+    );
+    _expectRemote(mapped.remote, const Offset(960, 540));
+
+    final ignoredInset = mapMeasuredAbsolutePointer(
+      imageOverflow: false,
+      scrollStyle: 'scrollauto',
+      localPosition: windowPoint,
+      scale: scale,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: offset.dx,
+      canvasY: offset.dy,
+    );
+    expect(ignoredInset.remote, isNotNull);
+    expect(ignoredInset.remote!.dy, isNot(closeTo(540, 1)));
+
+    final onToolbar = mapRetargetedWindowPoint(
+      windowPoint: const Offset(500, 24),
+      imageOrigin: imageOrigin,
+      imageOverflow: false,
+      scrollStyle: 'scrollauto',
+      scale: scale,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: offset.dx,
+      canvasY: offset.dy,
+    );
+    expect(onToolbar.remote, isNull);
+  });
+
   test('measurement apply order ignores unusable sizes', () async {
     final log = <String>[];
     Future<void> apply(Size size) {
