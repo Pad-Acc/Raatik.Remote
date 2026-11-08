@@ -38,19 +38,11 @@ const double _kContentHSubMargin = _kContentHMargin + 33;
 const double _kCheckBoxLeftMargin = 10;
 const double _kRadioLeftMargin = 10;
 const double _kListViewBottomMargin = 15;
-const double _kTitleFontSize = 20;
+const double _kTitleFontSize = 18;
 const double _kContentFontSize = 15;
 const Color _accentColor = MyTheme.accent;
 const String _kSettingPageControllerTag = 'settingPageController';
 const String _kSettingPageTabKeyTag = 'settingPageTabKey';
-
-class _TabInfo {
-  late final SettingsTabKey key;
-  late final String label;
-  late final IconData unselected;
-  late final IconData selected;
-  _TabInfo(this.key, this.label, this.unselected, this.selected);
-}
 
 enum SettingsTabKey {
   general,
@@ -107,7 +99,7 @@ RaatikSettingsSection raatikSectionFor(SettingsTabKey key) {
 
 class DesktopSettingPage extends StatefulWidget {
   final SettingsTabKey initialTabkey;
-  // Customer-first IA (spec §7): عمومی → امنیت → نمایش → شبکه → پیشرفته → درباره
+  // UI-C04 order: General, Safety, Display, Network, Plugin, Account, Printer, About.
   static final List<SettingsTabKey> tabKeys = RaatikSettingsAccess(
     isWeb: isWeb,
     outgoingOnly: bind.isOutgoingOnly(),
@@ -246,70 +238,6 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     _videoConnTimer?.cancel();
   }
 
-  String _groupForTab(SettingsTabKey key) {
-    switch (key) {
-      case SettingsTabKey.general:
-      case SettingsTabKey.safety:
-        return 'عمومی';
-      case SettingsTabKey.display:
-      case SettingsTabKey.network:
-      case SettingsTabKey.plugin:
-      case SettingsTabKey.printer:
-        return 'برای پشتیبان';
-      case SettingsTabKey.account:
-        return 'حساب';
-      case SettingsTabKey.about:
-        return 'درباره';
-    }
-  }
-
-  List<_TabInfo> _settingTabs() {
-    final List<_TabInfo> settingTabs = <_TabInfo>[];
-    for (final tab in DesktopSettingPage.tabKeys) {
-      switch (tab) {
-        case SettingsTabKey.general:
-          // fa: عمومی و ظاهر
-          settingTabs.add(_TabInfo(
-              tab, 'General', Icons.settings_outlined, Icons.settings));
-          break;
-        case SettingsTabKey.safety:
-          // fa: امنیت و دسترسی
-          settingTabs.add(_TabInfo(tab, 'Security',
-              Icons.enhanced_encryption_outlined, Icons.enhanced_encryption));
-          break;
-        case SettingsTabKey.display:
-          // fa: نمایش و کیفیت تصویر
-          settingTabs.add(_TabInfo(tab, 'Display',
-              Icons.desktop_windows_outlined, Icons.desktop_windows));
-          break;
-        case SettingsTabKey.network:
-          // fa: شبکه و سرور راتیک
-          settingTabs
-              .add(_TabInfo(tab, 'Network', Icons.link_outlined, Icons.link));
-          break;
-        case SettingsTabKey.plugin:
-          // fa: پیشرفته (Plugins key — matches lang map)
-          settingTabs.add(_TabInfo(
-              tab, 'Plugins', Icons.extension_outlined, Icons.extension));
-          break;
-        case SettingsTabKey.account:
-          settingTabs.add(
-              _TabInfo(tab, 'Account', Icons.person_outline, Icons.person));
-          break;
-        case SettingsTabKey.printer:
-          settingTabs
-              .add(_TabInfo(tab, 'Printer', Icons.print_outlined, Icons.print));
-          break;
-        case SettingsTabKey.about:
-          // fa: درباره RaatikDesk
-          settingTabs
-              .add(_TabInfo(tab, 'About', Icons.info_outline, Icons.info));
-          break;
-      }
-    }
-    return settingTabs;
-  }
-
   List<Widget> _children() {
     final children = List<Widget>.empty(growable: true);
     for (final tab in DesktopSettingPage.tabKeys) {
@@ -397,18 +325,18 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final tabs = _settingTabs();
-    final destinations = tabs
-        .map(
-          (tab) => RaatikSettingsDestination<SettingsTabKey>(
-            keyValue: tab.key,
-            label: translate(tab.label),
-            group: _groupForTab(tab.key),
-            icon: tab.unselected,
-            selectedIcon: tab.selected,
-          ),
-        )
-        .toList();
+    final locale = Localizations.localeOf(context);
+    final destinations = [
+      for (final tab in DesktopSettingPage.tabKeys)
+        RaatikSettingsDestination<SettingsTabKey>(
+          keyValue: tab,
+          label: raatikSettingsSectionLabel(raatikSectionFor(tab), locale),
+          group: raatikSettingsGroupLabel(raatikSectionFor(tab), locale),
+          icon: raatikSettingsSectionIcon(raatikSectionFor(tab), selected: false),
+          selectedIcon:
+              raatikSettingsSectionIcon(raatikSectionFor(tab), selected: true),
+        ),
+    ];
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -420,7 +348,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
                 destinations: destinations,
                 selected: selectedTab.value,
                 onSelected: _selectTab,
-                title: translate('Settings'),
+                title: raatikSettingsPageTitle(locale),
                 leading: _webLeading(context),
                 content: Container(
                   color: Theme.of(context).scaffoldBackgroundColor,
@@ -1443,70 +1371,34 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
   }
 
   List<Widget> directIp(BuildContext context) {
-    TextEditingController controller = TextEditingController();
     update(bool v) => setState(() {});
-    RxBool applyEnabled = false.obs;
     return [
       _OptionCheckBox(context, 'Enable direct IP access', kOptionDirectServer,
           update: update, enabled: !locked),
       () {
-        // Simple temp wrapper for PR check
-        tmpWrapper() {
-          bool enabled = option2bool(kOptionDirectServer,
-              bind.mainGetOptionSync(key: kOptionDirectServer));
-          if (!enabled) applyEnabled.value = false;
-          controller.text =
-              bind.mainGetOptionSync(key: kOptionDirectAccessPort);
-          final isOptFixed = isOptionFixed(kOptionDirectAccessPort);
-          return Offstage(
-            offstage: !enabled,
-            child: _SubLabeledWidget(
-              context,
-              'Port',
-              Row(children: [
-                SizedBox(
-                  width: 95,
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 15),
-                    child: TextField(
-                    controller: controller,
-                    enabled: enabled && !locked && !isOptFixed,
-                    onChanged: (_) => applyEnabled.value = true,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(
-                          r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
-                    ],
-                    decoration: const InputDecoration(
-                      hintText: '21118',
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                    ),
-                  ).workaroundFreezeLinuxMint(),
-                  ),
-                ),
-                Obx(() => ElevatedButton(
-                      onPressed: applyEnabled.value &&
-                              enabled &&
-                              !locked &&
-                              !isOptFixed
-                          ? () async {
-                              applyEnabled.value = false;
-                              await bind.mainSetOption(
-                                  key: kOptionDirectAccessPort,
-                                  value: controller.text);
-                            }
-                          : null,
-                      child: Text(
-                        translate('Apply'),
-                      ),
-                    ))
-              ]),
-              enabled: enabled && !locked && !isOptFixed,
-            ),
-          );
-        }
-
-        return tmpWrapper();
+        final enabled = option2bool(kOptionDirectServer,
+            bind.mainGetOptionSync(key: kOptionDirectServer));
+        final isOptFixed = isOptionFixed(kOptionDirectAccessPort);
+        final canEdit = enabled && !locked && !isOptFixed;
+        return Offstage(
+          offstage: !enabled,
+          child: RaatikExplicitOption(
+            label: translate('Port'),
+            placeholder: '21118',
+            initialValue: bind.mainGetOptionSync(key: kOptionDirectAccessPort),
+            enabled: canEdit,
+            saveLabel: translate('Apply'),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(
+                  r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
+            ],
+            fieldWrapper: (field) => field.workaroundFreezeLinuxMint(),
+            onSave: (value) {
+              bind.mainSetOption(key: kOptionDirectAccessPort, value: value);
+            },
+          ),
+        );
       }(),
     ];
   }
@@ -1613,62 +1505,35 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
   }
 
   List<Widget> autoDisconnect(BuildContext context) {
-    TextEditingController controller = TextEditingController();
     update(bool v) => setState(() {});
-    RxBool applyEnabled = false.obs;
     return [
       _OptionCheckBox(
           context, 'auto_disconnect_option_tip', kOptionAllowAutoDisconnect,
           update: update, enabled: !locked),
       () {
-        bool enabled = option2bool(kOptionAllowAutoDisconnect,
+        final enabled = option2bool(kOptionAllowAutoDisconnect,
             bind.mainGetOptionSync(key: kOptionAllowAutoDisconnect));
-        if (!enabled) applyEnabled.value = false;
-        controller.text =
-            bind.mainGetOptionSync(key: kOptionAutoDisconnectTimeout);
         final isOptFixed = isOptionFixed(kOptionAutoDisconnectTimeout);
+        final canEdit = enabled && !locked && !isOptFixed;
         return Offstage(
           offstage: !enabled,
-          child: _SubLabeledWidget(
-            context,
-            'Timeout in minutes',
-            Row(children: [
-              SizedBox(
-                width: 95,
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 15),
-                  child: TextField(
-                  controller: controller,
-                  enabled: enabled && !locked && !isOptFixed,
-                  onChanged: (_) => applyEnabled.value = true,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(
-                        r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
-                  ],
-                  decoration: const InputDecoration(
-                    hintText: '10',
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                  ),
-                ).workaroundFreezeLinuxMint(),
-                ),
-              ),
-              Obx(() => ElevatedButton(
-                    onPressed:
-                        applyEnabled.value && enabled && !locked && !isOptFixed
-                            ? () async {
-                                applyEnabled.value = false;
-                                await bind.mainSetOption(
-                                    key: kOptionAutoDisconnectTimeout,
-                                    value: controller.text);
-                              }
-                            : null,
-                    child: Text(
-                      translate('Apply'),
-                    ),
-                  ))
-            ]),
-            enabled: enabled && !locked && !isOptFixed,
+          child: RaatikExplicitOption(
+            label: translate('Timeout in minutes'),
+            placeholder: '10',
+            initialValue:
+                bind.mainGetOptionSync(key: kOptionAutoDisconnectTimeout),
+            enabled: canEdit,
+            saveLabel: translate('Apply'),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(
+                  r'^([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$')),
+            ],
+            fieldWrapper: (field) => field.workaroundFreezeLinuxMint(),
+            onSave: (value) {
+              bind.mainSetOption(
+                  key: kOptionAutoDisconnectTimeout, value: value);
+            },
           ),
         );
       }(),
@@ -2737,6 +2602,8 @@ Widget _Card(
                           textAlign: TextAlign.start,
                           style: const TextStyle(
                             fontSize: _kTitleFontSize,
+                            fontWeight: FontWeight.bold,
+                            height: 1.6,
                           ),
                         )),
                         ...?title_suffix
@@ -2802,41 +2669,20 @@ Widget _OptionCheckBox(
     enabled = false;
   }
 
-  return GestureDetector(
-    child: Padding(
-      padding: const EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
-      child: Obx(
-        () => Row(
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 5),
-              child: Checkbox(
-                  value: ref.value,
-                  onChanged: enabled && !isOptFixed ? onChanged : null),
-            ),
-            Offstage(
-              offstage: !ref.value || checkedIcon == null,
-              child: checkedIcon == null
-                  ? const SizedBox.shrink()
-                  : Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 5),
-                      child: checkedIcon,
-                    ),
-            ),
-            Expanded(
-                child: Text(
-              translate(label),
-              style: TextStyle(color: disabledTextColor(context, enabled)),
-            ))
-          ],
-        ),
+  return Padding(
+    padding: const EdgeInsetsDirectional.only(start: _kCheckBoxLeftMargin),
+    child: Obx(
+      () => RaatikImmediateOption(
+        optionKey: key,
+        label: translate(label),
+        value: ref.value,
+        enabled: enabled && !isOptFixed,
+        badge: ref.value ? checkedIcon : null,
+        onChanged: (next) {
+          onChanged(next);
+        },
       ),
     ),
-    onTap: enabled && !isOptFixed
-        ? () {
-            onChanged(!ref.value);
-          }
-        : null,
   );
 }
 
@@ -3024,6 +2870,7 @@ class _WaylandCardState extends State<WaylandCard> {
                             .copyWith(color: Colors.red))
                     .marginOnly(bottom: 10.0)),
       ),
+      const SizedBox(height: 12),
       _Button(
         'Reset keyboard shortcuts permission',
         showConfirmMsgBox,
@@ -3082,19 +2929,27 @@ Widget _SubButton(String label, Function() onPressed, [bool enabled = true]) {
 Widget _SubLabeledWidget(BuildContext context, String label, Widget child,
     {bool enabled = true}) {
   return Padding(
-    padding: EdgeInsetsDirectional.only(start: _kContentHSubMargin),
-    child: Row(
-    children: [
-      Text(
-        '${translate(label)}: ',
-        style: TextStyle(color: disabledTextColor(context, enabled)),
-      ),
-      SizedBox(
-        width: 10,
-      ),
-      child,
-    ],
-  ),
+    padding: const EdgeInsetsDirectional.only(
+      start: _kContentHSubMargin,
+      top: 8,
+      bottom: 8,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${translate(label)}:',
+          softWrap: true,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.6,
+            color: disabledTextColor(context, enabled),
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    ),
   );
 }
 
