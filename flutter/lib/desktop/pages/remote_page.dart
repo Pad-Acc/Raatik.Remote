@@ -429,6 +429,16 @@ class _RemotePageState extends State<RemotePage>
         final toolbarShown = !widget.toolbarState.hide.value &&
             !widget.toolbarState.collapse.value;
         final fullscreen = stateGlobal.fullscreen.value;
+        final inset = raatikToolbarImageInset(
+          edge: widget.toolbarState.dockEdge.value,
+          toolbarShown: toolbarShown,
+          fullscreen: fullscreen,
+          relativeMouse: relative,
+        );
+        _ffi.inputModel.raatikImageOrigin = raatikRemoteImageOrigin(
+          windowChrome: Offset(CanvasModel.leftToEdge, CanvasModel.topToEdge),
+          toolbarInset: Offset(inset.left, inset.top),
+        );
         final toolbarChild = relative
             ? const SizedBox.shrink()
             : _ffi.ffiModel.pi.isSet.isTrue

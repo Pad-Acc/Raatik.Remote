@@ -477,6 +477,11 @@ class InputModel {
   final isPhysicalMouse = false.obs;
   int _lastButtons = 0;
   Offset lastMousePos = Offset.zero;
+
+  /// Image top-left in this window. The remote page publishes chrome plus
+  /// the current toolbar inset. Menu hover subtracts it once the viewport
+  /// is measured.
+  Offset raatikImageOrigin = Offset.zero;
   int _lastWheelTsUs = 0;
 
   // Wheel acceleration thresholds.
@@ -1350,7 +1355,7 @@ class InputModel {
     if (isViewOnly) return;
     if (isViewCamera) return;
     if (peerPlatform == kPeerPlatformAndroid) {
-      handlePointerEvent('touch', kMouseEventTypePanStart, e.position);
+      _handleAndroidTrackpadBoundary(kMouseEventTypePanStart, e.position);
     }
   }
 
@@ -1482,7 +1487,7 @@ class InputModel {
   void onPointerPanZoomEnd(PointerPanZoomEndEvent e) {
     if (isViewCamera) return;
     if (peerPlatform == kPeerPlatformAndroid) {
-      handlePointerEvent('touch', kMouseEventTypePanEnd, e.position);
+      _handleAndroidTrackpadBoundary(kMouseEventTypePanEnd, e.position);
       return;
     }
 
@@ -1641,6 +1646,57 @@ class InputModel {
   bool get _pointerUsesMeasuredViewport =>
       (isDesktop || isWebDesktop) &&
       (parent.target?.canvasModel.hasMeasuredViewport ?? false);
+
+  /// Same gate as [refreshMousePos]. Menu hover reads it before storing.
+  bool get pointerUsesMeasuredViewport => _pointerUsesMeasuredViewport;
+
+  /// Android trackpad pan start/end. A measured viewport maps the window
+  /// point through [raatikImageOrigin]. An unmeasured viewport keeps the
+  /// absolute path. Pan updates stay deltas and do not come here.
+  void _handleAndroidTrackpadBoundary(String type, Offset windowPosition) {
+    if (!_pointerUsesMeasuredViewport) {
+      handlePointerEvent('touch', type, windowPosition);
+      return;
+    }
+    final stored = raatikMenuStoredPoint(
+      windowPosition: windowPosition,
+      imageOrigin: raatikImageOrigin,
+      viewportMeasured: true,
+    );
+    if (_checkPeerControlProtected(stored.dx, stored.dy)) {
+      return;
+    }
+    final target = parent.target;
+    final rect = target?.ffiModel.rect;
+    if (target == null || rect == null) return;
+    final canvas = CanvasCoords.fromCanvasModel(target.canvasModel);
+    final sample = mapRetargetedWindowPoint(
+      windowPoint: windowPosition,
+      imageOrigin: raatikImageOrigin,
+      imageOverflow: canvas.imageOverflow,
+      scrollStyle: canvas.scrollStyle.toJson(),
+      scale: canvas.scale,
+      remoteOrigin: rect.topLeft,
+      remoteSize: rect.size,
+      canvasX: canvas.x,
+      canvasY: canvas.y,
+      viewportSize: canvas.size,
+      scrollX: canvas.scrollX,
+      scrollY: canvas.scrollY,
+    );
+    final raw = sample.remote;
+    if (raw == null) return;
+    final pos = InputModel.getPointInRemoteRect(
+        true, peerPlatform, kPointerEventKindTouch, type, raw.dx, raw.dy, rect);
+    if (pos == null) return;
+    final evt = PointerEventToRust(kPointerEventKindTouch, type, {
+      'x': pos.x.toInt(),
+      'y': pos.y.toInt(),
+    }).toJson();
+    if (isViewCamera) return;
+    bind.sessionSendPointer(
+        sessionId: sessionId, msg: json.encode(modify(evt)));
+  }
 
   /// Convert pointer coordinates into the visible remote canvas space.
   ///

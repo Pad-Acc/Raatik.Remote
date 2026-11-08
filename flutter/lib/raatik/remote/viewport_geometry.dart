@@ -356,6 +356,30 @@ MeasuredAbsolutePointer mapRetargetedWindowPoint({
   );
 }
 
+/// Image top-left in the window: chrome plus the toolbar inset.
+///
+/// [windowChrome] is `(leftToEdge, topToEdge)`. [toolbarInset] is
+/// `(inset.left, inset.top)` for the current dock.
+Offset raatikRemoteImageOrigin({
+  required Offset windowChrome,
+  required Offset toolbarInset,
+}) {
+  return windowChrome + toolbarInset;
+}
+
+/// Menu hover point stored for a later refresh.
+///
+/// A measured viewport stores `windowPosition - imageOrigin`. An unmeasured
+/// viewport stores the window position.
+Offset raatikMenuStoredPoint({
+  required Offset windowPosition,
+  required Offset imageOrigin,
+  required bool viewportMeasured,
+}) {
+  if (!viewportMeasured) return windowPosition;
+  return windowPosition - imageOrigin;
+}
+
 Offset? _unboundedRemotePoint({
   required Offset localPosition,
   required Offset imageOffset,

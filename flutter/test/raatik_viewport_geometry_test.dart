@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
+import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 
 void _expectRemote(Offset? actual, Offset expected) {
   expect(actual, isNotNull);
@@ -647,6 +648,87 @@ void main() {
     );
     _expectRemote(scrollAuto.remote, viewportPoint - canvasInset);
     expect(scrollAuto.remote!.dy, isNot(closeTo(150, 1)));
+  });
+
+  test('menu storage and trackpad origin follow the toolbar inset', () {
+    const scale = 1000 / 1920;
+    const offset = Offset(0, 18.75);
+    const remote = Size(1920, 1080);
+    Offset contractRemote(Offset local) {
+      return mapMeasuredAbsolutePointer(
+        imageOverflow: false,
+        scrollStyle: 'scrollauto',
+        localPosition: local,
+        scale: scale,
+        remoteOrigin: Offset.zero,
+        remoteSize: remote,
+        canvasX: offset.dx,
+        canvasY: offset.dy,
+      ).remote!;
+    }
+
+    final shown = raatikToolbarImageInset(
+      edge: RaatikToolbarEdge.top,
+      toolbarShown: true,
+      fullscreen: false,
+    );
+    expect(shown.top, 48);
+    final shownOrigin = raatikRemoteImageOrigin(
+      windowChrome: Offset.zero,
+      toolbarInset: Offset(shown.left, shown.top),
+    );
+    final shownLocal = raatikMenuStoredPoint(
+      windowPosition: const Offset(500, 348),
+      imageOrigin: shownOrigin,
+      viewportMeasured: true,
+    );
+    expect(shownLocal, const Offset(500, 300));
+    _expectRemote(contractRemote(shownLocal), const Offset(960, 540));
+    expect(
+      raatikMenuStoredPoint(
+        windowPosition: const Offset(500, 348),
+        imageOrigin: shownOrigin,
+        viewportMeasured: false,
+      ),
+      const Offset(500, 348),
+    );
+
+    final hidden = raatikToolbarImageInset(
+      edge: RaatikToolbarEdge.top,
+      toolbarShown: false,
+      fullscreen: false,
+    );
+    expect(hidden.top, 20);
+    final hiddenOrigin = raatikRemoteImageOrigin(
+      windowChrome: Offset.zero,
+      toolbarInset: Offset(hidden.left, hidden.top),
+    );
+    final hiddenLocal = raatikMenuStoredPoint(
+      windowPosition: const Offset(500, 320),
+      imageOrigin: hiddenOrigin,
+      viewportMeasured: true,
+    );
+    expect(hiddenLocal, const Offset(500, 300));
+    _expectRemote(contractRemote(hiddenLocal), const Offset(960, 540));
+    final always48 = const Offset(500, 320) - const Offset(0, 48);
+    expect(always48, isNot(hiddenLocal));
+    expect(contractRemote(always48).dy, isNot(closeTo(540, 1)));
+
+    final overflow = mapRetargetedWindowPoint(
+      windowPoint: const Offset(210, 98),
+      imageOrigin: shownOrigin,
+      imageOverflow: true,
+      scrollStyle: 'scrolledge',
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: const Size(400, 800),
+      canvasX: 200,
+      canvasY: -200,
+      viewportSize: const Size(800, 400),
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    _expectRemote(overflow.remote, const Offset(10, 150));
   });
 
   test('measurement apply order ignores unusable sizes', () async {

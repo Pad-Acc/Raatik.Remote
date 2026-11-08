@@ -10,6 +10,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/input_model.dart';
 import 'package:flutter_hbb/models/model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
+import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_hbb/desktop/pages/remote_page.dart';
 import 'package:flutter_hbb/desktop/widgets/remote_toolbar.dart';
@@ -550,9 +551,10 @@ class _ConnectionTabPageState extends State<ConnectionTabPage> {
             fullscreen: stateGlobal.fullscreen.value,
             relativeMouse: ffi.inputModel.relativeMouseMode.value,
           );
-          final imageOrigin =
-              Offset(CanvasModel.leftToEdge, CanvasModel.topToEdge) +
-                  Offset(inset.left, inset.top);
+          final imageOrigin = raatikRemoteImageOrigin(
+            windowChrome: Offset(CanvasModel.leftToEdge, CanvasModel.topToEdge),
+            toolbarInset: Offset(inset.left, inset.top),
+          );
           final coords = RemoteWindowCoords(
               frame,
               CanvasCoords.fromCanvasModel(

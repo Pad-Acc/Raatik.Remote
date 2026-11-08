@@ -15,6 +15,7 @@ import 'package:flutter_hbb/plugin/common.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
+import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -3714,8 +3715,14 @@ _menuDismissCallback(FFI ffi) => ffi.inputModel.refreshMousePos();
 
 Widget _buildPointerTrackWidget(Widget child, FFI? ffi) {
   return Listener(
-    onPointerHover: (PointerHoverEvent e) => {
-      if (ffi != null) {ffi.inputModel.lastMousePos = e.position}
+    onPointerHover: (PointerHoverEvent e) {
+      if (ffi == null) return;
+      final input = ffi.inputModel;
+      input.lastMousePos = raatikMenuStoredPoint(
+        windowPosition: e.position,
+        imageOrigin: input.raatikImageOrigin,
+        viewportMeasured: input.pointerUsesMeasuredViewport,
+      );
     },
     child: MouseRegion(
       child: child,
