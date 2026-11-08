@@ -207,6 +207,32 @@ double viewportAxisFromImageListener({
   return local + spacer;
 }
 
+/// Image-listener content of one axis from a viewport-space point.
+///
+/// Inverse of [viewportAxisFromImageListener]. A scrolled axis adds
+/// `imageExtent * scrollFraction`. An unfilled axis subtracts the integer
+/// spacer `((viewportExtent - imageExtent) ~/ 2)`. The centering inset is
+/// not an input. Used only by [mapRetargetedWindowPoint].
+double imageListenerAxisFromViewport({
+  required double viewport,
+  required double viewportExtent,
+  required double imageExtent,
+  required double scrollFraction,
+}) {
+  if (!viewport.isFinite ||
+      !viewportExtent.isFinite ||
+      !imageExtent.isFinite ||
+      imageExtent < 0) {
+    return viewport;
+  }
+  if (viewportExtent < imageExtent) {
+    final fraction = scrollFraction.isFinite ? scrollFraction : 0.0;
+    return viewport + imageExtent * fraction;
+  }
+  final spacer = ((viewportExtent - imageExtent) ~/ 2).toDouble();
+  return viewport - spacer;
+}
+
 /// Maps one measured absolute pointer in the listener's coordinate space.
 ///
 /// The listener is the scrolled image only when [imageOverflow] is true and
@@ -278,7 +304,9 @@ MeasuredAbsolutePointer mapMeasuredAbsolutePointer({
 /// The image-viewport point is `windowPoint - imageOrigin`. A viewport listener
 /// (scroll-auto or fitted) then maps
 /// `remoteOrigin + (windowPoint - imageOrigin - offset) / scale`.
-/// Overflow image listeners use [mapMeasuredAbsolutePointer]. A point outside
+/// An overflow image listener converts that viewport point with
+/// [imageListenerAxisFromViewport] before [mapMeasuredAbsolutePointer].
+/// [canvasX] and [canvasY] are not that scroll translation. A point outside
 /// the destination image leaves [MeasuredAbsolutePointer.remote] null.
 MeasuredAbsolutePointer mapRetargetedWindowPoint({
   required Offset windowPoint,
@@ -294,10 +322,29 @@ MeasuredAbsolutePointer mapRetargetedWindowPoint({
   double scrollX = 0,
   double scrollY = 0,
 }) {
+  final viewportPoint = windowPoint - imageOrigin;
+  final imageListener = imageOverflow && scrollStyle != 'scrollauto';
+  final imageExtent = Size(remoteSize.width * scale, remoteSize.height * scale);
+  final localPosition = imageListener
+      ? Offset(
+          imageListenerAxisFromViewport(
+            viewport: viewportPoint.dx,
+            viewportExtent: viewportSize.width,
+            imageExtent: imageExtent.width,
+            scrollFraction: scrollX,
+          ),
+          imageListenerAxisFromViewport(
+            viewport: viewportPoint.dy,
+            viewportExtent: viewportSize.height,
+            imageExtent: imageExtent.height,
+            scrollFraction: scrollY,
+          ),
+        )
+      : viewportPoint;
   return mapMeasuredAbsolutePointer(
     imageOverflow: imageOverflow,
     scrollStyle: scrollStyle,
-    localPosition: windowPoint - imageOrigin,
+    localPosition: localPosition,
     scale: scale,
     remoteOrigin: remoteOrigin,
     remoteSize: remoteSize,

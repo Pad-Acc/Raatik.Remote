@@ -589,6 +589,66 @@ void main() {
     expect(onToolbar.remote, isNull);
   });
 
+  test('overflow handoff maps the viewport point back to image content', () {
+    const imageOrigin = Offset(0, 48);
+    const windowPoint = Offset(210, 98);
+    const viewportPoint = Offset(210, 50);
+    const viewport = Size(800, 400);
+    const remote = Size(400, 800);
+    const canvasInset = Offset(200, -200);
+    final mapped = mapRetargetedWindowPoint(
+      windowPoint: windowPoint,
+      imageOrigin: imageOrigin,
+      imageOverflow: true,
+      scrollStyle: 'scrolledge',
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: canvasInset.dx,
+      canvasY: canvasInset.dy,
+      viewportSize: viewport,
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    _expectRemote(mapped.remote, const Offset(10, 150));
+    expect(mapped.viewportPosition, viewportPoint);
+    expect(windowPoint - imageOrigin, viewportPoint);
+
+    final treatedAsContent = mapMeasuredAbsolutePointer(
+      imageOverflow: true,
+      scrollStyle: 'scrolledge',
+      localPosition: viewportPoint,
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: canvasInset.dx,
+      canvasY: canvasInset.dy,
+      viewportSize: viewport,
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    _expectRemote(treatedAsContent.remote, viewportPoint);
+    expect(treatedAsContent.remote!.dx, isNot(closeTo(10, 1e-6)));
+    expect(treatedAsContent.remote!.dy, isNot(closeTo(150, 1e-6)));
+
+    final scrollAuto = mapRetargetedWindowPoint(
+      windowPoint: windowPoint,
+      imageOrigin: imageOrigin,
+      imageOverflow: true,
+      scrollStyle: 'scrollauto',
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: canvasInset.dx,
+      canvasY: canvasInset.dy,
+      viewportSize: viewport,
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    _expectRemote(scrollAuto.remote, viewportPoint - canvasInset);
+    expect(scrollAuto.remote!.dy, isNot(closeTo(150, 1)));
+  });
+
   test('measurement apply order ignores unusable sizes', () async {
     final log = <String>[];
     Future<void> apply(Size size) {

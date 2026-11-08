@@ -681,8 +681,7 @@ class _RemotePageState extends State<RemotePage>
       Positioned(
         top: 10,
         right: 10,
-        child: _buildRawTouchAndPointerRegion(
-            QualityMonitor(_ffi.qualityMonitorModel), null, null),
+        child: QualityMonitor(_ffi.qualityMonitorModel),
       ),
     );
     return Stack(
