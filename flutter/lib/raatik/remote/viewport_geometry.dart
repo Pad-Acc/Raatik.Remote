@@ -412,6 +412,95 @@ Offset raatikMenuStoredPoint({
   return windowPosition - imageOrigin;
 }
 
+/// Mapping chosen for one stored desktop point when the viewport is refreshed.
+class RaatikMeasurementRefresh {
+  const RaatikMeasurementRefresh({
+    required this.viewportLocal,
+    required this.mapWindowPoint,
+    this.remote,
+  });
+
+  /// True only when the stored point was written after measurement.
+  final bool viewportLocal;
+
+  /// True when [remote] is mapped from a window point and the image origin.
+  final bool mapWindowPoint;
+
+  /// Null when the point is outside the image, or the viewport is unmeasured.
+  final Offset? remote;
+}
+
+/// Measurement refresh for a stored desktop point.
+///
+/// A window-space point on a measured viewport maps through
+/// [mapRetargetedWindowPoint] and [imageOrigin]. An image-local point maps
+/// through [mapMeasuredAbsolutePointer] and does not subtract [imageOrigin]
+/// again. An unmeasured viewport stays on the old window path: [viewportLocal]
+/// and [mapWindowPoint] are false, and [remote] is null. A point outside the
+/// image leaves [remote] null.
+RaatikMeasurementRefresh decideRaatikMeasurementRefresh({
+  required Offset storedPoint,
+  required bool windowSpace,
+  required bool viewportMeasured,
+  required Offset imageOrigin,
+  required bool imageOverflow,
+  required String scrollStyle,
+  required double scale,
+  required Offset remoteOrigin,
+  required Size remoteSize,
+  double canvasX = 0,
+  double canvasY = 0,
+  Size viewportSize = Size.zero,
+  double scrollX = 0,
+  double scrollY = 0,
+}) {
+  if (!viewportMeasured) {
+    return const RaatikMeasurementRefresh(
+      viewportLocal: false,
+      mapWindowPoint: false,
+    );
+  }
+  if (windowSpace) {
+    final sample = mapRetargetedWindowPoint(
+      windowPoint: storedPoint,
+      imageOrigin: imageOrigin,
+      imageOverflow: imageOverflow,
+      scrollStyle: scrollStyle,
+      scale: scale,
+      remoteOrigin: remoteOrigin,
+      remoteSize: remoteSize,
+      canvasX: canvasX,
+      canvasY: canvasY,
+      viewportSize: viewportSize,
+      scrollX: scrollX,
+      scrollY: scrollY,
+    );
+    return RaatikMeasurementRefresh(
+      viewportLocal: false,
+      mapWindowPoint: true,
+      remote: sample.remote,
+    );
+  }
+  final sample = mapMeasuredAbsolutePointer(
+    imageOverflow: imageOverflow,
+    scrollStyle: scrollStyle,
+    localPosition: storedPoint,
+    scale: scale,
+    remoteOrigin: remoteOrigin,
+    remoteSize: remoteSize,
+    canvasX: canvasX,
+    canvasY: canvasY,
+    viewportSize: viewportSize,
+    scrollX: scrollX,
+    scrollY: scrollY,
+  );
+  return RaatikMeasurementRefresh(
+    viewportLocal: true,
+    mapWindowPoint: false,
+    remote: sample.remote,
+  );
+}
+
 Offset? _unboundedRemotePoint({
   required Offset localPosition,
   required Offset imageOffset,

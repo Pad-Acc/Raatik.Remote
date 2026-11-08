@@ -773,6 +773,64 @@ void main() {
     expect(toolbarBand.remote?.dy, isNot(closeTo(800 * 0.125, 1e-6)));
   });
 
+  test('first measurement refresh maps a stored window point', () {
+    const scale = 1000 / 1920;
+    const offset = Offset(0, 18.75);
+    const remote = Size(1920, 1080);
+    const origin = Offset(0, 48);
+    const windowPoint = Offset(500, 348);
+    const imageLocal = Offset(500, 300);
+
+    RaatikMeasurementRefresh decide({
+      required Offset storedPoint,
+      required bool windowSpace,
+      bool viewportMeasured = true,
+    }) {
+      return decideRaatikMeasurementRefresh(
+        storedPoint: storedPoint,
+        windowSpace: windowSpace,
+        viewportMeasured: viewportMeasured,
+        imageOrigin: origin,
+        imageOverflow: false,
+        scrollStyle: 'scrollauto',
+        scale: scale,
+        remoteOrigin: Offset.zero,
+        remoteSize: remote,
+        canvasX: offset.dx,
+        canvasY: offset.dy,
+      );
+    }
+
+    final fromWindow = decide(storedPoint: windowPoint, windowSpace: true);
+    expect(fromWindow.mapWindowPoint, isTrue);
+    expect(fromWindow.viewportLocal, isFalse);
+    _expectRemote(fromWindow.remote, const Offset(960, 540));
+
+    final treatedAsImage = decide(storedPoint: windowPoint, windowSpace: false);
+    expect(treatedAsImage.viewportLocal, isTrue);
+    expect(treatedAsImage.mapWindowPoint, isFalse);
+    expect(treatedAsImage.remote, isNotNull);
+    expect(treatedAsImage.remote!.dy, isNot(closeTo(540, 1)));
+
+    final fromImage = decide(storedPoint: imageLocal, windowSpace: false);
+    expect(fromImage.viewportLocal, isTrue);
+    expect(fromImage.mapWindowPoint, isFalse);
+    _expectRemote(fromImage.remote, const Offset(960, 540));
+
+    final subtractedAgain = decide(storedPoint: imageLocal, windowSpace: true);
+    expect(subtractedAgain.remote, isNotNull);
+    expect(subtractedAgain.remote!.dy, isNot(closeTo(540, 1)));
+
+    final unmeasured = decide(
+      storedPoint: windowPoint,
+      windowSpace: true,
+      viewportMeasured: false,
+    );
+    expect(unmeasured.viewportLocal, isFalse);
+    expect(unmeasured.mapWindowPoint, isFalse);
+    expect(unmeasured.remote, isNull);
+  });
+
   test('measurement apply order ignores unusable sizes', () async {
     final log = <String>[];
     Future<void> apply(Size size) {

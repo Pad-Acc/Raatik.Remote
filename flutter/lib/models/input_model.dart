@@ -478,6 +478,11 @@ class InputModel {
   int _lastButtons = 0;
   Offset lastMousePos = Offset.zero;
 
+  /// True when [lastMousePos] is a desktop window point (`event.position`).
+  /// An image-listener sample after measurement stores `localPosition` and
+  /// clears this. Measurement refresh reads it before any peer-control write.
+  bool _lastMousePosIsWindowSpace = true;
+
   /// Original window position from the latest measured menu hover.
   /// Image pointer events clear it. Unmeasured hovers leave it null.
   Offset? _menuRefreshWindow;
@@ -1346,6 +1351,7 @@ class InputModel {
     if (isPhysicalMouse.value) {
       if (!_relativeMouse.handleRelativeMouseMove(e.localPosition)) {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
+        _noteDesktopImageSample();
         handleMouse(_getMouseEvent(e, _kMouseEventMove), canvasPosition,
             edgeScroll: useEdgeScroll,
             viewportLocal: _pointerUsesMeasuredViewport,
@@ -1591,6 +1597,7 @@ class InputModel {
             .sendRelativeMouseButton(_getMouseEvent(e, _kMouseEventDown));
       } else {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
+        _noteDesktopImageSample();
         handleMouse(_getMouseEvent(e, _kMouseEventDown), canvasPosition,
             viewportLocal: _pointerUsesMeasuredViewport,
             windowPosition: _windowPositionForRetarget(e));
@@ -1617,6 +1624,7 @@ class InputModel {
             .sendRelativeMouseButton(_getMouseEvent(e, _kMouseEventUp));
       } else {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
+        _noteDesktopImageSample();
         handleMouse(_getMouseEvent(e, _kMouseEventUp), canvasPosition,
             viewportLocal: _pointerUsesMeasuredViewport,
             windowPosition: _windowPositionForRetarget(e));
@@ -1643,6 +1651,7 @@ class InputModel {
     if (isPhysicalMouse.value) {
       if (!_relativeMouse.handleRelativeMouseMove(e.localPosition)) {
         final canvasPosition = _pointerPositionForRemoteCanvas(e);
+        _noteDesktopImageSample();
         handleMouse(_getMouseEvent(e, _kMouseEventMove), canvasPosition,
             edgeScroll: useEdgeScroll,
             viewportLocal: _pointerUsesMeasuredViewport,
@@ -1662,11 +1671,20 @@ class InputModel {
     _menuRefreshWindow = null;
   }
 
+  /// Desktop image samples store window space until the viewport is measured.
+  void _noteDesktopImageSample() {
+    if (!(isDesktop || isWebDesktop)) return;
+    _lastMousePosIsWindowSpace = !_pointerUsesMeasuredViewport;
+  }
+
   /// Menu hover. A measured session keeps [windowPosition] for refresh.
   /// An unmeasured session stores that window position in [lastMousePos].
   void rememberMenuHover(Offset windowPosition) {
     final measured = _pointerUsesMeasuredViewport;
     _menuRefreshWindow = measured ? windowPosition : null;
+    if (isDesktop || isWebDesktop) {
+      _lastMousePosIsWindowSpace = !measured;
+    }
     lastMousePos = raatikMenuStoredPoint(
       windowPosition: windowPosition,
       imageOrigin: raatikImageOrigin,
@@ -1679,6 +1697,9 @@ class InputModel {
   /// absolute path. Pan updates stay deltas and do not come here.
   void _handleAndroidTrackpadBoundary(String type, Offset windowPosition) {
     if (!_pointerUsesMeasuredViewport) {
+      if (isDesktop || isWebDesktop) {
+        _lastMousePosIsWindowSpace = true;
+      }
       handlePointerEvent('touch', type, windowPosition);
       return;
     }
@@ -1687,6 +1708,9 @@ class InputModel {
       imageOrigin: raatikImageOrigin,
       viewportMeasured: true,
     );
+    if (isDesktop || isWebDesktop) {
+      _lastMousePosIsWindowSpace = false;
+    }
     if (_checkPeerControlProtected(stored.dx, stored.dy)) {
       return;
     }
@@ -1840,13 +1864,103 @@ class InputModel {
       _refreshMeasuredMenuWindow(menuWindow);
       return;
     }
+    if (!_pointerUsesMeasuredViewport) {
+      _refreshUnmeasuredMousePos();
+      return;
+    }
+    // Decide from the original stored point. Peer control must not replace a
+    // window point with `window - imageOrigin` before this call.
+    final windowPosition = lastMousePos;
+    final decision = _decideStoredMeasurementRefresh(windowPosition);
+    if (decision.mapWindowPoint) {
+      _sendStoredWindowMeasurementRefresh(windowPosition, decision);
+      return;
+    }
     handleMouse({
       'buttons': 0,
       'type': _kMouseEventMove,
     }, lastMousePos,
         edgeScroll: useEdgeScroll,
-        viewportLocal: _pointerUsesMeasuredViewport,
+        viewportLocal: decision.viewportLocal,
         probeWindow: false);
+  }
+
+  /// Unmeasured refresh. Keeps the old window path on desktop and mobile.
+  void _refreshUnmeasuredMousePos() {
+    handleMouse({
+      'buttons': 0,
+      'type': _kMouseEventMove,
+    }, lastMousePos,
+        edgeScroll: useEdgeScroll,
+        viewportLocal: false,
+        probeWindow: false);
+  }
+
+  RaatikMeasurementRefresh _decideStoredMeasurementRefresh(Offset storedPoint) {
+    final target = parent.target;
+    final rect = target?.ffiModel.rect;
+    if (target == null || rect == null) {
+      return RaatikMeasurementRefresh(
+        viewportLocal: !_lastMousePosIsWindowSpace,
+        mapWindowPoint: _lastMousePosIsWindowSpace,
+      );
+    }
+    final canvas = CanvasCoords.fromCanvasModel(target.canvasModel);
+    return decideRaatikMeasurementRefresh(
+      storedPoint: storedPoint,
+      windowSpace: _lastMousePosIsWindowSpace,
+      viewportMeasured: true,
+      imageOrigin: raatikImageOrigin,
+      imageOverflow: canvas.imageOverflow,
+      scrollStyle: canvas.scrollStyle.toJson(),
+      scale: canvas.scale,
+      remoteOrigin: rect.topLeft,
+      remoteSize: rect.size,
+      canvasX: canvas.x,
+      canvasY: canvas.y,
+      viewportSize: canvas.size,
+      scrollX: canvas.scrollX,
+      scrollY: canvas.scrollY,
+    );
+  }
+
+  /// Measured refresh of a window-space sample. [windowPosition] is the
+  /// original point. Outside the image is not sent.
+  void _sendStoredWindowMeasurementRefresh(
+    Offset windowPosition,
+    RaatikMeasurementRefresh decision,
+  ) {
+    if (isViewCamera) return;
+    if (_checkPeerControlProtected(windowPosition.dx, windowPosition.dy)) {
+      return;
+    }
+    final target = parent.target;
+    final rect = target?.ffiModel.rect;
+    if (target == null || rect == null) return;
+    final raw = decision.remote;
+    if (raw == null) return;
+    final pos = InputModel.getPointInRemoteRect(
+      true,
+      peerPlatform,
+      kPointerEventKindMouse,
+      kMouseEventTypeDefault,
+      raw.dx,
+      raw.dy,
+      rect,
+      buttons: 0,
+    );
+    if (pos == null) return;
+    _pointerMovedAfterEnter = true;
+    target.canvasModel.updateLocalCursor(raw.dx, raw.dy);
+    bind.sessionSendMouse(
+      sessionId: sessionId,
+      msg: json.encode(modify({
+        'type': kMouseEventTypeDefault,
+        'buttons': '',
+        'x': '${pos.x.toInt()}',
+        'y': '${pos.y.toInt()}',
+      })),
+    );
   }
 
   /// Measured menu refresh. Maps the original window point. Outside the image
@@ -1907,17 +2021,21 @@ class InputModel {
     Offset pos, {
     bool viewportLocal = false,
     Offset? windowPosition,
-  }) =>
-      handleMouse(
-        {
-          'buttons': 0,
-          'type': _kMouseEventMove,
-        },
-        pos,
-        onExit: true,
-        viewportLocal: viewportLocal,
-        windowPosition: windowPosition,
-      );
+  }) {
+    if (isDesktop || isWebDesktop) {
+      _lastMousePosIsWindowSpace = !viewportLocal;
+    }
+    handleMouse(
+      {
+        'buttons': 0,
+        'type': _kMouseEventMove,
+      },
+      pos,
+      onExit: true,
+      viewportLocal: viewportLocal,
+      windowPosition: windowPosition,
+    );
+  }
 
   static double tryGetNearestRange(double v, double min, double max, double n) {
     if (v < min && v >= min - n) {
