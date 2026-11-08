@@ -1660,9 +1660,14 @@ class InputModel {
     }
   }
 
-  bool get _pointerUsesMeasuredViewport =>
-      (isDesktop || isWebDesktop) &&
-      (parent.target?.canvasModel.hasMeasuredViewport ?? false);
+  bool get _pointerUsesMeasuredViewport {
+    final canvas = parent.target?.canvasModel;
+    return (isDesktop || isWebDesktop) &&
+        measuredInputReady(
+          storedViewport: canvas?.measuredViewport,
+          fitCommittedFor: canvas?.measuredFitCommittedFor,
+        );
+  }
 
   /// Same gate as [refreshMousePos]. Menu hover reads it before storing.
   bool get pointerUsesMeasuredViewport => _pointerUsesMeasuredViewport;

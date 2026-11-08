@@ -851,4 +851,50 @@ void main() {
     await apply(const Size(640, 672));
     expect(log, ['image', 'viewport', 'style', 'refresh']);
   });
+
+  test('measured input waits until the fit for that size is committed', () {
+    const stored = Size(640, 672);
+    expect(
+      measuredInputReady(storedViewport: stored, fitCommittedFor: null),
+      isFalse,
+    );
+    expect(
+      measuredInputReady(storedViewport: stored, fitCommittedFor: stored),
+      isTrue,
+    );
+    expect(
+      measuredInputReady(storedViewport: null, fitCommittedFor: null),
+      isFalse,
+    );
+    expect(
+      measuredInputReady(storedViewport: null, fitCommittedFor: stored),
+      isFalse,
+    );
+    expect(
+      measuredInputReady(
+        storedViewport: const Size(800, 600),
+        fitCommittedFor: stored,
+      ),
+      isFalse,
+    );
+  });
+
+  test('unmounted view style skips refresh', () async {
+    final log = <String>[];
+    var mounted = true;
+    await applyMeasuredViewportSize(
+      size: const Size(640, 672),
+      updateImageWidgetSize: (_) => log.add('image'),
+      updateViewportSize: (_) => log.add('viewport'),
+      updateViewStyle: () async {
+        log.add('style');
+        mounted = false;
+      },
+      stillMounted: () => mounted,
+      refresh: () => log.add('refresh'),
+      onChangeResolution: () => log.add('resolution'),
+      onChangeQuality: () => log.add('quality'),
+    );
+    expect(log, ['image', 'viewport', 'style']);
+  });
 }

@@ -668,8 +668,21 @@ MeasuredPointerDecision decideMeasuredPointer({
   );
 }
 
+/// Image-local input is on only when [storedViewport] is set and the fit was
+/// committed for that same size. A stored size with no commit, a different
+/// committed size, or a cleared viewport stays off.
+bool measuredInputReady({
+  Size? storedViewport,
+  Size? fitCommittedFor,
+}) {
+  return storedViewport != null && storedViewport == fitCommittedFor;
+}
+
+bool _measuredViewportStillMounted() => true;
+
 /// Applies one changed measurement. Unusable sizes are ignored.
 /// Call order is image size, viewport size, view style, then one refresh.
+/// Refresh runs only when [stillMounted] is true after view style returns.
 /// [onChangeResolution] and [onChangeQuality] are not called.
 Future<void> applyMeasuredViewportSize({
   required Size size,
@@ -677,6 +690,7 @@ Future<void> applyMeasuredViewportSize({
   required void Function(Size size) updateViewportSize,
   required Future<void> Function() updateViewStyle,
   required void Function() refresh,
+  bool Function() stillMounted = _measuredViewportStillMounted,
   VoidCallback? onChangeResolution,
   VoidCallback? onChangeQuality,
 }) async {
@@ -684,5 +698,6 @@ Future<void> applyMeasuredViewportSize({
   updateImageWidgetSize(size);
   updateViewportSize(size);
   await updateViewStyle();
+  if (!stillMounted()) return;
   refresh();
 }

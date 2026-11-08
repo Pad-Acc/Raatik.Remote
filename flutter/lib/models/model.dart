@@ -2209,6 +2209,7 @@ class CanvasModel with ChangeNotifier {
   double _devicePixelRatio = 1.0;
   Size _size = Size.zero;
   Size? _measuredViewport;
+  Size? _measuredFitCommittedFor;
   // the tabbar over the image
   // double tabBarHeight = 0.0;
   // the window border's width
@@ -2294,14 +2295,22 @@ class CanvasModel with ChangeNotifier {
 
   bool get hasMeasuredViewport => _measuredViewport != null;
 
+  Size? get measuredViewport => _measuredViewport;
+
+  Size? get measuredFitCommittedFor => _measuredFitCommittedFor;
+
   /// Stores the image viewport. Does not notify; [updateViewStyle] refreshes.
   void updateViewportSize(Size size) {
     if (!isUsableViewportSize(size)) return;
+    if (_measuredViewport != size) {
+      _measuredFitCommittedFor = null;
+    }
     _measuredViewport = size;
   }
 
   void clearViewportSize() {
     _measuredViewport = null;
+    _measuredFitCommittedFor = null;
   }
 
   Size getSize() {
@@ -2355,9 +2364,26 @@ class CanvasModel with ChangeNotifier {
   updateSize() => _size = getSize();
 
   updateViewStyle({refreshMousePos = true, notify = true}) async {
+    // This call fits [pendingViewport]. A newer store or a clear invalidates it.
+    final pendingViewport = _measuredViewport;
     final style = await bind.sessionGetViewStyle(sessionId: sessionId);
-    if (style == null) {
+    if (_measuredViewport != pendingViewport || style == null) {
       return;
+    }
+
+    // Custom scale is the second await. Re-check before writing that fit.
+    double? customScale;
+    if (style == kRemoteViewStyleCustom) {
+      try {
+        customScale = await getSessionCustomScale(sessionId);
+      } catch (e, stack) {
+        debugPrint('Error in getSessionCustomScale: $e');
+        debugPrintStack(stackTrace: stack);
+        customScale = 1.0;
+      }
+      if (_measuredViewport != pendingViewport) {
+        return;
+      }
     }
 
     updateSize();
@@ -2377,24 +2403,14 @@ class CanvasModel with ChangeNotifier {
     // allow updates to proceed when style == kRemoteViewStyleCustom, even if the
     // rest of the ViewStyle fields are unchanged.
     if (_lastViewStyle == viewStyle && style != kRemoteViewStyleCustom) {
+      _commitMeasuredFit(pendingViewport);
       return;
     }
     if (_lastViewStyle.style != viewStyle.style) {
       _resetScroll();
     }
     _lastViewStyle = viewStyle;
-    _scale = viewStyle.scale;
-
-    // Apply custom scale percent when in Custom mode
-    if (style == kRemoteViewStyleCustom) {
-      try {
-        _scale = await getSessionCustomScale(sessionId);
-      } catch (e, stack) {
-        debugPrint('Error in getSessionCustomScale: $e');
-        debugPrintStack(stackTrace: stack);
-        _scale = 1.0;
-      }
-    }
+    _scale = customScale ?? viewStyle.scale;
 
     _devicePixelRatio = ui.window.devicePixelRatio;
     if (kIgnoreDpi) {
@@ -2405,6 +2421,7 @@ class CanvasModel with ChangeNotifier {
       }
     }
     _resetCanvasOffset(displayWidth, displayHeight);
+    _commitMeasuredFit(pendingViewport);
     final overflow = _x < 0 || y < 0;
     if (_imageOverflow.value != overflow) {
       _imageOverflow.value = overflow;
@@ -2416,6 +2433,12 @@ class CanvasModel with ChangeNotifier {
       parent.target?.inputModel.refreshMousePos();
     }
     tryUpdateScrollStyle(Duration.zero, style);
+  }
+
+  void _commitMeasuredFit(Size? pending) {
+    if (pending != null && _measuredViewport == pending) {
+      _measuredFitCommittedFor = pending;
+    }
   }
 
   _resetCanvasOffset(int displayWidth, int displayHeight) {

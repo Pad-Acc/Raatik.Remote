@@ -755,6 +755,7 @@ class _ViewStyleUpdaterState extends State<_ViewStyleUpdater> {
                 updateViewportSize: widget.canvasModel.updateViewportSize,
                 updateViewStyle: () =>
                     widget.canvasModel.updateViewStyle(refreshMousePos: false),
+                stillMounted: () => mounted,
                 refresh: () {
                   if (!isMobile) {
                     widget.inputModel.refreshMousePos();
