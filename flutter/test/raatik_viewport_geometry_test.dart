@@ -215,6 +215,90 @@ void main() {
     );
   });
 
+  test('scrolledge stays image-local at any canvas offset', () {
+    const remote = Size(400, 800);
+    const local = Offset(10, 130);
+    const scrollY = 120 / 800;
+    const canvas = Size(400, 300);
+    final atZero = remotePointFromMeasuredScrollImage(
+      scrollStyle: 'scrolledge',
+      localPosition: local,
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      scrollX: 0,
+      scrollY: scrollY,
+      canvasX: 0,
+      canvasY: 0,
+      canvasSize: canvas,
+    );
+    final overflow = remotePointFromMeasuredScrollImage(
+      scrollStyle: 'scrolledge',
+      localPosition: local,
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      scrollX: 0,
+      scrollY: scrollY,
+      canvasX: 0,
+      canvasY: -120,
+      canvasSize: canvas,
+    );
+    _expectRemote(atZero, local);
+    _expectRemote(overflow, local);
+    expect(atZero!.dy, isNot(closeTo(local.dy + remote.height * scrollY, 1e-6)));
+    expect(
+      remotePointFromMeasuredScrollImage(
+        scrollStyle: 'scrolledge',
+        localPosition: const Offset(10, 801),
+        scale: 1,
+        remoteOrigin: Offset.zero,
+        remoteSize: remote,
+        scrollX: 0.25,
+        scrollY: scrollY,
+        canvasX: -40,
+        canvasY: -120,
+        canvasSize: canvas,
+      ),
+      isNull,
+    );
+  });
+
+  test('scrollbar at canvas offset zero stays image-local', () {
+    const remote = Size(400, 300);
+    const local = Offset(10, 10);
+    const canvas = Size(800, 600);
+    const origin = Offset(1920, 0);
+    final point = remotePointFromMeasuredScrollImage(
+      scrollStyle: 'scrollbar',
+      localPosition: local,
+      scale: 1,
+      remoteOrigin: origin,
+      remoteSize: remote,
+      scrollX: 0,
+      scrollY: 0,
+      canvasX: 0,
+      canvasY: 0,
+      canvasSize: canvas,
+    );
+    _expectRemote(point, origin + local);
+    expect(point!.dx, isNot(closeTo(origin.dx + local.dx - 200, 1e-6)));
+    expect(point.dy, isNot(closeTo(origin.dy + local.dy - 150, 1e-6)));
+    expect(
+      remotePointFromMeasuredScrollImage(
+        scrollStyle: 'scrollbar',
+        localPosition: const Offset(-1, 10),
+        scale: 1,
+        remoteOrigin: origin,
+        remoteSize: remote,
+        canvasX: 0,
+        canvasY: 0,
+        canvasSize: canvas,
+      ),
+      isNull,
+    );
+  });
+
   test('measured move retargets another window without toolbar inset', () {
     const others = [
       MeasuredWindowSpan(

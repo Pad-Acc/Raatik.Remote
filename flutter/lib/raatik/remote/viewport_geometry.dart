@@ -130,6 +130,35 @@ Offset? remotePointFromScrollbarImage({
   );
 }
 
+/// Measured scrollbar and scrolledge pointers are image-local, including a
+/// scrollbar session whose canvas offset is still zero. [scrollX], [scrollY],
+/// [canvasX], [canvasY], and [canvasSize] do not move the point. A centering
+/// inset is not applied. A point outside the image returns null.
+Offset? remotePointFromMeasuredScrollImage({
+  required String scrollStyle,
+  required Offset localPosition,
+  required double scale,
+  required Offset remoteOrigin,
+  required Size remoteSize,
+  double scrollX = 0,
+  double scrollY = 0,
+  double canvasX = 0,
+  double canvasY = 0,
+  Size canvasSize = Size.zero,
+}) {
+  if (scrollStyle != 'scrollbar' && scrollStyle != 'scrolledge') return null;
+  if (!canvasX.isFinite || !canvasY.isFinite) return null;
+  if (!canvasSize.width.isFinite || !canvasSize.height.isFinite) return null;
+  return remotePointFromScrollbarImage(
+    localPosition: localPosition,
+    scale: scale,
+    remoteOrigin: remoteOrigin,
+    remoteSize: remoteSize,
+    scrollX: scrollX,
+    scrollY: scrollY,
+  );
+}
+
 /// Another remote window, in the same coordinate space as the pointer probe.
 class MeasuredWindowSpan {
   const MeasuredWindowSpan({

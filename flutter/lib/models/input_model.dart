@@ -1993,18 +1993,23 @@ class InputModel {
       return InputModel.getPointInRemoteRect(
           true, peerPlatform, kind, evtType, mapped.dx, mapped.dy, rect,
           buttons: buttons);
-    } else if (viewportLocal &&
-        rect != null &&
-        canvas.scrollStyle == ScrollStyle.scrollbar &&
-        (canvas.x < 0 || canvas.y < 0)) {
-      // The overflow listener is the image, so localPosition is content space.
-      final mapped = remotePointFromScrollbarImage(
+    } else if (rect != null &&
+        canvas.scrollStyle != ScrollStyle.scrollauto) {
+      // Measured scrollbar and scrolledge listeners sit on the image, including
+      // a scrollbar session whose offset is still zero. x,y stay image-local
+      // for edge scroll and canvas pan. Do not add the scroll fraction or the
+      // centering inset a second time.
+      final mapped = remotePointFromMeasuredScrollImage(
+        scrollStyle: canvas.scrollStyle.toJson(),
         localPosition: Offset(x, y),
         scale: canvas.scale,
         remoteOrigin: rect.topLeft,
         remoteSize: rect.size,
         scrollX: canvas.scrollX,
         scrollY: canvas.scrollY,
+        canvasX: canvas.x,
+        canvasY: canvas.y,
+        canvasSize: canvas.size,
       );
       if (mapped == null) return null;
       if (isMove) {

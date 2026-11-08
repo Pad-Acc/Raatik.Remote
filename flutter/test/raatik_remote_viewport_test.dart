@@ -437,6 +437,129 @@ void main() {
     );
   });
 
+  testWidgets('scrolledge image maps the content point', (tester) async {
+    const remote = Size(400, 800);
+    final points = <Offset?>[];
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 400,
+          height: 300,
+          child: SingleChildScrollView(
+            controller: controller,
+            child: GestureDetector(
+              onTapDown: (details) {
+                final metrics = controller.position;
+                final total = metrics.extentBefore +
+                    metrics.extentInside +
+                    metrics.extentAfter;
+                final scrollY = total == 0 ? 0.0 : metrics.extentBefore / total;
+                points.add(
+                  remotePointFromMeasuredScrollImage(
+                    scrollStyle: 'scrolledge',
+                    localPosition: details.localPosition,
+                    scale: 1,
+                    remoteOrigin: Offset.zero,
+                    remoteSize: remote,
+                    scrollX: 0,
+                    scrollY: scrollY,
+                    canvasX: 0,
+                    canvasY: 0,
+                    canvasSize: const Size(400, 300),
+                  ),
+                );
+              },
+              child: const ColoredBox(
+                key: Key('raatik-scrolledge-image'),
+                color: Color(0xFF0284C7),
+                child: SizedBox(width: 400, height: 800),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    controller.jumpTo(120);
+    await tester.pump();
+    final viewportTopLeft = tester.getTopLeft(find.byType(SingleChildScrollView));
+    await tester.tapAt(viewportTopLeft + const Offset(10, 10));
+    await tester.pump();
+
+    expect(points, hasLength(1));
+    final scrollY = controller.offset / remote.height;
+    _expectNear(points.single!, Offset(10, 10 + controller.offset));
+    expect(
+      points.single!.dy,
+      isNot(closeTo(10 + controller.offset + remote.height * scrollY, 0.5)),
+    );
+  });
+
+  testWidgets('scrollbar at scroll offset zero stays on the image point',
+      (tester) async {
+    const remote = Size(400, 300);
+    const canvas = Size(800, 600);
+    final points = <Offset?>[];
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: canvas.width,
+          height: canvas.height,
+          child: SingleChildScrollView(
+            controller: controller,
+            child: SizedBox(
+              width: canvas.width,
+              height: canvas.height,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  (canvas.width - remote.width) / 2,
+                  (canvas.height - remote.height) / 2,
+                  (canvas.width - remote.width) / 2,
+                  (canvas.height - remote.height) / 2,
+                ),
+                child: GestureDetector(
+                  onTapDown: (details) {
+                    points.add(
+                      remotePointFromMeasuredScrollImage(
+                        scrollStyle: 'scrollbar',
+                        localPosition: details.localPosition,
+                        scale: 1,
+                        remoteOrigin: Offset.zero,
+                        remoteSize: remote,
+                        scrollX: 0,
+                        scrollY: 0,
+                        canvasX: 0,
+                        canvasY: 0,
+                        canvasSize: canvas,
+                      ),
+                    );
+                  },
+                  child: const ColoredBox(
+                    key: Key('raatik-scrollbar-zero-image'),
+                    color: Color(0xFF0284C7),
+                    child: SizedBox(width: 400, height: 300),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(controller.offset, 0);
+    final image = tester.getTopLeft(find.byKey(const Key('raatik-scrollbar-zero-image')));
+    await tester.tapAt(image + const Offset(10, 10));
+    await tester.pump();
+
+    expect(points, hasLength(1));
+    _expectNear(points.single!, const Offset(10, 10));
+    expect(points.single!.dx, isNot(closeTo(10 - (canvas.width - remote.width) / 2, 0.5)));
+    expect(points.single!.dy, isNot(closeTo(10 - (canvas.height - remote.height) / 2, 0.5)));
+  });
+
   testWidgets('hidden toolbar slot can show the bar again', (tester) async {
     final spy = _InputSpy();
     var shown = false;
