@@ -207,12 +207,16 @@ class RaatikRemoteToolbarBar extends StatelessWidget {
 
   Widget _fitCrossAxis(Widget child) {
     if (!_vertical) return child;
+    // Let a wide child keep its height, then clip it to the 48px strip.
     return SizedBox(
       width: barHeight,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.center,
-        child: child,
+      child: ClipRect(
+        child: UnconstrainedBox(
+          alignment: Alignment.center,
+          constrainedAxis: Axis.vertical,
+          clipBehavior: Clip.hardEdge,
+          child: child,
+        ),
       ),
     );
   }

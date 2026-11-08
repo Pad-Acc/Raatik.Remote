@@ -299,15 +299,32 @@ MeasuredAbsolutePointer mapMeasuredAbsolutePointer({
   );
 }
 
+/// True when [point] is outside the inclusive viewport range `0..size`.
+bool _viewportPointOutside(Offset point, Size viewport) {
+  if (!point.dx.isFinite ||
+      !point.dy.isFinite ||
+      !viewport.width.isFinite ||
+      !viewport.height.isFinite) {
+    return true;
+  }
+  return point.dx < 0 ||
+      point.dy < 0 ||
+      point.dx > viewport.width ||
+      point.dy > viewport.height;
+}
+
 /// Maps a point already in the destination window through that window's image.
 ///
 /// The image-viewport point is `windowPoint - imageOrigin`. A viewport listener
 /// (scroll-auto or fitted) then maps
 /// `remoteOrigin + (windowPoint - imageOrigin - offset) / scale`.
-/// An overflow image listener converts that viewport point with
-/// [imageListenerAxisFromViewport] before [mapMeasuredAbsolutePointer].
-/// [canvasX] and [canvasY] are not that scroll translation. A point outside
-/// the destination image leaves [MeasuredAbsolutePointer.remote] null.
+/// An overflow image listener converts a viewport point inside `0..viewportSize`
+/// with [imageListenerAxisFromViewport] before [mapMeasuredAbsolutePointer].
+/// A viewport point outside that range is outside the image: a negative
+/// toolbar-band coordinate stays negative and is not shifted by
+/// `imageExtent * scrollFraction`. [canvasX] and [canvasY] are not that scroll
+/// translation. A point outside the destination image leaves
+/// [MeasuredAbsolutePointer.remote] null.
 MeasuredAbsolutePointer mapRetargetedWindowPoint({
   required Offset windowPoint,
   required Offset imageOrigin,
@@ -324,6 +341,19 @@ MeasuredAbsolutePointer mapRetargetedWindowPoint({
 }) {
   final viewportPoint = windowPoint - imageOrigin;
   final imageListener = imageOverflow && scrollStyle != 'scrollauto';
+  if (imageListener && _viewportPointOutside(viewportPoint, viewportSize)) {
+    return MeasuredAbsolutePointer(
+      remote: null,
+      viewportPosition: viewportPoint,
+      unbounded: _unboundedRemotePoint(
+        localPosition: viewportPoint,
+        imageOffset: Offset.zero,
+        scale: scale,
+        remoteOrigin: remoteOrigin,
+        remoteSize: remoteSize,
+      ),
+    );
+  }
   final imageExtent = Size(remoteSize.width * scale, remoteSize.height * scale);
   final localPosition = imageListener
       ? Offset(
@@ -369,8 +399,10 @@ Offset raatikRemoteImageOrigin({
 
 /// Menu hover point stored for a later refresh.
 ///
-/// A measured viewport stores `windowPosition - imageOrigin`. An unmeasured
-/// viewport stores the window position.
+/// A measured viewport stores `windowPosition - imageOrigin`. Measured refresh
+/// does not send that viewport point; it maps the original window position
+/// through [mapRetargetedWindowPoint]. An unmeasured viewport stores the
+/// window position and keeps the old window path.
 Offset raatikMenuStoredPoint({
   required Offset windowPosition,
   required Offset imageOrigin,

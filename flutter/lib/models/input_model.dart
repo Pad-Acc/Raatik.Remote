@@ -478,6 +478,10 @@ class InputModel {
   int _lastButtons = 0;
   Offset lastMousePos = Offset.zero;
 
+  /// Original window position from the latest measured menu hover.
+  /// Image pointer events clear it. Unmeasured hovers leave it null.
+  Offset? _menuRefreshWindow;
+
   /// Image top-left in this window. The remote page publishes chrome plus
   /// the current toolbar inset. Menu hover subtracts it once the viewport
   /// is measured.
@@ -1317,6 +1321,7 @@ class InputModel {
   }
 
   void onPointHoverImage(PointerHoverEvent e) {
+    _clearMenuRefreshWindow();
     _stopFling = true;
     if (isViewOnly && !showMyCursor) return;
     if (e.kind != ui.PointerDeviceKind.mouse) return;
@@ -1546,6 +1551,7 @@ class InputModel {
   }
 
   void onPointDownImage(PointerDownEvent e) {
+    _clearMenuRefreshWindow();
     debugPrint("onPointDownImage ${e.kind}");
     _stopFling = true;
     if (isDesktop) _queryOtherWindowCoords = true;
@@ -1593,6 +1599,7 @@ class InputModel {
   }
 
   void onPointUpImage(PointerUpEvent e) {
+    _clearMenuRefreshWindow();
     if (isDesktop) _queryOtherWindowCoords = false;
     if (isViewOnly && !showMyCursor) return;
     if (isViewCamera) return;
@@ -1618,6 +1625,7 @@ class InputModel {
   }
 
   void onPointMoveImage(PointerMoveEvent e) {
+    _clearMenuRefreshWindow();
     if (isViewOnly && !showMyCursor) return;
     if (isViewCamera) return;
     if (e.kind != ui.PointerDeviceKind.mouse) return;
@@ -1649,6 +1657,22 @@ class InputModel {
 
   /// Same gate as [refreshMousePos]. Menu hover reads it before storing.
   bool get pointerUsesMeasuredViewport => _pointerUsesMeasuredViewport;
+
+  void _clearMenuRefreshWindow() {
+    _menuRefreshWindow = null;
+  }
+
+  /// Menu hover. A measured session keeps [windowPosition] for refresh.
+  /// An unmeasured session stores that window position in [lastMousePos].
+  void rememberMenuHover(Offset windowPosition) {
+    final measured = _pointerUsesMeasuredViewport;
+    _menuRefreshWindow = measured ? windowPosition : null;
+    lastMousePos = raatikMenuStoredPoint(
+      windowPosition: windowPosition,
+      imageOrigin: raatikImageOrigin,
+      viewportMeasured: measured,
+    );
+  }
 
   /// Android trackpad pan start/end. A measured viewport maps the window
   /// point through [raatikImageOrigin]. An unmeasured viewport keeps the
@@ -1810,13 +1834,74 @@ class InputModel {
     }
   }
 
-  void refreshMousePos() => handleMouse({
-        'buttons': 0,
-        'type': _kMouseEventMove,
-      }, lastMousePos,
-          edgeScroll: useEdgeScroll,
-          viewportLocal: _pointerUsesMeasuredViewport,
-          probeWindow: false);
+  void refreshMousePos() {
+    final menuWindow = _menuRefreshWindow;
+    if (_pointerUsesMeasuredViewport && menuWindow != null) {
+      _refreshMeasuredMenuWindow(menuWindow);
+      return;
+    }
+    handleMouse({
+      'buttons': 0,
+      'type': _kMouseEventMove,
+    }, lastMousePos,
+        edgeScroll: useEdgeScroll,
+        viewportLocal: _pointerUsesMeasuredViewport,
+        probeWindow: false);
+  }
+
+  /// Measured menu refresh. Maps the original window point. Outside the image
+  /// is not sent, and the viewport point is not treated as image content.
+  void _refreshMeasuredMenuWindow(Offset windowPosition) {
+    if (isViewCamera) return;
+    final stored = raatikMenuStoredPoint(
+      windowPosition: windowPosition,
+      imageOrigin: raatikImageOrigin,
+      viewportMeasured: true,
+    );
+    if (_checkPeerControlProtected(stored.dx, stored.dy)) return;
+    final target = parent.target;
+    final rect = target?.ffiModel.rect;
+    if (target == null || rect == null) return;
+    final canvas = CanvasCoords.fromCanvasModel(target.canvasModel);
+    final sample = mapRetargetedWindowPoint(
+      windowPoint: windowPosition,
+      imageOrigin: raatikImageOrigin,
+      imageOverflow: canvas.imageOverflow,
+      scrollStyle: canvas.scrollStyle.toJson(),
+      scale: canvas.scale,
+      remoteOrigin: rect.topLeft,
+      remoteSize: rect.size,
+      canvasX: canvas.x,
+      canvasY: canvas.y,
+      viewportSize: canvas.size,
+      scrollX: canvas.scrollX,
+      scrollY: canvas.scrollY,
+    );
+    final raw = sample.remote;
+    if (raw == null) return;
+    final pos = InputModel.getPointInRemoteRect(
+      true,
+      peerPlatform,
+      kPointerEventKindMouse,
+      kMouseEventTypeDefault,
+      raw.dx,
+      raw.dy,
+      rect,
+      buttons: 0,
+    );
+    if (pos == null) return;
+    _pointerMovedAfterEnter = true;
+    target.canvasModel.updateLocalCursor(raw.dx, raw.dy);
+    bind.sessionSendMouse(
+      sessionId: sessionId,
+      msg: json.encode(modify({
+        'type': kMouseEventTypeDefault,
+        'buttons': '',
+        'x': '${pos.x.toInt()}',
+        'y': '${pos.y.toInt()}',
+      })),
+    );
+  }
 
   void tryMoveEdgeOnExit(
     Offset pos, {
@@ -1936,8 +2021,11 @@ class InputModel {
     bool? probeWindow,
   }) {
     if (isViewCamera) return null;
+    _clearMenuRefreshWindow();
     double x = offset.dx;
-    double y = max(0.0, offset.dy);
+    // A measured point above the image stays negative until the outside-image
+    // check. Clamping it to 0 would send the viewport's top edge.
+    final double y = viewportLocal ? offset.dy : max(0.0, offset.dy);
     if (_checkPeerControlProtected(x, y)) {
       return null;
     }

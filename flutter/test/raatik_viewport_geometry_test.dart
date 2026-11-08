@@ -648,6 +648,26 @@ void main() {
     );
     _expectRemote(scrollAuto.remote, viewportPoint - canvasInset);
     expect(scrollAuto.remote!.dy, isNot(closeTo(150, 1)));
+
+    final toolbarBand = mapRetargetedWindowPoint(
+      windowPoint: const Offset(210, 10),
+      imageOrigin: imageOrigin,
+      imageOverflow: true,
+      scrollStyle: 'scrolledge',
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: remote,
+      canvasX: canvasInset.dx,
+      canvasY: canvasInset.dy,
+      viewportSize: viewport,
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    expect(toolbarBand.remote, isNull);
+    expect(toolbarBand.viewportPosition.dy, lessThan(0));
+    expect(toolbarBand.viewportPosition.dy, closeTo(10 - 48, 1e-6));
+    expect(toolbarBand.remote?.dy, isNot(closeTo(10 + 800 * 0.125, 1e-6)));
+    expect(toolbarBand.remote?.dy, isNot(closeTo(800 * 0.125, 1e-6)));
   });
 
   test('menu storage and trackpad origin follow the toolbar inset', () {
@@ -729,6 +749,28 @@ void main() {
       scrollY: 0.125,
     );
     _expectRemote(overflow.remote, const Offset(10, 150));
+
+    final toolbarBand = mapRetargetedWindowPoint(
+      windowPoint: const Offset(210, 10),
+      imageOrigin: shownOrigin,
+      imageOverflow: true,
+      scrollStyle: 'scrolledge',
+      scale: 1,
+      remoteOrigin: Offset.zero,
+      remoteSize: const Size(400, 800),
+      canvasX: 200,
+      canvasY: -200,
+      viewportSize: const Size(800, 400),
+      scrollX: 0,
+      scrollY: 0.125,
+    );
+    expect(toolbarBand.remote, isNull);
+    expect(toolbarBand.viewportPosition.dy, lessThan(0));
+    expect(
+      toolbarBand.remote?.dy,
+      isNot(closeTo(10 + 800 * 0.125, 1e-6)),
+    );
+    expect(toolbarBand.remote?.dy, isNot(closeTo(800 * 0.125, 1e-6)));
   });
 
   test('measurement apply order ignores unusable sizes', () async {

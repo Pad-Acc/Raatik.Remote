@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/dialogs/dialog_style.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
@@ -209,17 +210,73 @@ void main() {
 
       void visit(RenderObject object) {
         if (object is RenderBox && object.hasSize && object.attached) {
-          final paint = MatrixUtils.transformRect(
+          var paint = MatrixUtils.transformRect(
             object.getTransformTo(null),
             Offset.zero & object.size,
           );
-          expect(paint.left, greaterThanOrEqualTo(bar.left - 0.5));
-          expect(paint.right, lessThanOrEqualTo(bar.right + 0.5));
+          RenderObject? ancestor = object.parent;
+          while (ancestor != null) {
+            if (ancestor is RenderClipRect &&
+                ancestor.hasSize &&
+                ancestor.attached) {
+              final clip = MatrixUtils.transformRect(
+                ancestor.getTransformTo(null),
+                Offset.zero & ancestor.size,
+              );
+              paint = paint.intersect(clip);
+            }
+            ancestor = ancestor.parent;
+          }
+          if (!paint.isEmpty) {
+            expect(paint.left, greaterThanOrEqualTo(bar.left - 0.5));
+            expect(paint.right, lessThanOrEqualTo(bar.right + 0.5));
+          }
         }
         object.visitChildren(visit);
       }
 
       visit(tester.renderObject(find.byType(RaatikRemoteToolbarBar)));
+    });
+
+    testWidgets('side dock keeps a tall hit target', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(48, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildRaatikLightTheme(),
+          home: Scaffold(
+            body: SizedBox(
+              width: RaatikRemoteToolbarBar.barHeight,
+              height: 720,
+              child: RaatikRemoteToolbarBar(
+                width: 720,
+                edge: RaatikToolbarEdge.left,
+                brandLabel: const SizedBox.shrink(),
+                primaryItems: const [
+                  SizedBox(
+                    key: Key('side-hit'),
+                    width: 64,
+                    height: 36,
+                    child: ColoredBox(color: Color(0x33FFFFFF)),
+                  ),
+                ],
+                moreMenu: SizedBox(width: 36, height: 36),
+                closeMenu: SizedBox(width: 36, height: 36),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+
+      final box = tester.renderObject<RenderBox>(find.byKey(const Key('side-hit')));
+      final rect = MatrixUtils.transformRect(
+        box.getTransformTo(null),
+        Offset.zero & box.size,
+      );
+      expect(rect.height, greaterThan(24));
+      expect(rect.height, greaterThanOrEqualTo(36));
     });
 
     testWidgets('900px shows RaatikDesk brand label', (tester) async {

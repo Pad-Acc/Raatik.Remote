@@ -15,7 +15,6 @@ import 'package:flutter_hbb/plugin/common.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
-import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
 import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -944,7 +943,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       menuButtonTheme: MenuButtonThemeData(
         style: ButtonStyle(
           minimumSize: MaterialStatePropertyAll(
-            vertical ? const Size(32, 32) : const Size(64, 32),
+            vertical ? const Size(36, 36) : const Size(64, 32),
           ),
           textStyle: MaterialStatePropertyAll(
             TextStyle(fontWeight: FontWeight.normal),
@@ -3717,12 +3716,7 @@ Widget _buildPointerTrackWidget(Widget child, FFI? ffi) {
   return Listener(
     onPointerHover: (PointerHoverEvent e) {
       if (ffi == null) return;
-      final input = ffi.inputModel;
-      input.lastMousePos = raatikMenuStoredPoint(
-        windowPosition: e.position,
-        imageOrigin: input.raatikImageOrigin,
-        viewportMeasured: input.pointerUsesMeasuredViewport,
-      );
+      ffi.inputModel.rememberMenuHover(e.position);
     },
     child: MouseRegion(
       child: child,
