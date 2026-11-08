@@ -27,6 +27,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 import '../../raatik/flags.dart';
+import '../../raatik/navigation/app_shell.dart';
 import '../../raatik/settings/settings_shell.dart';
 import '../../raatik/theme/tokens.dart';
 
@@ -62,28 +63,67 @@ enum SettingsTabKey {
   about,
 }
 
+SettingsTabKey settingsTabKeyFor(RaatikSettingsSection section) {
+  switch (section) {
+    case RaatikSettingsSection.general:
+      return SettingsTabKey.general;
+    case RaatikSettingsSection.safety:
+      return SettingsTabKey.safety;
+    case RaatikSettingsSection.display:
+      return SettingsTabKey.display;
+    case RaatikSettingsSection.network:
+      return SettingsTabKey.network;
+    case RaatikSettingsSection.plugin:
+      return SettingsTabKey.plugin;
+    case RaatikSettingsSection.account:
+      return SettingsTabKey.account;
+    case RaatikSettingsSection.printer:
+      return SettingsTabKey.printer;
+    case RaatikSettingsSection.about:
+      return SettingsTabKey.about;
+  }
+}
+
+RaatikSettingsSection raatikSectionFor(SettingsTabKey key) {
+  switch (key) {
+    case SettingsTabKey.general:
+      return RaatikSettingsSection.general;
+    case SettingsTabKey.safety:
+      return RaatikSettingsSection.safety;
+    case SettingsTabKey.display:
+      return RaatikSettingsSection.display;
+    case SettingsTabKey.network:
+      return RaatikSettingsSection.network;
+    case SettingsTabKey.plugin:
+      return RaatikSettingsSection.plugin;
+    case SettingsTabKey.account:
+      return RaatikSettingsSection.account;
+    case SettingsTabKey.printer:
+      return RaatikSettingsSection.printer;
+    case SettingsTabKey.about:
+      return RaatikSettingsSection.about;
+  }
+}
+
 class DesktopSettingPage extends StatefulWidget {
   final SettingsTabKey initialTabkey;
   // Customer-first IA (spec §7): عمومی → امنیت → نمایش → شبکه → پیشرفته → درباره
-  static final List<SettingsTabKey> tabKeys = [
-    SettingsTabKey.general,
-    if (!isWeb &&
-        !bind.isOutgoingOnly() &&
-        !bind.isDisableSettings() &&
-        bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) != 'Y')
-      SettingsTabKey.safety,
-    if (!bind.isIncomingOnly()) SettingsTabKey.display,
-    if (!bind.isDisableSettings() &&
-        bind.mainGetBuildinOption(key: kOptionHideNetworkSetting) != 'Y')
-      SettingsTabKey.network,
-    if (!isWeb && !bind.isIncomingOnly() && bind.pluginFeatureIsEnabled())
-      SettingsTabKey.plugin,
-    if (kRaatikApiEnabled && !bind.isDisableAccount()) SettingsTabKey.account,
-    if (isWindows &&
-        bind.mainGetBuildinOption(key: kOptionHideRemotePrinterSetting) != 'Y')
-      SettingsTabKey.printer,
-    SettingsTabKey.about,
-  ];
+  static final List<SettingsTabKey> tabKeys = RaatikSettingsAccess(
+    isWeb: isWeb,
+    outgoingOnly: bind.isOutgoingOnly(),
+    incomingOnly: bind.isIncomingOnly(),
+    disableSettings: bind.isDisableSettings(),
+    hideSecurity:
+        bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) == 'Y',
+    hideNetwork:
+        bind.mainGetBuildinOption(key: kOptionHideNetworkSetting) == 'Y',
+    pluginFeatureEnabled: bind.pluginFeatureIsEnabled(),
+    apiEnabled: kRaatikApiEnabled,
+    disableAccount: bind.isDisableAccount(),
+    isWindows: isWindows,
+    hideRemotePrinter:
+        bind.mainGetBuildinOption(key: kOptionHideRemotePrinterSetting) == 'Y',
+  ).sections.map(settingsTabKeyFor).toList();
 
   DesktopSettingPage({Key? key, required this.initialTabkey}) : super(key: key);
 
@@ -91,23 +131,34 @@ class DesktopSettingPage extends StatefulWidget {
   State<DesktopSettingPage> createState() =>
       _DesktopSettingPageState(initialTabkey);
 
+  static SettingsTabKey resolveSection(SettingsTabKey page) {
+    final allowed = tabKeys.map(raatikSectionFor).toList(growable: false);
+    if (allowed.isEmpty) return SettingsTabKey.general;
+    if (allowed.contains(raatikSectionFor(page))) return page;
+    return settingsTabKeyFor(allowed.first);
+  }
+
+  static void revealSection(SettingsTabKey page) {
+    final resolved = resolveSection(page);
+    final index = tabKeys.indexOf(resolved);
+    if (index < 0) return;
+    if (!Get.isRegistered<PageController>(tag: _kSettingPageControllerTag)) {
+      return;
+    }
+    if (Get.isRegistered<Rx<SettingsTabKey>>(tag: _kSettingPageTabKeyTag)) {
+      Get.find<Rx<SettingsTabKey>>(tag: _kSettingPageTabKeyTag).value =
+          resolved;
+    }
+    final controller =
+        Get.find<PageController>(tag: _kSettingPageControllerTag);
+    if (controller.hasClients) {
+      controller.jumpToPage(index);
+    }
+  }
+
   static void switch2page(SettingsTabKey page) {
     try {
-      int index = tabKeys.indexOf(page);
-      if (index == -1) {
-        return;
-      }
-      if (Get.isRegistered<PageController>(tag: _kSettingPageControllerTag)) {
-        DesktopTabPage.onAddSetting(initialPage: page);
-        PageController controller =
-            Get.find<PageController>(tag: _kSettingPageControllerTag);
-        Rx<SettingsTabKey> selected =
-            Get.find<Rx<SettingsTabKey>>(tag: _kSettingPageTabKeyTag);
-        selected.value = page;
-        controller.jumpToPage(index);
-      } else {
-        DesktopTabPage.onAddSetting(initialPage: page);
-      }
+      DesktopTabPage.onAddSetting(initialPage: page);
     } catch (e) {
       debugPrintStack(label: '$e');
     }
@@ -130,7 +181,10 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   Timer? _videoConnTimer;
 
   _DesktopSettingPageState(SettingsTabKey initialTabkey) {
-    var initialIndex = DesktopSettingPage.tabKeys.indexOf(initialTabkey);
+    final requested =
+        DesktopTabPage.currentSettingsRequest ?? initialTabkey;
+    final resolved = DesktopSettingPage.resolveSection(requested);
+    var initialIndex = DesktopSettingPage.tabKeys.indexOf(resolved);
     if (initialIndex == -1) {
       initialIndex = 0;
     }
@@ -156,17 +210,31 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _videoConnTimer =
-        periodic_immediate(Duration(milliseconds: 1000), () async {
+  void _applyPageVisibility(bool visible) {
+    if (!visible) {
+      _videoConnTimer?.cancel();
+      _videoConnTimer = null;
+      return;
+    }
+    _videoConnTimer ??=
+        periodic_immediate(const Duration(milliseconds: 1000), () async {
       if (!mounted) {
         return;
       }
       _canBeBlocked.value = await canBeBlocked();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _applyPageVisibility(RaatikPageVisibility.of(context));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override

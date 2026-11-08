@@ -18,7 +18,9 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/plugin/ui_manager.dart';
+import 'package:flutter_hbb/common/widgets/peer_tab_page.dart';
 import 'package:flutter_hbb/raatik/home/home_layout.dart';
+import 'package:flutter_hbb/raatik/navigation/app_shell.dart';
 import 'package:flutter_hbb/raatik/home/service_gate.dart';
 import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
 import 'package:flutter_hbb/raatik/theme/text_styles.dart';
@@ -43,8 +45,6 @@ const borderColor = Color(0xFF2F65BA);
 
 class _DesktopHomePageState extends State<DesktopHomePage>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
-  final _leftPaneScrollController = ScrollController();
-
   @override
   bool get wantKeepAlive => true;
   var systemError = '';
@@ -72,10 +72,21 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
-    final receivePanel = buildReceiveSupportPanel(context);
-    final connectPanel = isIncomingOnly
-        ? const SizedBox.shrink()
-        : buildConnectToPeerPanel(context);
+    final showReceive = !isOutgoingOnly;
+    final showConnect = !isIncomingOnly;
+    final shell = RaatikShellScope.maybeOf(context);
+    final onOpenHistory = shell != null && shell.historyEnabled
+        ? () => shell.destination.value = RaatikDestination.history
+        : null;
+    final receivePanel = showReceive
+        ? buildReceiveSupportPanel(context)
+        : const SizedBox.shrink();
+    final connectPanel = showConnect
+        ? buildConnectToPeerPanel(context)
+        : const SizedBox.shrink();
+    final recent = showConnect
+        ? const SizedBox(height: 360, child: PeerTabPage())
+        : null;
 
     Widget homeLayout({
       required Widget serviceGate,
@@ -86,8 +97,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             serviceGate: serviceGate,
             receivePanel: receivePanel,
             connectPanel: connectPanel,
-            showConnectPanel: !isIncomingOnly,
+            showConnectPanel: showConnect,
+            showReceivePanel: showReceive,
             blocked: blocked,
+            recent: recent,
+            onOpenHistory: onOpenHistory,
           ),
         );
 
@@ -246,18 +260,15 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.background,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(RaatikTokens.radiusLg),
           border: Border.all(color: panelBorder),
         ),
         child: Stack(
           children: [
-            SingleChildScrollView(
-              controller: _leftPaneScrollController,
-              child: Column(
-                key: _childKey,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: children,
-              ),
+            Column(
+              key: _childKey,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
             ),
             if (isOutgoingOnly)
               PositionedDirectional(
@@ -298,10 +309,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(RaatikTokens.radiusLg),
         border: Border.all(color: panelBorder),
       ),
-      child: ConnectionPage(),
+      child: const ConnectionPage(
+        includeRecentPeers: false,
+        showHeading: false,
+      ),
     );
   }
 
@@ -838,9 +852,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _startPolling() {
+    if (_updateTimer != null) return;
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();
@@ -892,6 +905,26 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       // Continuous svcStatus / videoConnCount updates (was OnlineStatusWidget).
       await _pollConnectStatus();
     });
+  }
+
+  void _applyPageVisibility(bool visible) {
+    if (!visible) {
+      _updateTimer?.cancel();
+      _updateTimer = null;
+      return;
+    }
+    _startPolling();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _applyPageVisibility(RaatikPageVisibility.of(context));
+  }
+
+  @override
+  void initState() {
+    super.initState();
     Get.put<RxBool>(svcStopped, tag: 'stop-service');
     rustDeskWinManager.registerActiveWindowListener(onActiveWindowChanged);
 

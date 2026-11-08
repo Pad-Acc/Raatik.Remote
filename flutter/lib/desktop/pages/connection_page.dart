@@ -16,6 +16,7 @@ import '../../common/widgets/peer_tab_page.dart';
 import '../../common/widgets/autocomplete.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
+import 'package:flutter_hbb/raatik/navigation/app_shell.dart';
 import 'package:flutter_hbb/raatik/text/identifier_widgets.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/text_styles.dart';
@@ -23,7 +24,14 @@ import 'package:flutter_hbb/raatik/theme/tokens.dart';
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {
-  const ConnectionPage({Key? key}) : super(key: key);
+  const ConnectionPage({
+    Key? key,
+    this.includeRecentPeers = true,
+    this.showHeading = true,
+  }) : super(key: key);
+
+  final bool includeRecentPeers;
+  final bool showHeading;
 
   @override
   State<ConnectionPage> createState() => _ConnectionPageState();
@@ -68,6 +76,14 @@ class _ConnectionPageState extends State<ConnectionPage>
     Get.put<TextEditingController>(_idEditingController);
     Get.put<IDTextEditingController>(_idController);
     windowManager.addListener(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!RaatikPageVisibility.of(context)) {
+      _allPeersLoader.pauseTimers();
+    }
   }
 
   @override
@@ -148,21 +164,25 @@ class _ConnectionPageState extends State<ConnectionPage>
         return Padding(
           padding: const EdgeInsetsDirectional.only(start: 12.0),
           child: Column(
-            mainAxisSize: useExpanded ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize: useExpanded && widget.includeRecentPeers
+                ? MainAxisSize.max
+                : MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildConnectHeader(context),
+              if (widget.showHeading) _buildConnectHeader(context),
               Row(
                 children: [
                   Flexible(child: _buildRemoteIDTextField(context)),
                 ],
-              ).marginOnly(top: 12),
-              const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsetsDirectional.only(end: 12),
-                child: Divider(),
-              ),
-              peerList,
+              ).marginOnly(top: widget.showHeading ? 12 : 0),
+              if (widget.includeRecentPeers) ...[
+                const SizedBox(height: 12),
+                const Padding(
+                  padding: EdgeInsetsDirectional.only(end: 12),
+                  child: Divider(),
+                ),
+                peerList,
+              ],
             ],
           ),
         );
@@ -276,7 +296,9 @@ class _ConnectionPageState extends State<ConnectionPage>
                   ) {
                     updateTextAndPreserveSelection(
                         fieldTextEditingController, _idController.text);
-                    return Obx(() => RaatikIdentifierField(
+                    return Obx(() => SizedBox(
+                          height: RaatikTokens.heroInput,
+                          child: RaatikIdentifierField(
                           controller: fieldTextEditingController,
                           focusNode: fieldFocusNode,
                           style: RaatikTextStyles.displayId(context),
@@ -296,6 +318,7 @@ class _ConnectionPageState extends State<ConnectionPage>
                           onSubmitted: (_) {
                             onConnect();
                           },
+                        ),
                         ));
                   },
                   onSelected: (option) {
@@ -372,8 +395,9 @@ class _ConnectionPageState extends State<ConnectionPage>
               padding: const EdgeInsets.only(top: 13.0),
               child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                 SizedBox(
-                  height: 28.0,
+                  height: RaatikTokens.minTarget,
                   child: ElevatedButton(
+                    key: const ValueKey('connect-action'),
                     onPressed: () {
                       onConnect();
                     },

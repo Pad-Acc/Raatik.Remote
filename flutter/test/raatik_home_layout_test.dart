@@ -111,7 +111,8 @@ void main() {
 
       final receive = tester.getRect(find.byKey(_receiveKey));
       final layout = tester.getRect(find.byType(RaatikHomeLayout));
-      expect(receive.width, closeTo(layout.width - 32, 1));
+      // Medium page margin is 24 on each side (UI-C02).
+      expect(receive.width, closeTo(layout.width - 48, 1));
     });
 
     testWidgets('omits connect panel in compact layout at 600', (tester) async {

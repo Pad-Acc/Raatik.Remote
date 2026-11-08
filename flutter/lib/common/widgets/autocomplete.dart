@@ -141,6 +141,11 @@ class AllPeersLoader {
     });
   }
 
+  void pauseTimers() {
+    _queryOnlineTimer?.cancel();
+    _queryOnlineTimer = null;
+  }
+
   void clear() {
     gFFI.recentPeersModel.removeListener(_mergeAllPeers);
     gFFI.lanPeersModel.removeListener(_mergeAllPeers);
