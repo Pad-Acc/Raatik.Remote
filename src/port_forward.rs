@@ -61,6 +61,7 @@ pub async fn listen(
         run_rdp(addr.port());
     }
     let mut ui_receiver = ui_receiver;
+    let mut forward_tasks: Vec<tokio::task::JoinHandle<()>> = Vec::new();
     loop {
         tokio::select! {
             Ok((forward, addr)) = listener.accept() => {
@@ -73,12 +74,17 @@ pub async fn listen(
                 match connect_and_login(&id, &password, &mut ui_receiver, interface.clone(), &mut forward, key, token, is_rdp, &mut close_port_forward).await {
                     Ok(Some(authenticated)) => {
                         let interface = interface.clone();
-                        tokio::spawn(async move {
+                        let parked = crate::raatik::ParkedForwardGuard::new(
+                            authenticated.history_session_key.clone(),
+                        );
+                        forward_tasks.push(tokio::spawn(async move {
+                            // On drop, finishes this session's parked interval if adopt did not take it.
+                            let _parked = parked;
                             if let Err(err) = run_forward(forward, authenticated).await {
                                 interface.msgbox("error", "Error", &err.to_string(), "");
                             }
                             log::info!("connection from {:?} closed", addr);
-                       });
+                       }));
                     }
                     _ if close_port_forward => {
                         break;
@@ -102,6 +108,13 @@ pub async fn listen(
                 }
             }
         }
+    }
+    // Close and listener exit must finish parked intervals without another forward poll.
+    for task in &forward_tasks {
+        task.abort();
+    }
+    for task in forward_tasks {
+        let _ = task.await;
     }
     Ok(())
 }

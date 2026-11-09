@@ -572,6 +572,33 @@ pub(crate) fn adopt_retried_forward(slot: &mut Option<HistoryInterval>, session_
     }
 }
 
+/// Held by one spawned port-forward or RDP task.
+/// Drop takes this session's parked interval. That owner's `Drop` finishes the same record.
+/// If the forward already adopted it, the park slot is empty and this drop does not write.
+#[cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code))]
+pub(crate) struct ParkedForwardGuard {
+    session_key: String,
+}
+
+#[cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code))]
+impl ParkedForwardGuard {
+    pub(crate) fn new(session_key: impl Into<String>) -> Self {
+        Self {
+            session_key: session_key.into(),
+        }
+    }
+}
+
+impl Drop for ParkedForwardGuard {
+    fn drop(&mut self) {
+        // `HistoryInterval::Drop` finishes this record. Outside tests that write
+        // runs on `raatik-history-finish`, not on the async thread that aborts the task.
+        if let Some(interval) = take_unadopted(&self.session_key) {
+            drop(interval);
+        }
+    }
+}
+
 /// Finish only the interval that belongs to `round`.
 /// A failed write puts the same interval back so retry keeps its id and start.
 pub(crate) fn finish_round(

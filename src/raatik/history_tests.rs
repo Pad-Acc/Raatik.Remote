@@ -1684,3 +1684,51 @@ fn drop_finalizes_when_session_index_is_weak() {
     assert_eq!(finished.connection_type, "rdp");
     drop(root);
 }
+
+#[test]
+fn dropped_forward_guard_finishes_parked_interval() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let (root, store, inserted) =
+        retry_after_failed_open("sess-dropped-forward", "135790", "port_forward");
+    assert_eq!(inserted.status, "active");
+    assert_eq!(page_records(&store).len(), 1);
+    drop(super::history::ParkedForwardGuard::new(
+        "sess-dropped-forward",
+    ));
+    let finished = store.get(&inserted.record_id).unwrap();
+    assert_eq!(finished.record_id, inserted.record_id);
+    assert_eq!(finished.started_at_utc_ms, inserted.started_at_utc_ms);
+    assert_eq!(
+        finished.status, "completed",
+        "dropping the forward guard must finish the parked record"
+    );
+    assert!(finished.ended_at_utc_ms.is_some());
+    assert_eq!(finished.connection_type, "port_forward");
+    assert_eq!(page_records(&store).len(), 1);
+
+    let (taken_root, taken_store, taken) =
+        retry_after_failed_open("sess-taken-forward", "135791", "rdp");
+    let mut slot: Option<HistoryInterval> = None;
+    super::history::adopt_retried_forward(&mut slot, "sess-taken-forward");
+    slot.take().unwrap().finish().unwrap();
+    assert_eq!(page_records(&taken_store).len(), 1);
+    assert_eq!(
+        taken_store.get(&taken.record_id).unwrap().status,
+        "completed"
+    );
+    drop(super::history::ParkedForwardGuard::new(
+        "sess-taken-forward",
+    ));
+    let after = taken_store.get(&taken.record_id).unwrap();
+    assert_eq!(after.record_id, taken.record_id);
+    assert_eq!(after.started_at_utc_ms, taken.started_at_utc_ms);
+    assert_eq!(after.status, "completed");
+    assert_eq!(
+        page_records(&taken_store).len(),
+        1,
+        "guard drop after adopt and finish must not insert another record"
+    );
+    drop(root);
+    drop(taken_root);
+}
