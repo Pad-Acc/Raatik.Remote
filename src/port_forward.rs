@@ -71,10 +71,10 @@ pub async fn listen(
                 let mut forward = Framed::new(forward, BytesCodec::new());
                 let mut close_port_forward = false;
                 match connect_and_login(&id, &password, &mut ui_receiver, interface.clone(), &mut forward, key, token, is_rdp, &mut close_port_forward).await {
-                    Ok(Some(stream)) => {
+                    Ok(Some(authenticated)) => {
                         let interface = interface.clone();
                         tokio::spawn(async move {
-                            if let Err(err) = run_forward(forward, stream).await {
+                            if let Err(err) = run_forward(forward, authenticated).await {
                                 interface.msgbox("error", "Error", &err.to_string(), "");
                             }
                             log::info!("connection from {:?} closed", addr);
@@ -116,7 +116,7 @@ async fn connect_and_login(
     token: &str,
     is_rdp: bool,
     close_port_forward: &mut bool,
-) -> ResultType<Option<Stream>> {
+) -> ResultType<Option<AuthenticatedForward>> {
     let conn_type = if is_rdp {
         ConnType::RDP
     } else {
@@ -133,6 +133,7 @@ async fn connect_and_login(
     }
     let mut buffer = Vec::new();
     let mut received = false;
+    let mut history = None;
 
     let _keep_it = hc_connection(feedback, rendezvous_server, token).await;
 
@@ -159,6 +160,8 @@ async fn connect_and_login(
                                 }
                             }
                             Some(login_response::Union::PeerInfo(pi)) => {
+                                let hostname = pi.hostname.clone();
+                                history = start_forward_history(id, &hostname, is_rdp, &interface).await;
                                 interface.handle_peer_info(pi);
                                 break;
                             }
@@ -201,13 +204,64 @@ async fn connect_and_login(
     if !buffer.is_empty() {
         allow_err!(stream.send_bytes(buffer.into()).await);
     }
-    Ok(Some(stream))
+    Ok(Some(AuthenticatedForward { stream, history }))
 }
 
-async fn run_forward(forward: Framed<TcpStream, BytesCodec>, stream: Stream) -> ResultType<()> {
+struct AuthenticatedForward {
+    stream: Stream,
+    history: Option<crate::raatik::HistoryInterval>,
+}
+
+async fn start_forward_history(
+    id: &str,
+    hostname: &str,
+    is_rdp: bool,
+    interface: &impl Interface,
+) -> Option<crate::raatik::HistoryInterval> {
+    #[cfg(not(windows))]
+    {
+        let _ = (id, hostname, is_rdp, interface);
+        None
+    }
+    #[cfg(windows)]
+    {
+        let alias = interface.get_lch().read().unwrap().get_option("alias");
+        let peer_id = id.to_owned();
+        let peer_name = crate::raatik::snapshot_peer_name(&alias, hostname, &peer_id);
+        let kind = if is_rdp { "rdp" } else { "port_forward" }.to_owned();
+        match tokio::task::spawn_blocking(move || {
+            crate::raatik::begin_current_interval(peer_id, peer_name, kind)
+        })
+        .await
+        {
+            Ok(Ok(interval)) => interval,
+            Ok(Err(err)) => {
+                log::warn!("history start failed: {err}");
+                None
+            }
+            Err(err) => {
+                log::warn!("history start task failed: {err}");
+                None
+            }
+        }
+    }
+}
+
+async fn run_forward(
+    forward: Framed<TcpStream, BytesCodec>,
+    authenticated: AuthenticatedForward,
+) -> ResultType<()> {
     log::info!("new port forwarding connection started");
     let mut forward = forward;
-    let mut stream = stream;
+    let AuthenticatedForward {
+        mut stream,
+        history,
+    } = authenticated;
+    let mut checkpoint_job: Option<tokio::task::JoinHandle<()>> = None;
+    let mut checkpoint_timer = tokio::time::interval_at(
+        tokio::time::Instant::now() + std::time::Duration::from_secs(30),
+        std::time::Duration::from_secs(30),
+    );
     loop {
         tokio::select! {
             res = forward.next() => {
@@ -224,7 +278,31 @@ async fn run_forward(forward: Framed<TcpStream, BytesCodec>, stream: Stream) -> 
                     break;
                 }
             },
+            _ = checkpoint_timer.tick(), if history.is_some() => {
+                if checkpoint_job.as_ref().is_some_and(|job| !job.is_finished()) {
+                    continue;
+                }
+                checkpoint_job = None;
+                if let Some(interval) = history.clone() {
+                    checkpoint_job = Some(tokio::task::spawn_blocking(move || {
+                        if let Err(err) = interval.checkpoint() {
+                            log::warn!("history checkpoint failed: {err}");
+                        }
+                    }));
+                }
+            }
         }
+    }
+    if let Some(job) = checkpoint_job {
+        let _ = job.await;
+    }
+    if let Some(interval) = history {
+        let _ = tokio::task::spawn_blocking(move || {
+            if let Err(err) = interval.finish() {
+                log::warn!("history finish failed: {err}");
+            }
+        })
+        .await;
     }
     Ok(())
 }

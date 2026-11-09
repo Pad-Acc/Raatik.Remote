@@ -115,7 +115,7 @@ impl OwnerProbe for WindowsOwnerProbe {
     }
 }
 
-#[cfg(all(test, windows))]
+#[cfg(windows)]
 pub(crate) fn process_creation_filetime(pid: u32) -> Option<u64> {
     match read_creation_ticks(pid) {
         Ok(ticks) => Some(ticks),

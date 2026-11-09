@@ -1,3 +1,8 @@
+use super::history::{
+    admit_peer_info, finish_round, history_save_warning, note_approval_canceled,
+    note_login_failure, retry_history_save, snapshot_peer_name, HistoryInterval, OwnerIdentity,
+    HISTORY_SAVE_WARNING_ACTION, HISTORY_SAVE_WARNING_TEXT,
+};
 use super::history_store::{
     checkpoint_after_barrier, process_creation_filetime, set_history_fault, HistoryFault,
     CHECKPOINT_HOLDING_FILE, CHECKPOINT_RELEASE_FILE,
@@ -11,7 +16,10 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::{Mutex, MutexGuard},
+    sync::{
+        atomic::{AtomicI64, AtomicU64, Ordering},
+        Arc, Mutex, MutexGuard,
+    },
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -925,4 +933,337 @@ fn same_start_sorts_by_record_id() {
             "ffffffff-ffff-4fff-8fff-ffffffffffff"
         ]
     );
+}
+
+fn test_owner() -> OwnerIdentity {
+    OwnerIdentity {
+        pid: 424_242,
+        started_at: 64,
+    }
+}
+
+fn page_records(store: &HistoryStore) -> Vec<HistoryRecord> {
+    store
+        .query(&HistoryQuery {
+            search: String::new(),
+            from_utc_ms: None,
+            to_utc_ms: None,
+            offset: 0,
+            limit: 20,
+        })
+        .expect("query history")
+        .records
+}
+
+fn manual_clocks(wall_ms: i64, monotonic_ms: u64) -> (Arc<AtomicI64>, Arc<AtomicU64>) {
+    (
+        Arc::new(AtomicI64::new(wall_ms)),
+        Arc::new(AtomicU64::new(monotonic_ms)),
+    )
+}
+
+fn start_at(
+    store: &Arc<HistoryStore>,
+    peer_id: &str,
+    peer_name: &str,
+    connection_type: &str,
+    wall_ms: &Arc<AtomicI64>,
+    monotonic_ms: &Arc<AtomicU64>,
+) -> Result<HistoryInterval, HistoryError> {
+    HistoryInterval::start_with_clock(
+        store.clone(),
+        peer_id.to_owned(),
+        peer_name.to_owned(),
+        connection_type.to_owned(),
+        test_owner(),
+        wall_ms.clone(),
+        monotonic_ms.clone(),
+    )
+}
+
+#[test]
+fn unauthenticated_transport_has_no_history() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let slot = None;
+    assert!(page_records(&store).is_empty());
+    note_login_failure(&slot);
+    note_approval_canceled(&slot);
+    assert!(slot.is_none());
+    assert!(page_records(&store).is_empty());
+}
+
+#[test]
+fn duplicate_peer_info_one_record() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(1_700_000_000_000, 0);
+    let mut slot = None;
+    assert!(page_records(&store).is_empty());
+    let mut creates = 0u32;
+    admit_peer_info(&mut slot, 4, || {
+        creates += 1;
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    admit_peer_info(&mut slot, 4, || {
+        creates += 1;
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    assert_eq!(creates, 1);
+    let records = page_records(&store);
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].status, "active");
+    assert_eq!(records[0].record_id, slot.as_ref().unwrap().1.record_id());
+    assert_eq!(slot.as_ref().unwrap().0, 4);
+}
+
+#[test]
+fn stale_disconnect_leaves_new_round_active() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(1_700_000_000_000, 0);
+    let mut old_round = None;
+    let mut new_round = None;
+    admit_peer_info(&mut old_round, 1, || {
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    mono.store(5_000, Ordering::SeqCst);
+    wall.fetch_add(5_000, Ordering::SeqCst);
+    admit_peer_info(&mut new_round, 2, || {
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    let old_id = old_round.as_ref().unwrap().1.record_id().to_owned();
+    let new_id = new_round.as_ref().unwrap().1.record_id().to_owned();
+    finish_round(&mut new_round, 1).unwrap();
+    assert!(new_round.is_some());
+    assert_eq!(store.get(&new_id).unwrap().status, "active");
+    finish_round(&mut old_round, 1).unwrap();
+    assert!(old_round.is_none());
+    assert_eq!(store.get(&old_id).unwrap().status, "completed");
+    assert_eq!(store.get(&new_id).unwrap().status, "active");
+    assert_ne!(old_id, new_id);
+}
+
+#[test]
+fn reconnect_excludes_wait_time() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(1_700_000_000_000, 0);
+    let mut first = None;
+    admit_peer_info(&mut first, 1, || {
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    mono.store(30_000, Ordering::SeqCst);
+    wall.fetch_add(30_000, Ordering::SeqCst);
+    finish_round(&mut first, 1).unwrap();
+
+    mono.store(90_000, Ordering::SeqCst);
+    wall.fetch_add(60_000, Ordering::SeqCst);
+    let mut second = None;
+    admit_peer_info(&mut second, 2, || {
+        start_at(&store, "123456", "Desk", "file_transfer", &wall, &mono)
+    })
+    .unwrap();
+    mono.store(110_000, Ordering::SeqCst);
+    wall.fetch_add(20_000, Ordering::SeqCst);
+    finish_round(&mut second, 2).unwrap();
+
+    let records = page_records(&store);
+    assert_eq!(records.len(), 2);
+    let durations: Vec<u64> = records.iter().map(|record| record.elapsed_ms).collect();
+    assert_eq!(durations, vec![20_000, 30_000]);
+    assert!(durations.iter().all(|elapsed| *elapsed != 110_000));
+}
+
+#[test]
+fn port_forward_logs_each_authenticated_transport() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(1_700_000_000_000, 0);
+    let listener = None::<(u32, HistoryInterval)>;
+    assert!(listener.is_none());
+    assert!(page_records(&store).is_empty());
+    let mut first = None;
+    let mut second = None;
+    admit_peer_info(&mut first, 1, || {
+        start_at(
+            &store,
+            "123456",
+            &snapshot_peer_name("Alias", "host", "123456"),
+            "port_forward",
+            &wall,
+            &mono,
+        )
+    })
+    .unwrap();
+    admit_peer_info(&mut second, 2, || {
+        start_at(
+            &store,
+            "123456",
+            &snapshot_peer_name("", "host-b", "123456"),
+            "port_forward",
+            &wall,
+            &mono,
+        )
+    })
+    .unwrap();
+    let left = store.get(first.as_ref().unwrap().1.record_id()).unwrap();
+    let right = store.get(second.as_ref().unwrap().1.record_id()).unwrap();
+    assert_ne!(left.record_id, right.record_id);
+    assert_eq!(left.peer_id, "123456");
+    assert_eq!(right.peer_id, "123456");
+    assert_eq!(left.connection_type, "port_forward");
+    assert_eq!(right.connection_type, "port_forward");
+    assert_eq!(left.peer_name, "Alias");
+    assert_eq!(right.peer_name, "host-b");
+    assert_eq!(snapshot_peer_name("", "", "123456"), "123456");
+    assert_eq!(page_records(&store).len(), 2);
+}
+
+#[test]
+fn drop_or_error_finalizes_interval() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(1_700_000_000_000, 0);
+    let error_id = {
+        let mut slot = None;
+        admit_peer_info(&mut slot, 8, || {
+            start_at(&store, "123456", "Desk", "terminal", &wall, &mono)
+        })
+        .unwrap();
+        let id = slot.as_ref().unwrap().1.record_id().to_owned();
+        mono.store(4_000, Ordering::SeqCst);
+        finish_round(&mut slot, 8).unwrap();
+        finish_round(&mut slot, 8).unwrap();
+        id
+    };
+    let errored = store.get(&error_id).unwrap();
+    assert_eq!(errored.status, "completed");
+    assert_eq!(errored.elapsed_ms, 4_000);
+    assert!(errored.ended_at_utc_ms.is_some());
+
+    mono.store(10_000, Ordering::SeqCst);
+    let dropped_id = {
+        let mut slot = None;
+        admit_peer_info(&mut slot, 9, || {
+            start_at(&store, "123456", "Desk", "camera", &wall, &mono)
+        })
+        .unwrap();
+        let id = slot.as_ref().unwrap().1.record_id().to_owned();
+        mono.store(12_000, Ordering::SeqCst);
+        drop(slot);
+        id
+    };
+    let dropped = store.get(&dropped_id).unwrap();
+    assert_eq!(dropped.status, "completed");
+    assert_eq!(dropped.elapsed_ms, 2_000);
+
+    let system = HistoryInterval::start(
+        store.clone(),
+        "123456".to_owned(),
+        String::new(),
+        "desktop".to_owned(),
+        test_owner(),
+    )
+    .unwrap();
+    let system_id = system.record_id().to_owned();
+    system.finish().unwrap();
+    let system_record = store.get(&system_id).unwrap();
+    assert_eq!(system_record.peer_name, "123456");
+    assert_eq!(system_record.status, "completed");
+}
+
+#[test]
+fn wall_clock_rollback_keeps_elapsed() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(50_000, 0);
+    let mut slot = None;
+    admit_peer_info(&mut slot, 1, || {
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    mono.store(20_000, Ordering::SeqCst);
+    slot.as_ref().unwrap().1.checkpoint().unwrap();
+    assert_eq!(
+        store
+            .get(slot.as_ref().unwrap().1.record_id())
+            .unwrap()
+            .elapsed_ms,
+        20_000
+    );
+
+    wall.store(1_000, Ordering::SeqCst);
+    mono.store(25_000, Ordering::SeqCst);
+    slot.as_ref().unwrap().1.checkpoint().unwrap();
+    let rolled = store.get(slot.as_ref().unwrap().1.record_id()).unwrap();
+    assert_eq!(rolled.started_at_utc_ms, 50_000);
+    assert_eq!(rolled.elapsed_ms, 25_000);
+    assert!(rolled.elapsed_ms >= 20_000);
+
+    wall.store(500, Ordering::SeqCst);
+    finish_round(&mut slot, 1).unwrap();
+    let finished = page_records(&store);
+    assert_eq!(finished.len(), 1);
+    assert_eq!(finished[0].elapsed_ms, 25_000);
+    assert_eq!(finished[0].status, "completed");
+    assert_eq!(finished[0].ended_at_utc_ms, Some(500));
+    assert!(finished[0].ended_at_utc_ms.unwrap() < finished[0].started_at_utc_ms);
+}
+
+#[test]
+fn failed_insert_retries_same_record() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(80_000, 0);
+    let interval = {
+        let _fault = FaultGuard::arm(HistoryFault::CreateTemp);
+        let started = HistoryInterval::start_with_clock(
+            store.clone(),
+            "123456".to_owned(),
+            "Desk".to_owned(),
+            "rdp".to_owned(),
+            test_owner(),
+            wall.clone(),
+            mono.clone(),
+        )
+        .expect("interval stays in memory when the first insert fails");
+        assert!(matches!(
+            store.get(started.record_id()),
+            Err(HistoryError::NotFound)
+        ));
+        started
+    };
+    let id = interval.record_id().to_owned();
+    let warning = history_save_warning().expect("save warning");
+    assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
+    assert_eq!(warning.action, HISTORY_SAVE_WARNING_ACTION);
+    assert_eq!(warning.record_id, id);
+    mono.store(3_000, Ordering::SeqCst);
+    retry_history_save().unwrap();
+    let stored = store.get(&id).unwrap();
+    assert_eq!(stored.record_id, id);
+    assert_eq!(stored.started_at_utc_ms, 80_000);
+    assert_eq!(stored.elapsed_ms, 3_000);
+    assert_eq!(stored.status, "active");
+    assert_eq!(stored.connection_type, "rdp");
+    assert!(history_save_warning().is_none());
+}
+
+fn clear_history_warning() {
+    super::history::clear_history_save_warning();
 }

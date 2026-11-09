@@ -15,6 +15,23 @@ use crate::{
 // Restart msgbox text is kept as a legacy UI fallback; Flutter handles the type as a control event.
 const RESTART_REMOTE_DEVICE_NO_DATA_TIMEOUT: Duration = Duration::from_secs(5);
 const KCP_CLOSE_REASON_FLUSH_DELAY: Duration = Duration::from_millis(30);
+
+#[cfg(windows)]
+fn history_connection_type(conn_type: ConnType) -> &'static str {
+    if conn_type == ConnType::FILE_TRANSFER {
+        "file_transfer"
+    } else if conn_type == ConnType::VIEW_CAMERA {
+        "camera"
+    } else if conn_type == ConnType::TERMINAL {
+        "terminal"
+    } else if conn_type == ConnType::PORT_FORWARD {
+        "port_forward"
+    } else if conn_type == ConnType::RDP {
+        "rdp"
+    } else {
+        "desktop"
+    }
+}
 #[cfg(feature = "unix-file-copy-paste")]
 use crate::{clipboard::try_empty_clipboard_files, clipboard_file::unix_file_clip};
 #[cfg(any(
@@ -83,6 +100,14 @@ pub struct Remote<T: InvokeUiSession> {
     chroma: Arc<RwLock<Option<Chroma>>>,
     last_record_state: bool,
     sent_close_reason: bool,
+    #[cfg(windows)]
+    history_interval: Option<(u32, crate::raatik::HistoryInterval)>,
+    #[cfg(windows)]
+    history_round: u32,
+    #[cfg(windows)]
+    history_kind: String,
+    #[cfg(windows)]
+    history_checkpoint: Option<hbb_common::tokio::task::JoinHandle<()>>,
 }
 
 #[derive(Default)]
@@ -132,6 +157,14 @@ impl<T: InvokeUiSession> Remote<T> {
             chroma: Default::default(),
             last_record_state: false,
             sent_close_reason: false,
+            #[cfg(windows)]
+            history_interval: None,
+            #[cfg(windows)]
+            history_round: 0,
+            #[cfg(windows)]
+            history_kind: String::new(),
+            #[cfg(windows)]
+            history_checkpoint: None,
         }
     }
 
@@ -168,6 +201,11 @@ impl<T: InvokeUiSession> Remote<T> {
         } else {
             ConnType::default()
         };
+        #[cfg(windows)]
+        {
+            self.history_round = round;
+            self.history_kind = history_connection_type(conn_type).to_owned();
+        }
 
         match Client::start(
             &self.handler.get_id(),
@@ -195,7 +233,9 @@ impl<T: InvokeUiSession> Remote<T> {
                     if kcp.is_some() {
                         tokio::time::sleep(KCP_CLOSE_REASON_FLUSH_DELAY).await;
                     }
-                    self.handle_disconnected(round);
+                    #[cfg(windows)]
+                    crate::raatik::note_approval_canceled(&self.history_interval);
+                    self.finalize_round(round).await;
                     return;
                 }
                 self.handler.update_direct(Some(direct));
@@ -281,6 +321,7 @@ impl<T: InvokeUiSession> Remote<T> {
                             self.handle_local_clipboard_msg(&mut peer, _msg).await;
                         }
                         _ = self.timer.tick() => {
+                            self.queue_history_checkpoint();
                             if last_recv_time.elapsed() >= SEC30 {
                                 self.handler.msgbox("error", "Connection Error", "Timeout", "");
                                 break;
@@ -358,7 +399,95 @@ impl<T: InvokeUiSession> Remote<T> {
                 self.handler.on_establish_connection_error(err.to_string());
             }
         }
+        self.finalize_round(round).await;
+    }
+
+    fn queue_history_checkpoint(&mut self) {
+        #[cfg(not(windows))]
+        {
+            let _ = self;
+        }
+        #[cfg(windows)]
+        {
+            if self
+                .history_checkpoint
+                .as_ref()
+                .is_some_and(|job| !job.is_finished())
+            {
+                return;
+            }
+            self.history_checkpoint = None;
+            let Some((_, interval)) = self.history_interval.clone() else {
+                return;
+            };
+            self.history_checkpoint = Some(hbb_common::tokio::task::spawn_blocking(move || {
+                if let Err(err) = interval.checkpoint() {
+                    log::warn!("history checkpoint failed: {err}");
+                }
+            }));
+        }
+    }
+
+    async fn finish_history_interval(&mut self, round: u32) {
+        #[cfg(windows)]
+        {
+            if let Some(job) = self.history_checkpoint.take() {
+                let _ = job.await;
+            }
+            let mut slot = self.history_interval.take();
+            let restored = hbb_common::tokio::task::spawn_blocking(move || {
+                if let Err(err) = crate::raatik::finish_round(&mut slot, round) {
+                    log::warn!("history finish failed: {err}");
+                }
+                slot
+            })
+            .await;
+            if let Ok(slot) = restored {
+                self.history_interval = slot;
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = (self, round);
+        }
+    }
+
+    async fn finalize_round(&mut self, round: u32) {
+        self.finish_history_interval(round).await;
         self.handle_disconnected(round);
+    }
+
+    #[cfg(windows)]
+    async fn note_authenticated_peer(&mut self, hostname: &str) {
+        if self.history_interval.is_some() {
+            return;
+        }
+        let round = self.history_round;
+        let kind = self.history_kind.clone();
+        let hostname = hostname.to_owned();
+        let (alias, peer_id) = {
+            let lc = self.handler.lc.read().unwrap();
+            (lc.get_option("alias"), lc.get_id().to_owned())
+        };
+        let peer_name = crate::raatik::snapshot_peer_name(&alias, &hostname, &peer_id);
+        let started = hbb_common::tokio::task::spawn_blocking(move || {
+            crate::raatik::begin_current_interval(peer_id, peer_name, kind)
+        })
+        .await;
+        match started {
+            Ok(Ok(Some(interval))) => {
+                if let Err(err) =
+                    crate::raatik::admit_peer_info(&mut self.history_interval, round, || {
+                        Ok(interval)
+                    })
+                {
+                    log::warn!("history start failed: {err}");
+                }
+            }
+            Ok(Ok(None)) => {}
+            Ok(Err(err)) => log::warn!("history start failed: {err}"),
+            Err(err) => log::warn!("history start task failed: {err}"),
+        }
     }
 
     fn handle_disconnected(&self, round: u32) {
@@ -1364,10 +1493,17 @@ impl<T: InvokeUiSession> Remote<T> {
                                 lr.enable_trusted_devices;
                         }
                         if !self.handler.handle_login_error(&err) {
+                            #[cfg(windows)]
+                            crate::raatik::note_login_failure(&self.history_interval);
                             return false;
                         }
                     }
                     Some(login_response::Union::PeerInfo(pi)) => {
+                        #[cfg(windows)]
+                        {
+                            let hostname = pi.hostname.clone();
+                            self.note_authenticated_peer(&hostname).await;
+                        }
                         let peer_version = pi.version.clone();
                         let peer_platform = pi.platform.clone();
                         self.set_peer_info(&pi);
