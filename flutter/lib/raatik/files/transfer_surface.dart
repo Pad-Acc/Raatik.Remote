@@ -193,23 +193,24 @@ class _RaatikFileTransferSurfaceState extends State<RaatikFileTransferSurface> {
 
     return Column(
       children: [
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: RaatikLabelledOverflow(
-            label: widget.overflowLabel,
-            children: [
-              TextButton(
-                key: const Key('file-overflow-transfer'),
-                onPressed: _transfer,
-                child: Text(
-                  widget.transferPermitted
-                      ? widget.transferLabel
-                      : (widget.disabledReason ?? widget.transferLabel),
+        if (widget.onTransfer != null)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: RaatikLabelledOverflow(
+              label: widget.overflowLabel,
+              children: [
+                TextButton(
+                  key: const Key('file-overflow-transfer'),
+                  onPressed: _transfer,
+                  child: Text(
+                    widget.transferPermitted
+                        ? widget.transferLabel
+                        : (widget.disabledReason ?? widget.transferLabel),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         if (widget.progress != null)
           LinearProgressIndicator(
             key: const Key('file-progress'),

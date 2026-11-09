@@ -379,6 +379,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('file surface omits transfer unless a caller supplies one',
+      (tester) async {
+    await _pump(
+      tester,
+      const RaatikFileTransferSurface(
+        width: 900,
+        localLabel: 'This computer',
+        remoteLabel: 'Remote computer',
+        overflowLabel: 'More',
+        localFiles: [
+          RaatikFileEntry(name: 'quarterly-plan.txt', id: '123456789'),
+        ],
+        remoteFiles: [
+          RaatikFileEntry(name: 'remote-note.txt', id: '987654321'),
+        ],
+      ),
+      size: const Size(900, 680),
+      locale: const Locale('en'),
+      scale: 1,
+    );
+    expect(find.byKey(const Key('file-overflow-transfer')), findsNothing);
+    expect(find.byKey(RaatikLabelledOverflow.buttonKey), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('cancelling a transfer does not start one', (tester) async {
     final calls = <String>[];
     await _pump(

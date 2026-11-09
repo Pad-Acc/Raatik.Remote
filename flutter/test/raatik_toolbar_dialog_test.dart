@@ -492,5 +492,148 @@ void main() {
       expect(disconnect.color, RaatikTokens.danger);
       expect(tester.takeException(), isNull);
     });
+
+    List<RaatikToolbarTool> focusTools({
+      required VoidCallback onDisplay,
+      VoidCallback? onDisabled,
+      bool disableImage = false,
+    }) {
+      return [
+        RaatikToolbarTool(
+          id: RaatikSessionTool.display,
+          label: 'Display',
+          child: TextButton(
+            key: const Key('tool-display-action'),
+            onPressed: onDisplay,
+            child: const Text('Display'),
+          ),
+        ),
+        RaatikToolbarTool(
+          id: RaatikSessionTool.image,
+          label: 'Image',
+          enabled: !disableImage,
+          disabledReason: disableImage ? 'Image is denied' : null,
+          child: TextButton(
+            key: const Key('tool-image-action'),
+            onPressed: onDisabled ?? () {},
+            child: const Text('Image'),
+          ),
+        ),
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.chat,
+          label: 'Chat',
+          child: Text('Chat', key: Key('tool-chat')),
+        ),
+      ];
+    }
+
+    Future<void> openOverflow(WidgetTester tester) async {
+      await tester.tap(find.byKey(RaatikLabelledOverflow.buttonKey));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('disabled tool ignores Enter and an enabled tool fires once',
+        (tester) async {
+      var disabledCalls = 0;
+      var enabledCalls = 0;
+      await pumpSession(
+        tester,
+        width: 900,
+        locale: const Locale('en'),
+        tools: focusTools(
+          onDisplay: () => enabledCalls++,
+          onDisabled: () => disabledCalls++,
+          disableImage: true,
+        ),
+      );
+
+      expect(find.text('Image is denied'), findsOneWidget);
+      expect(find.byKey(const Key('tool-image-action')), findsOneWidget);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+
+      final imageLabel = find.descendant(
+        of: find.byKey(const Key('tool-image-action')),
+        matching: find.text('Image'),
+      );
+      final imageFocus = Focus.of(tester.element(imageLabel));
+      imageFocus.requestFocus();
+      await tester.pump();
+      expect(imageFocus.hasFocus, isFalse);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(disabledCalls, 0);
+
+      await tester.tap(find.byKey(const Key('tool-display-action')));
+      await tester.pump();
+      expect(enabledCalls, 1);
+      expect(disabledCalls, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('overflow menu takes focus and Enter runs the first item',
+        (tester) async {
+      var calls = 0;
+      await pumpSession(
+        tester,
+        width: 480,
+        locale: const Locale('en'),
+        tools: focusTools(onDisplay: () => calls++),
+      );
+
+      expect(find.byKey(const Key('tool-display-action')), findsNothing);
+      await openOverflow(tester);
+      final display = find.byKey(const Key('tool-display-action'));
+      expect(display, findsOneWidget);
+      final itemFocus = Focus.of(tester.element(find.descendant(
+        of: display,
+        matching: find.text('Display'),
+      )));
+      expect(itemFocus.hasPrimaryFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(calls, 1);
+      expect(find.byKey(const Key('tool-display-action')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('escape closes the overflow menu without running an item',
+        (tester) async {
+      var calls = 0;
+      await pumpSession(
+        tester,
+        width: 480,
+        locale: const Locale('en'),
+        tools: focusTools(onDisplay: () => calls++),
+      );
+
+      await openOverflow(tester);
+      expect(find.byKey(const Key('tool-display-action')), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(calls, 0);
+      expect(find.byKey(const Key('tool-display-action')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('pointer activation runs an overflow item and closes the menu',
+        (tester) async {
+      var calls = 0;
+      await pumpSession(
+        tester,
+        width: 480,
+        locale: const Locale('en'),
+        tools: focusTools(onDisplay: () => calls++),
+      );
+
+      await openOverflow(tester);
+      await tester.tap(find.byKey(const Key('tool-display-action')));
+      await tester.pumpAndSettle();
+      expect(calls, 1);
+      expect(find.byKey(const Key('tool-display-action')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

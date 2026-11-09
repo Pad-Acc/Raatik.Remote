@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -68,15 +69,17 @@ Widget _presentTool(RaatikToolbarTool tool) {
     child: Semantics(
       label: reason,
       enabled: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          IgnorePointer(
-            child: Opacity(opacity: 0.45, child: tool.child),
-          ),
-          Text(reason),
-        ],
+      child: ExcludeFocus(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            IgnorePointer(
+              child: Opacity(opacity: 0.45, child: tool.child),
+            ),
+            Text(reason),
+          ],
+        ),
       ),
     ),
   );
@@ -128,16 +131,106 @@ class RaatikLabelledOverflow extends StatefulWidget {
 
 class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
   OverlayEntry? _entry;
+  final FocusScopeNode _menuScope =
+      FocusScopeNode(debugLabel: 'raatik-overflow-menu');
+  bool _listening = false;
+  late final KeyEventCallback _keyHandler = _onHardwareKey;
+  late final PointerRoute _pointerRoute = _onPointer;
 
   @override
   void dispose() {
-    _remove();
+    _stopListening();
+    _entry?.remove();
+    _entry = null;
+    _menuScope.dispose();
     super.dispose();
   }
 
+  void _startListening() {
+    if (_listening) return;
+    _listening = true;
+    HardwareKeyboard.instance.addHandler(_keyHandler);
+    GestureBinding.instance.pointerRouter.addGlobalRoute(_pointerRoute);
+  }
+
+  void _stopListening() {
+    if (!_listening) return;
+    _listening = false;
+    HardwareKeyboard.instance.removeHandler(_keyHandler);
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(_pointerRoute);
+  }
+
   void _remove() {
-    _entry?.remove();
+    final entry = _entry;
     _entry = null;
+    entry?.remove();
+    _stopListening();
+  }
+
+  bool _onHardwareKey(KeyEvent event) {
+    if (event is KeyDownEvent &&
+        (event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+      _scheduleLeafClose();
+    }
+    return false;
+  }
+
+  void _onPointer(PointerEvent event) {
+    if (event is PointerUpEvent) _scheduleLeafClose();
+  }
+
+  void _scheduleClose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _entry != null) _remove();
+    });
+  }
+
+  void _scheduleLeafClose() {
+    final before = _menuPanelCount();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _entry == null) return;
+      if (_menuPanelCount() > before) return;
+      _remove();
+    });
+  }
+
+  int _menuPanelCount() {
+    final root = WidgetsBinding.instance.rootElement;
+    if (root == null) return 0;
+    var count = 0;
+    void visit(Element element) {
+      if (element.widget.runtimeType.toString() == '_MenuPanel') count++;
+      element.visitChildren(visit);
+    }
+    visit(root);
+    return count;
+  }
+
+  KeyEventResult _onMenuKey(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      _scheduleClose();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _focusFirstItem() {
+    if (!mounted || _entry == null) return;
+    if (_menuScope.context == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _entry != null) _focusFirstItem();
+      });
+      return;
+    }
+    final node = ReadingOrderTraversalPolicy()
+        .findFirstFocus(_menuScope, ignoreCurrentFocus: true);
+    if (node != null && node != _menuScope && node.canRequestFocus) {
+      node.requestFocus();
+      return;
+    }
+    _menuScope.requestFocus();
   }
 
   void _toggle() {
@@ -159,17 +252,22 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
           left: left,
           top: origin.dy + box.size.height,
           width: menuWidth,
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(RaatikTokens.radiusSm),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: widget.children.isEmpty
-                    ? [Text(widget.label)]
-                    : widget.children,
+          child: FocusScope(
+            node: _menuScope,
+            autofocus: true,
+            onKeyEvent: _onMenuKey,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(RaatikTokens.radiusSm),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: widget.children.isEmpty
+                      ? [Text(widget.label)]
+                      : widget.children,
+                ),
               ),
             ),
           ),
@@ -177,6 +275,11 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
       },
     );
     overlay.insert(_entry!);
+    _startListening();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _entry == null) return;
+      _focusFirstItem();
+    });
   }
 
   @override

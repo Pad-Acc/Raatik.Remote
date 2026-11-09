@@ -184,7 +184,6 @@ class _FileManagerPageState extends State<FileManagerPage>
                 remote: dropArea(FileManagerView(
                     model.remoteController, _ffi, _mouseFocusScope)),
                 status: statusList(),
-                onTransfer: _transferCurrentSelection,
               );
             },
           ),
@@ -395,23 +394,6 @@ class _FileManagerPageState extends State<FileManagerPage>
     final otherSideData = model.localController.directoryData();
     raatikInvokePermitted(_ffi.ffiModel.permissions['file'] != false, () {
       model.remoteController.sendFiles(items, otherSideData);
-    });
-  }
-
-  void _transferCurrentSelection() {
-    final permitted = _ffi.ffiModel.permissions['file'] != false;
-    raatikInvokePermitted(permitted, () {
-      for (final controller in [
-        model.localController,
-        model.remoteController,
-      ]) {
-        if (!SelectedItems.valid(controller.selectedItems.items)) continue;
-        controller.sendFiles(
-          controller.selectedItems,
-          controller.getOtherSideDirectoryData(),
-        );
-        controller.selectedItems.clear();
-      }
     });
   }
 }
