@@ -1732,3 +1732,157 @@ fn dropped_forward_guard_finishes_parked_interval() {
     drop(root);
     drop(taken_root);
 }
+
+fn park_retried_forward(
+    session_key: &str,
+    park_id: &str,
+    peer_id: &str,
+    connection_type: &str,
+    store: &Arc<HistoryStore>,
+) -> HistoryRecord {
+    let open = open_after_one_failure(session_key, store.clone());
+    let failed = super::history::begin_for_park(
+        session_key,
+        park_id,
+        peer_id.to_owned(),
+        "Desk".to_owned(),
+        connection_type.to_owned(),
+        test_owner(),
+        open,
+        None,
+    );
+    assert!(failed.is_err(), "first open fails before a record exists");
+    retry_history_save(session_key).expect("retry parks this forward");
+    page_records(store)
+        .into_iter()
+        .find(|record| record.peer_id == peer_id)
+        .unwrap_or_else(|| panic!("retry did not park {peer_id} under {park_id}"))
+}
+
+#[test]
+fn sibling_forward_park_ids_stay_independent() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let session = "flutter-forward-sess";
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let desktop_open = open_after_one_failure(session, store.clone());
+    assert!(super::history::begin_for_session(
+        session,
+        "100000".to_owned(),
+        "Desk".to_owned(),
+        "desktop".to_owned(),
+        test_owner(),
+        desktop_open,
+        None,
+    )
+    .is_err());
+    retry_history_save(session).expect("desktop retry parks under the session key");
+    let desktop = page_records(&store)
+        .into_iter()
+        .find(|record| record.peer_id == "100000")
+        .expect("desktop record");
+    let desktop_id = desktop.record_id.clone();
+    let desktop_start = desktop.started_at_utc_ms;
+    let desktop_parked = super::history::parked_forward_identity(session).expect("desktop parked");
+    assert_eq!(desktop_parked.0, desktop_id);
+    assert_eq!(desktop_parked.1, desktop_start);
+
+    let park_a = super::history::new_forward_park_id();
+    let park_b = super::history::new_forward_park_id();
+    assert_ne!(park_a, session);
+    assert_ne!(park_b, session);
+    assert_ne!(park_a, park_b);
+    let rec_a = park_retried_forward(session, &park_a, "100001", "port_forward", &store);
+    let rec_b = park_retried_forward(session, &park_b, "100002", "rdp", &store);
+    let id_a = rec_a.record_id.clone();
+    let start_a = rec_a.started_at_utc_ms;
+    let id_b = rec_b.record_id.clone();
+    let start_b = rec_b.started_at_utc_ms;
+    let parked_b = super::history::parked_forward_identity(&park_b).expect("B parked");
+    assert_eq!(parked_b.0, id_b);
+    assert_eq!(parked_b.1, start_b);
+    assert_eq!(store.get(&id_b).unwrap().status, "active");
+    let parked_desktop = super::history::parked_forward_identity(session).expect("desktop stays");
+    assert_eq!(parked_desktop.0, desktop_id);
+    assert_eq!(parked_desktop.1, desktop_start);
+    assert_eq!(parked_desktop.2, desktop_parked.2);
+    assert_eq!(store.get(&desktop_id).unwrap().status, "active");
+    assert_eq!(page_records(&store).len(), 3);
+
+    drop(super::history::ParkedForwardGuard::new(park_a.clone()));
+    let finished_a = store.get(&id_a).unwrap();
+    assert_eq!(finished_a.record_id, id_a);
+    assert_eq!(finished_a.started_at_utc_ms, start_a);
+    assert_eq!(finished_a.status, "completed");
+    assert!(finished_a.ended_at_utc_ms.is_some());
+    assert!(super::history::parked_forward_identity(&park_a).is_none());
+    let still_b = super::history::parked_forward_identity(&park_b).expect("B stays parked");
+    assert_eq!(still_b.0, id_b, "same UUID");
+    assert_eq!(still_b.1, start_b, "same start");
+    assert_eq!(still_b.2, parked_b.2, "same Instant");
+    assert_eq!(store.get(&id_b).unwrap().status, "active");
+    assert_eq!(store.get(&desktop_id).unwrap().status, "active");
+    assert_eq!(
+        super::history::parked_forward_identity(session)
+            .expect("desktop park")
+            .2,
+        desktop_parked.2
+    );
+    assert_eq!(page_records(&store).len(), 3);
+
+    let park_c = super::history::new_forward_park_id();
+    let park_d = super::history::new_forward_park_id();
+    let rec_c = park_retried_forward(session, &park_c, "100003", "port_forward", &store);
+    let rec_d = park_retried_forward(session, &park_d, "100004", "rdp", &store);
+    let id_c = rec_c.record_id.clone();
+    let start_c = rec_c.started_at_utc_ms;
+    let id_d = rec_d.record_id.clone();
+    let start_d = rec_d.started_at_utc_ms;
+    let parked_d = super::history::parked_forward_identity(&park_d).expect("D parked");
+    assert_eq!(parked_d.0, id_d);
+    assert_eq!(parked_d.1, start_d);
+    let mut slot_c: Option<HistoryInterval> = None;
+    super::history::adopt_retried_forward(&mut slot_c, &park_c);
+    let adopted_c = slot_c
+        .as_ref()
+        .map(|interval| interval.record_id().to_owned());
+    assert_eq!(adopted_c.as_deref(), Some(id_c.as_str()));
+    assert_eq!(
+        super::history::parked_forward_identity(&park_d)
+            .expect("adopt C leaves D")
+            .2,
+        parked_d.2
+    );
+    slot_c.take().unwrap().finish().unwrap();
+    assert_eq!(store.get(&id_c).unwrap().status, "completed");
+    assert_eq!(store.get(&id_c).unwrap().started_at_utc_ms, start_c);
+    let still_d = super::history::parked_forward_identity(&park_d).expect("finish C leaves D");
+    assert_eq!(still_d.0, id_d);
+    assert_eq!(still_d.1, start_d);
+    assert_eq!(still_d.2, parked_d.2);
+    assert_eq!(store.get(&id_d).unwrap().status, "active");
+    assert_eq!(store.get(&id_b).unwrap().status, "active");
+    assert_eq!(
+        super::history::parked_forward_identity(&park_b)
+            .expect("B still parked")
+            .2,
+        parked_b.2
+    );
+    assert_eq!(store.get(&desktop_id).unwrap().status, "active");
+    assert_eq!(
+        store.get(&desktop_id).unwrap().started_at_utc_ms,
+        desktop_start
+    );
+    let mut slot_d: Option<HistoryInterval> = None;
+    super::history::adopt_retried_forward(&mut slot_d, &park_d);
+    let adopted_d = slot_d.as_ref().expect("D still adopted from its park id");
+    assert_eq!(adopted_d.record_id(), id_d);
+    assert_eq!(super::history::interval_allocation(adopted_d), parked_d.2);
+    drop(super::history::ParkedForwardGuard::new(park_c));
+    assert_eq!(page_records(&store).len(), 5);
+    assert_eq!(store.get(&id_c).unwrap().status, "completed");
+    drop(slot_d);
+    super::history::reset_history_sessions();
+    drop(root);
+}

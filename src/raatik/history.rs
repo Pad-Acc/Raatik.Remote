@@ -342,6 +342,7 @@ struct LiveRef {
 }
 
 struct PendingBegin {
+    park_id: String,
     peer_id: String,
     peer_name: String,
     connection_type: String,
@@ -355,6 +356,7 @@ struct PendingBegin {
 impl Clone for PendingBegin {
     fn clone(&self) -> Self {
         Self {
+            park_id: self.park_id.clone(),
             peer_id: self.peer_id.clone(),
             peer_name: self.peer_name.clone(),
             connection_type: self.connection_type.clone(),
@@ -381,40 +383,50 @@ pub fn clear_history_save_warning(session_key: &str) {
     clear_failure(session_key);
 }
 
+fn retry_existing(interval: &HistoryInterval) -> Result<(), HistoryError> {
+    if interval.inner.close_requested.load(Ordering::SeqCst) {
+        interval.finish()
+    } else {
+        interval.checkpoint()
+    }
+}
+
 pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
-    if let Some(interval) = find_interval(session_key) {
-        return if interval.inner.close_requested.load(Ordering::SeqCst) {
-            interval.finish()
-        } else {
-            interval.checkpoint()
+    if let Some(pending) = peek_pending(session_key) {
+        let park_id = pending.park_id.clone();
+        if let Some(interval) = interval_for_park(&park_id) {
+            return retry_existing(&interval);
+        }
+        let mut owner = pending.owner;
+        if let Some(refresh) = pending.refresh_owner {
+            if let Some(next) = refresh() {
+                owner = next;
+            }
+        }
+        return match begin_for_park(
+            session_key,
+            &park_id,
+            pending.peer_id,
+            pending.peer_name,
+            pending.connection_type,
+            owner,
+            pending.open,
+            pending.refresh_owner,
+        ) {
+            Ok(Some(interval)) => {
+                // Park under this connection's id. A sibling id stays where it is.
+                let park_id = interval.inner.park_key.clone();
+                park_unadopted(&park_id, interval);
+                Ok(())
+            }
+            Ok(None) => Ok(()),
+            Err(err) => Err(err),
         };
     }
-    let Some(pending) = peek_pending(session_key) else {
-        return Ok(());
-    };
-    let mut owner = pending.owner;
-    if let Some(refresh) = pending.refresh_owner {
-        if let Some(next) = refresh() {
-            owner = next;
-        }
+    if let Some(interval) = find_interval(session_key) {
+        return retry_existing(&interval);
     }
-    match begin_for_session(
-        session_key,
-        pending.peer_id,
-        pending.peer_name,
-        pending.connection_type,
-        owner,
-        pending.open,
-        pending.refresh_owner,
-    ) {
-        Ok(Some(interval)) => {
-            // The retry thread has no transport. Keep this owner until io_loop or run_forward adopts it.
-            park_unadopted(session_key, interval);
-            Ok(())
-        }
-        Ok(None) => Ok(()),
-        Err(err) => Err(err),
-    }
+    Ok(())
 }
 
 /// Open the store before publishing it. A failed open leaves the cell empty.
@@ -451,9 +463,42 @@ pub(crate) fn begin_for_session(
     >,
     refresh_owner: Option<fn() -> Option<OwnerIdentity>>,
 ) -> Result<Option<HistoryInterval>, HistoryError> {
+    begin_for_park(
+        session_key,
+        session_key,
+        peer_id,
+        peer_name,
+        connection_type,
+        owner,
+        open,
+        refresh_owner,
+    )
+}
+
+/// `park_id` is the slot adopt, guard drop, and finish may take.
+/// Desktop, file, camera, and terminal pass the Flutter session key.
+/// A port-forward or RDP connection passes its own id.
+pub(crate) fn begin_for_park(
+    session_key: &str,
+    park_id: &str,
+    peer_id: String,
+    peer_name: String,
+    connection_type: String,
+    owner: OwnerIdentity,
+    open: Arc<
+        dyn Fn() -> Result<Arc<super::history_store::HistoryStore>, HistoryError> + Send + Sync,
+    >,
+    refresh_owner: Option<fn() -> Option<OwnerIdentity>>,
+) -> Result<Option<HistoryInterval>, HistoryError> {
+    let park_id = if park_id.is_empty() {
+        session_key
+    } else {
+        park_id
+    };
     remember_pending(
         session_key,
         PendingBegin {
+            park_id: park_id.to_owned(),
             peer_id: peer_id.clone(),
             peer_name: peer_name.clone(),
             connection_type: connection_type.clone(),
@@ -480,6 +525,7 @@ pub(crate) fn begin_for_session(
     };
     match HistoryInterval::start_in_session(
         session_key,
+        park_id,
         store,
         peer_id,
         peer_name,
@@ -562,29 +608,54 @@ pub(crate) fn adopt_retried_round(
     }
 }
 
-/// Move a retry-created interval into an empty port-forward or RDP slot.
-pub(crate) fn adopt_retried_forward(slot: &mut Option<HistoryInterval>, session_key: &str) {
+pub(crate) fn new_forward_park_id() -> String {
+    format!("fwd:{}", Uuid::new_v4().hyphenated())
+}
+
+#[cfg(test)]
+pub(crate) fn parked_forward_identity(park_id: &str) -> Option<(String, i64, usize)> {
+    unadopted_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .get(park_id)
+        .map(|interval| {
+            (
+                interval.record_id().to_owned(),
+                interval.inner.started_at_utc_ms,
+                Arc::as_ptr(&interval.inner) as usize,
+            )
+        })
+}
+
+#[cfg(test)]
+pub(crate) fn interval_allocation(interval: &HistoryInterval) -> usize {
+    Arc::as_ptr(&interval.inner) as usize
+}
+
+/// Move the interval parked under `park_id` into an empty forward slot.
+/// Any other id stays parked.
+pub(crate) fn adopt_retried_forward(slot: &mut Option<HistoryInterval>, park_id: &str) {
     if slot.is_some() {
         return;
     }
-    if let Some(interval) = take_unadopted(session_key) {
+    if let Some(interval) = take_unadopted(park_id) {
         *slot = Some(interval);
     }
 }
 
 /// Held by one spawned port-forward or RDP task.
-/// Drop takes this session's parked interval. That owner's `Drop` finishes the same record.
-/// If the forward already adopted it, the park slot is empty and this drop does not write.
+/// Drop takes only this connection's parked interval. That owner's `Drop` finishes the same record.
+/// If this id is empty, or the forward already adopted it, this drop writes nothing.
 #[cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code))]
 pub(crate) struct ParkedForwardGuard {
-    session_key: String,
+    park_id: String,
 }
 
 #[cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code))]
 impl ParkedForwardGuard {
-    pub(crate) fn new(session_key: impl Into<String>) -> Self {
+    pub(crate) fn new(park_id: impl Into<String>) -> Self {
         Self {
-            session_key: session_key.into(),
+            park_id: park_id.into(),
         }
     }
 }
@@ -593,7 +664,7 @@ impl Drop for ParkedForwardGuard {
     fn drop(&mut self) {
         // `HistoryInterval::Drop` finishes this record. Outside tests that write
         // runs on `raatik-history-finish`, not on the async thread that aborts the task.
-        if let Some(interval) = take_unadopted(&self.session_key) {
+        if let Some(interval) = take_unadopted(&self.park_id) {
             drop(interval);
         }
     }
@@ -666,6 +737,18 @@ pub(crate) fn begin_current_interval(
     peer_name: String,
     connection_type: String,
 ) -> Result<Option<HistoryInterval>, HistoryError> {
+    let park_id = session_key.clone();
+    begin_interactive(session_key, park_id, peer_id, peer_name, connection_type)
+}
+
+#[cfg(all(windows, not(raatik_history_harness)))]
+fn begin_interactive(
+    session_key: String,
+    park_id: String,
+    peer_id: String,
+    peer_name: String,
+    connection_type: String,
+) -> Result<Option<HistoryInterval>, HistoryError> {
     if crate::platform::is_root() {
         return Ok(None);
     }
@@ -673,6 +756,11 @@ pub(crate) fn begin_current_interval(
         Uuid::new_v4().hyphenated().to_string()
     } else {
         session_key
+    };
+    let park_id = if park_id.is_empty() {
+        session_key.clone()
+    } else {
+        park_id
     };
     let open_key = session_key.clone();
     let open: Arc<
@@ -682,8 +770,9 @@ pub(crate) fn begin_current_interval(
         pid: std::process::id(),
         started_at: 0,
     });
-    begin_for_session(
+    begin_for_park(
         &session_key,
+        &park_id,
         peer_id,
         peer_name,
         connection_type,
@@ -691,6 +780,17 @@ pub(crate) fn begin_current_interval(
         open,
         Some(current_owner),
     )
+}
+
+#[cfg(all(windows, not(raatik_history_harness)))]
+pub(crate) fn begin_forward_interval(
+    session_key: String,
+    park_id: String,
+    peer_id: String,
+    peer_name: String,
+    connection_type: String,
+) -> Result<Option<HistoryInterval>, HistoryError> {
+    begin_interactive(session_key, park_id, peer_id, peer_name, connection_type)
 }
 
 #[derive(Clone)]
@@ -712,6 +812,7 @@ enum TimeBase {
 struct IntervalInner {
     store: Arc<super::history_store::HistoryStore>,
     session_key: String,
+    park_key: String,
     record_id: String,
     peer_id: String,
     peer_name: String,
@@ -739,6 +840,7 @@ impl HistoryInterval {
     ) -> Result<Self, HistoryError> {
         Self::open(
             String::new(),
+            String::new(),
             store,
             peer_id,
             peer_name,
@@ -763,6 +865,7 @@ impl HistoryInterval {
         let origin = monotonic_ms.load(Ordering::SeqCst);
         Self::open(
             String::new(),
+            String::new(),
             store,
             peer_id,
             peer_name,
@@ -786,6 +889,7 @@ impl HistoryInterval {
 
     pub(crate) fn start_in_session(
         session_key: &str,
+        park_key: &str,
         store: Arc<super::history_store::HistoryStore>,
         peer_id: String,
         peer_name: String,
@@ -794,6 +898,7 @@ impl HistoryInterval {
     ) -> Result<Self, HistoryError> {
         Self::open(
             session_key.to_owned(),
+            park_key.to_owned(),
             store,
             peer_id,
             peer_name,
@@ -815,6 +920,7 @@ impl HistoryInterval {
 
     fn open(
         session_key: String,
+        park_key: String,
         store: Arc<super::history_store::HistoryStore>,
         peer_id: String,
         peer_name: String,
@@ -845,10 +951,16 @@ impl HistoryInterval {
         } else {
             session_key
         };
+        let park_key = if park_key.is_empty() {
+            session_key.clone()
+        } else {
+            park_key
+        };
         let started_at_utc_ms = wall_from_base(&time);
         let inner = Arc::new(IntervalInner {
             store,
             session_key: session_key.clone(),
+            park_key,
             record_id,
             peer_id,
             peer_name,
@@ -959,7 +1071,7 @@ impl IntervalInner {
                 self.finished.store(true, Ordering::SeqCst);
                 clear_failure(&self.session_key);
                 forget_active(&self.session_key);
-                forget_unadopted(&self.session_key);
+                forget_unadopted(&self.park_key);
                 Ok(())
             }
             Err(err) => {
@@ -1122,6 +1234,32 @@ pub(crate) fn session_index_holds_strong_owner(session_key: &str) -> bool {
         .lock()
         .unwrap_or_else(|err| err.into_inner())
         .contains_key(session_key)
+}
+
+fn interval_for_park(park_id: &str) -> Option<HistoryInterval> {
+    if let Some(interval) = unadopted_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .get(park_id)
+        .cloned()
+    {
+        return Some(interval);
+    }
+    if let Some(interval) = active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .values()
+        .find(|interval| interval.inner.park_key == park_id)
+        .cloned()
+    {
+        return Some(interval);
+    }
+    let mut live = LIVE_INTERVALS.lock().unwrap_or_else(|err| err.into_inner());
+    live.retain(|item| item.interval.strong_count() > 0);
+    live.iter().find_map(|item| {
+        let inner = item.interval.upgrade()?;
+        (inner.park_key == park_id).then_some(HistoryInterval { inner })
+    })
 }
 
 fn find_interval(session_key: &str) -> Option<HistoryInterval> {

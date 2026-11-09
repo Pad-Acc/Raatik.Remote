@@ -71,14 +71,15 @@ pub async fn listen(
                 let password = password.clone();
                 let mut forward = Framed::new(forward, BytesCodec::new());
                 let mut close_port_forward = false;
-                match connect_and_login(&id, &password, &mut ui_receiver, interface.clone(), &mut forward, key, token, is_rdp, &mut close_port_forward).await {
+                let park_id = crate::raatik::new_forward_park_id();
+                match connect_and_login(&id, &password, &mut ui_receiver, interface.clone(), &mut forward, key, token, is_rdp, &park_id, &mut close_port_forward).await {
                     Ok(Some(authenticated)) => {
                         let interface = interface.clone();
                         let parked = crate::raatik::ParkedForwardGuard::new(
-                            authenticated.history_session_key.clone(),
+                            authenticated.park_id.clone(),
                         );
                         forward_tasks.push(tokio::spawn(async move {
-                            // On drop, finishes this session's parked interval if adopt did not take it.
+                            // On drop, finishes this connection's parked interval if adopt did not take it.
                             let _parked = parked;
                             if let Err(err) = run_forward(forward, authenticated).await {
                                 interface.msgbox("error", "Error", &err.to_string(), "");
@@ -128,6 +129,7 @@ async fn connect_and_login(
     key: &str,
     token: &str,
     is_rdp: bool,
+    park_id: &str,
     close_port_forward: &mut bool,
 ) -> ResultType<Option<AuthenticatedForward>> {
     let conn_type = if is_rdp {
@@ -174,7 +176,7 @@ async fn connect_and_login(
                             }
                             Some(login_response::Union::PeerInfo(pi)) => {
                                 let hostname = pi.hostname.clone();
-                                history = start_forward_history(id, &hostname, is_rdp, &interface).await;
+                                history = start_forward_history(id, &hostname, is_rdp, &interface, park_id).await;
                                 interface.handle_peer_info(pi);
                                 break;
                             }
@@ -217,18 +219,17 @@ async fn connect_and_login(
     if !buffer.is_empty() {
         allow_err!(stream.send_bytes(buffer.into()).await);
     }
-    let history_session_key = interface.history_session_key();
     Ok(Some(AuthenticatedForward {
         stream,
         history,
-        history_session_key,
+        park_id: park_id.to_owned(),
     }))
 }
 
 struct AuthenticatedForward {
     stream: Stream,
     history: Option<crate::raatik::HistoryInterval>,
-    history_session_key: String,
+    park_id: String,
 }
 
 async fn start_forward_history(
@@ -236,10 +237,11 @@ async fn start_forward_history(
     hostname: &str,
     is_rdp: bool,
     interface: &impl Interface,
+    park_id: &str,
 ) -> Option<crate::raatik::HistoryInterval> {
     #[cfg(not(windows))]
     {
-        let _ = (id, hostname, is_rdp, interface);
+        let _ = (id, hostname, is_rdp, interface, park_id);
         None
     }
     #[cfg(windows)]
@@ -249,8 +251,9 @@ async fn start_forward_history(
         let peer_name = crate::raatik::snapshot_peer_name(&alias, hostname, &peer_id);
         let kind = if is_rdp { "rdp" } else { "port_forward" }.to_owned();
         let session_key = interface.history_session_key();
+        let park_id = park_id.to_owned();
         match tokio::task::spawn_blocking(move || {
-            crate::raatik::begin_current_interval(session_key, peer_id, peer_name, kind)
+            crate::raatik::begin_forward_interval(session_key, park_id, peer_id, peer_name, kind)
         })
         .await
         {
@@ -276,7 +279,7 @@ async fn run_forward(
     let AuthenticatedForward {
         mut stream,
         mut history,
-        history_session_key,
+        park_id,
     } = authenticated;
     let mut checkpoint_job: Option<tokio::task::JoinHandle<()>> = None;
     let mut checkpoint_timer = tokio::time::interval_at(
@@ -301,7 +304,7 @@ async fn run_forward(
             },
             _ = checkpoint_timer.tick(), if cfg!(windows) => {
                 if history.is_none() {
-                    crate::raatik::adopt_retried_forward(&mut history, &history_session_key);
+                    crate::raatik::adopt_retried_forward(&mut history, &park_id);
                 }
                 if checkpoint_job.as_ref().is_some_and(|job| !job.is_finished()) {
                     continue;
@@ -321,7 +324,7 @@ async fn run_forward(
         let _ = job.await;
     }
     if history.is_none() {
-        crate::raatik::adopt_retried_forward(&mut history, &history_session_key);
+        crate::raatik::adopt_retried_forward(&mut history, &park_id);
     }
     if let Some(interval) = history {
         let _ = tokio::task::spawn_blocking(move || {
