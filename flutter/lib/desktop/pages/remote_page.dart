@@ -579,10 +579,15 @@ class _RemotePageState extends State<RemotePage>
     _ffi.canvasModel.disableEdgeScroll();
 
     if (_ffi.ffiModel.keyboard) {
-      _ffi.inputModel.tryMoveEdgeOnExit(
-        evt.localPosition,
-        viewportLocal: true,
+      final exit = decideRaatikPointerExit(
+        measuredInput: _ffi.inputModel.pointerUsesMeasuredViewport,
+        localPosition: evt.localPosition,
         windowPosition: evt.position,
+      );
+      _ffi.inputModel.tryMoveEdgeOnExit(
+        exit.point,
+        viewportLocal: exit.viewportLocal,
+        windowPosition: exit.windowPosition,
       );
     }
 

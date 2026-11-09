@@ -2771,6 +2771,7 @@ class CanvasModel with ChangeNotifier {
   }
 
   clear() {
+    clearViewportSize();
     _x = 0;
     _y = 0;
     _scale = 1.0;

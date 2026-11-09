@@ -852,6 +852,29 @@ void main() {
     expect(log, ['image', 'viewport', 'style', 'refresh']);
   });
 
+  test('pointer exit waits for measured input', () {
+    const local = Offset(120, 80);
+    const window = Offset(500, 348);
+
+    final off = decideRaatikPointerExit(
+      measuredInput: false,
+      localPosition: local,
+      windowPosition: window,
+    );
+    expect(off.point, window);
+    expect(off.viewportLocal, isFalse);
+    expect(off.windowPosition, isNull);
+
+    final on = decideRaatikPointerExit(
+      measuredInput: true,
+      localPosition: local,
+      windowPosition: window,
+    );
+    expect(on.point, local);
+    expect(on.viewportLocal, isTrue);
+    expect(on.windowPosition, window);
+  });
+
   test('measured input waits until the fit for that size is committed', () {
     const stored = Size(640, 672);
     expect(

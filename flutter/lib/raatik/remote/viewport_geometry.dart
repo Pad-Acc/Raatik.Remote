@@ -678,6 +678,48 @@ bool measuredInputReady({
   return storedViewport != null && storedViewport == fitCommittedFor;
 }
 
+/// Coordinates passed to pointer exit.
+///
+/// [point] is the sample stored for the move. [viewportLocal] is true only
+/// after measured input is on. [windowPosition] is the refresh probe, and is
+/// null until then.
+class RaatikPointerExit {
+  const RaatikPointerExit({
+    required this.point,
+    required this.viewportLocal,
+    required this.windowPosition,
+  });
+
+  final Offset point;
+  final bool viewportLocal;
+  final Offset? windowPosition;
+}
+
+/// Exit sample for one pointer leave.
+///
+/// Until [measuredInput] is true, [RaatikPointerExit.point] is [windowPosition],
+/// [RaatikPointerExit.viewportLocal] is false, and the window probe is null.
+/// When it is true, the point is [localPosition], viewport-local, and
+/// [windowPosition] is kept.
+RaatikPointerExit decideRaatikPointerExit({
+  required bool measuredInput,
+  required Offset localPosition,
+  required Offset windowPosition,
+}) {
+  if (!measuredInput) {
+    return RaatikPointerExit(
+      point: windowPosition,
+      viewportLocal: false,
+      windowPosition: null,
+    );
+  }
+  return RaatikPointerExit(
+    point: localPosition,
+    viewportLocal: true,
+    windowPosition: windowPosition,
+  );
+}
+
 bool _measuredViewportStillMounted() => true;
 
 /// Applies one changed measurement. Unusable sizes are ignored.
