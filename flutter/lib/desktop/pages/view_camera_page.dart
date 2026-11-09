@@ -348,7 +348,7 @@ class _ViewCameraPageState extends State<ViewCameraPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return WillPopScope(
+    return _ffi.ffiModel.historySaveOverlay(WillPopScope(
         onWillPop: () async {
           clientClose(sessionId, _ffi);
           return false;
@@ -359,7 +359,7 @@ class _ViewCameraPageState extends State<ViewCameraPage>
           ChangeNotifierProvider.value(value: _ffi.cursorModel),
           ChangeNotifierProvider.value(value: _ffi.canvasModel),
           ChangeNotifierProvider.value(value: _ffi.recordingModel),
-        ], child: buildBody(context)));
+        ], child: buildBody(context))));
   }
 
   void enterView(PointerEnterEvent evt) {

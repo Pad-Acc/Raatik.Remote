@@ -72,6 +72,7 @@ pub struct Session<T: InvokeUiSession> {
     pub reconnect_count: Arc<AtomicUsize>,
     pub last_audit_note: Arc<Mutex<String>>,
     pub audit_guid: Arc<Mutex<String>>,
+    pub history_session_key: Arc<Mutex<String>>,
 }
 
 #[derive(Clone)]
@@ -201,6 +202,24 @@ impl<T: InvokeUiSession> Session<T> {
             server_file_transfer_enabled: self.server_file_transfer_enabled.clone(),
             server_clipboard_enabled: self.server_clipboard_enabled.clone(),
         }
+    }
+
+    pub fn set_history_session_key(&self, key: String) {
+        *self
+            .history_session_key
+            .lock()
+            .unwrap_or_else(|err| err.into_inner()) = key;
+    }
+
+    pub fn read_history_session_key(&self) -> String {
+        self.history_session_key
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .clone()
+    }
+
+    pub fn show_history_save_status(&self, show: bool, text: &str, action: &str) {
+        self.ui_handler.history_save_status(show, text, action);
     }
 
     pub fn is_file_transfer(&self) -> bool {
@@ -1724,6 +1743,7 @@ pub trait InvokeUiSession: Send + Sync + Clone + 'static + Sized + Default {
     fn adapt_size(&self);
     fn on_rgba(&self, display: usize, rgba: &mut scrap::ImageRgb);
     fn msgbox(&self, msgtype: &str, title: &str, text: &str, link: &str, retry: bool);
+    fn history_save_status(&self, _show: bool, _text: &str, _action: &str) {}
     #[cfg(any(target_os = "android", target_os = "ios"))]
     fn clipboard(&self, content: String);
     fn cancel_msgbox(&self, tag: &str);
@@ -1774,6 +1794,10 @@ impl<T: InvokeUiSession> Interface for Session<T> {
         if let Some(sender) = self.sender.read().unwrap().as_ref() {
             sender.send(data).ok();
         }
+    }
+
+    fn history_session_key(&self) -> String {
+        self.read_history_session_key()
     }
 
     fn msgbox(&self, msgtype: &str, title: &str, text: &str, link: &str) {

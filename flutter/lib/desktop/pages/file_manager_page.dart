@@ -162,7 +162,8 @@ class _FileManagerPageState extends State<FileManagerPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Overlay(key: _overlayKeyState.key, initialEntries: [
+    return _ffi.ffiModel
+        .historySaveOverlay(Overlay(key: _overlayKeyState.key, initialEntries: [
       OverlayEntry(builder: (_) {
         return willPopScope(Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -189,7 +190,7 @@ class _FileManagerPageState extends State<FileManagerPage>
           ),
         ));
       })
-    ]);
+    ]));
   }
 
   Widget dropArea(FileManagerView fileView) {

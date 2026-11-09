@@ -354,6 +354,20 @@ pub fn session_get_flutter_option(session_id: SessionID, k: String) -> Option<St
 }
 
 pub fn session_set_flutter_option(session_id: SessionID, k: String, v: String) {
+    if k == "raatik.history.retry" {
+        if let Some(session) = sessions::get_session_by_session_id(&session_id) {
+            let key = session.read_history_session_key();
+            if key.is_empty() {
+                return;
+            }
+            let _ = std::thread::Builder::new()
+                .name("raatik-history-retry".to_owned())
+                .spawn(move || {
+                    let _ = crate::raatik::retry_history_save(&key);
+                });
+        }
+        return;
+    }
     if let Some(session) = sessions::get_session_by_session_id(&session_id) {
         session.save_flutter_option(k, v);
     }
@@ -3030,8 +3044,7 @@ pub fn main_set_common(_key: String, _value: String) {
 
 pub fn session_set_common(session_id: SessionID, key: String, value: String) {
     if let Some(s) = sessions::get_session_by_session_id(&session_id) {
-        if key == "continue-insecure-connection"
-        {
+        if key == "continue-insecure-connection" {
             s.continue_insecure_connection(value == "Y");
             return;
         }

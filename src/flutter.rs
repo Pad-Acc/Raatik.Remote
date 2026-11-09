@@ -694,7 +694,8 @@ impl InvokeUiSession for FlutterHandler {
     }
 
     /// unused in flutter, use switch_display or set_peer_info
-    fn set_display(&self, _x: i32, _y: i32, _w: i32, _h: i32, _cursor_embedded: bool, _scale: f64) {}
+    fn set_display(&self, _x: i32, _y: i32, _w: i32, _h: i32, _cursor_embedded: bool, _scale: f64) {
+    }
 
     fn update_privacy_mode(&self) {
         self.push_event::<&str>("update_privacy_mode", &[], &[]);
@@ -1000,6 +1001,15 @@ impl InvokeUiSession for FlutterHandler {
         );
     }
 
+    fn history_save_status(&self, show: bool, text: &str, action: &str) {
+        let shown = if show { "true" } else { "false" };
+        self.push_event(
+            "history_save_status",
+            &[("show", shown), ("text", text), ("action", action)],
+            &[],
+        );
+    }
+
     fn cancel_msgbox(&self, tag: &str) {
         self.push_event("cancel_msgbox", &[("tag", tag)], &[]);
     }
@@ -1284,6 +1294,20 @@ pub fn session_add_existed(
     Ok(())
 }
 
+fn install_history_status_hook() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        crate::raatik::set_history_status_hook(push_history_status);
+    });
+}
+
+fn push_history_status(session_key: &str, show: bool, text: &str, action: &str) {
+    let Some(session) = sessions::session_by_history_key(session_key) else {
+        return;
+    };
+    session.show_history_save_status(show, text, action);
+}
+
 /// Create a new remote session with the given id.
 ///
 /// # Arguments
@@ -1350,6 +1374,8 @@ pub fn session_add(
         reconnect_count: Arc::new(AtomicUsize::new(0)),
         ..Default::default()
     };
+    session.set_history_session_key(session_id.to_string());
+    install_history_status_hook();
 
     let switch_uuid = if switch_uuid.is_empty() {
         None
@@ -2078,6 +2104,19 @@ pub mod sessions {
                     None
                 }
             })
+    }
+
+    #[inline]
+    pub fn session_by_history_key(session_key: &str) -> Option<FlutterSession> {
+        if session_key.is_empty() {
+            return None;
+        }
+        SESSIONS
+            .read()
+            .unwrap()
+            .values()
+            .find(|session| session.read_history_session_key() == session_key)
+            .cloned()
     }
 
     #[inline]

@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashMap,
     sync::{
         atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicUsize, Ordering},
-        Arc, Condvar, Mutex, Weak,
+        Arc, Condvar, Mutex, OnceLock, Weak,
     },
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
@@ -317,41 +318,204 @@ pub struct OwnerIdentity {
     pub started_at: u64,
 }
 
-static SAVE_WARNING: Mutex<Option<HistorySaveWarning>> = Mutex::new(None);
-static LIVE_INTERVALS: Mutex<Vec<Weak<IntervalInner>>> = Mutex::new(Vec::new());
+static LIVE_INTERVALS: Mutex<Vec<LiveRef>> = Mutex::new(Vec::new());
+static STATUS_HOOK: Mutex<Option<fn(&str, bool, &str, &str)>> = Mutex::new(None);
 
-pub fn history_save_warning() -> Option<HistorySaveWarning> {
-    SAVE_WARNING
+fn warnings() -> &'static Mutex<HashMap<String, HistorySaveWarning>> {
+    static SLOT: OnceLock<Mutex<HashMap<String, HistorySaveWarning>>> = OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn active_intervals() -> &'static Mutex<HashMap<String, HistoryInterval>> {
+    static SLOT: OnceLock<Mutex<HashMap<String, HistoryInterval>>> = OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn pending_begins() -> &'static Mutex<HashMap<String, PendingBegin>> {
+    static SLOT: OnceLock<Mutex<HashMap<String, PendingBegin>>> = OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+struct LiveRef {
+    session_key: String,
+    interval: Weak<IntervalInner>,
+}
+
+struct PendingBegin {
+    peer_id: String,
+    peer_name: String,
+    connection_type: String,
+    owner: OwnerIdentity,
+    open: Arc<
+        dyn Fn() -> Result<Arc<super::history_store::HistoryStore>, HistoryError> + Send + Sync,
+    >,
+    refresh_owner: Option<fn() -> Option<OwnerIdentity>>,
+}
+
+impl Clone for PendingBegin {
+    fn clone(&self) -> Self {
+        Self {
+            peer_id: self.peer_id.clone(),
+            peer_name: self.peer_name.clone(),
+            connection_type: self.connection_type.clone(),
+            owner: self.owner,
+            open: Arc::clone(&self.open),
+            refresh_owner: self.refresh_owner,
+        }
+    }
+}
+
+pub fn set_history_status_hook(hook: fn(&str, bool, &str, &str)) {
+    *STATUS_HOOK.lock().unwrap_or_else(|err| err.into_inner()) = Some(hook);
+}
+
+pub fn history_save_warning(session_key: &str) -> Option<HistorySaveWarning> {
+    warnings()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
-        .clone()
+        .get(session_key)
+        .cloned()
 }
 
-pub fn clear_history_save_warning() {
-    *SAVE_WARNING.lock().unwrap_or_else(|err| err.into_inner()) = None;
+pub fn clear_history_save_warning(session_key: &str) {
+    clear_failure(session_key);
 }
 
-pub fn retry_history_save() -> Result<(), HistoryError> {
-    let record_id = {
-        let guard = SAVE_WARNING.lock().unwrap_or_else(|err| err.into_inner());
-        match guard.as_ref() {
-            Some(warning) if !warning.record_id.is_empty() => warning.record_id.clone(),
-            Some(_) => return Err(HistoryError::InvalidInput),
-            None => return Ok(()),
+pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
+    if let Some(interval) = find_interval(session_key) {
+        return if interval.inner.close_requested.load(Ordering::SeqCst) {
+            interval.finish()
+        } else {
+            interval.checkpoint()
+        };
+    }
+    let Some(pending) = peek_pending(session_key) else {
+        return Ok(());
+    };
+    let mut owner = pending.owner;
+    if let Some(refresh) = pending.refresh_owner {
+        if let Some(next) = refresh() {
+            owner = next;
+        }
+    }
+    begin_for_session(
+        session_key,
+        pending.peer_id,
+        pending.peer_name,
+        pending.connection_type,
+        owner,
+        pending.open,
+        pending.refresh_owner,
+    )
+    .map(|_| ())
+}
+
+/// Open the store before publishing it. A failed open leaves the cell empty.
+pub(crate) fn open_history_store(
+    slot: &OnceLock<Arc<super::history_store::HistoryStore>>,
+    session_key: &str,
+    path_empty: bool,
+    open: impl FnOnce() -> Result<Arc<super::history_store::HistoryStore>, HistoryError>,
+) -> Result<Arc<super::history_store::HistoryStore>, HistoryError> {
+    if let Some(existing) = slot.get() {
+        return Ok(existing.clone());
+    }
+    if path_empty {
+        report_failure(session_key, "", HistoryError::Io);
+        return Err(HistoryError::Io);
+    }
+    match open() {
+        Ok(store) => Ok(slot.get_or_init(|| store).clone()),
+        Err(err) => {
+            report_failure(session_key, "", err);
+            Err(err)
+        }
+    }
+}
+
+pub(crate) fn begin_for_session(
+    session_key: &str,
+    peer_id: String,
+    peer_name: String,
+    connection_type: String,
+    owner: OwnerIdentity,
+    open: Arc<
+        dyn Fn() -> Result<Arc<super::history_store::HistoryStore>, HistoryError> + Send + Sync,
+    >,
+    refresh_owner: Option<fn() -> Option<OwnerIdentity>>,
+) -> Result<Option<HistoryInterval>, HistoryError> {
+    remember_pending(
+        session_key,
+        PendingBegin {
+            peer_id: peer_id.clone(),
+            peer_name: peer_name.clone(),
+            connection_type: connection_type.clone(),
+            owner,
+            open: Arc::clone(&open),
+            refresh_owner,
+        },
+    );
+    if owner.started_at == 0 {
+        report_failure(session_key, "", HistoryError::Io);
+        return Err(HistoryError::Io);
+    }
+    if validate_peer_id(&peer_id).is_err() || !CONNECTION_TYPES.contains(&connection_type.as_str())
+    {
+        report_failure(session_key, "", HistoryError::InvalidInput);
+        return Err(HistoryError::InvalidInput);
+    }
+    let store = match open() {
+        Ok(store) => store,
+        Err(err) => {
+            report_failure(session_key, "", err);
+            return Err(err);
         }
     };
-    let inner = {
-        let mut live = LIVE_INTERVALS.lock().unwrap_or_else(|err| err.into_inner());
-        live.retain(|weak| weak.strong_count() > 0);
-        live.iter().find_map(|weak| {
-            let inner = weak.upgrade()?;
-            (inner.record_id == record_id).then_some(inner)
-        })
-    };
-    match inner {
-        Some(inner) => inner.checkpoint(),
-        None => Err(HistoryError::NotFound),
+    match HistoryInterval::start_in_session(
+        session_key,
+        store,
+        peer_id,
+        peer_name,
+        connection_type,
+        owner,
+    ) {
+        Ok(interval) => {
+            forget_pending(session_key);
+            remember_active(session_key, &interval);
+            Ok(Some(interval))
+        }
+        Err(err) => Err(err),
     }
+}
+
+pub(crate) fn finish_session(session_key: &str) -> Result<(), HistoryError> {
+    let Some(interval) = find_interval(session_key) else {
+        return Ok(());
+    };
+    interval.finish()
+}
+
+#[cfg(test)]
+pub(crate) fn reset_history_sessions() {
+    warnings()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .clear();
+    pending_begins()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .clear();
+    LIVE_INTERVALS
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .clear();
+    let mut active = active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    for interval in active.values() {
+        interval.inner.finished.store(true, Ordering::SeqCst);
+    }
+    active.clear();
 }
 
 /// First authenticated PeerInfo of an empty slot starts one interval.
@@ -370,6 +534,7 @@ pub(crate) fn admit_peer_info(
 }
 
 /// Finish only the interval that belongs to `round`.
+/// A failed write puts the same interval back so retry keeps its id and start.
 pub(crate) fn finish_round(
     slot: &mut Option<(u32, HistoryInterval)>,
     round: u32,
@@ -380,8 +545,14 @@ pub(crate) fn finish_round(
     if *stored != round {
         return Ok(());
     }
-    let (_, interval) = slot.take().expect("history interval present");
-    interval.finish()
+    let (stored, interval) = slot.take().expect("history interval present");
+    match interval.finish() {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            *slot = Some((stored, interval));
+            Err(err)
+        }
+    }
 }
 
 pub(crate) fn note_login_failure(slot: &Option<(u32, HistoryInterval)>) {
@@ -404,7 +575,27 @@ pub(crate) fn snapshot_peer_name(alias: &str, hostname: &str, peer_id: &str) -> 
 }
 
 #[cfg(all(windows, not(raatik_history_harness)))]
+fn current_owner() -> Option<OwnerIdentity> {
+    let pid = std::process::id();
+    super::history_store::process_creation_filetime(pid)
+        .map(|started_at| OwnerIdentity { pid, started_at })
+}
+
+#[cfg(all(windows, not(raatik_history_harness)))]
+fn interactive_open(
+    session_key: &str,
+) -> Result<Arc<super::history_store::HistoryStore>, HistoryError> {
+    static SLOT: OnceLock<Arc<super::history_store::HistoryStore>> = OnceLock::new();
+    let path = hbb_common::config::Config::path("history/v1");
+    let path_empty = path.as_os_str().is_empty();
+    open_history_store(&SLOT, session_key, path_empty, || {
+        super::history_store::HistoryStore::open(path).map(Arc::new)
+    })
+}
+
+#[cfg(all(windows, not(raatik_history_harness)))]
 pub(crate) fn begin_current_interval(
+    session_key: String,
     peer_id: String,
     peer_name: String,
     connection_type: String,
@@ -412,37 +603,28 @@ pub(crate) fn begin_current_interval(
     if crate::platform::is_root() {
         return Ok(None);
     }
-    let pid = std::process::id();
-    let Some(started_at) = super::history_store::process_creation_filetime(pid) else {
-        report_failure("", HistoryError::Io);
-        return Ok(None);
+    let session_key = if session_key.is_empty() {
+        Uuid::new_v4().hyphenated().to_string()
+    } else {
+        session_key
     };
-    let store = interactive_store()?;
-    HistoryInterval::start(
-        store,
+    let open_key = session_key.clone();
+    let open: Arc<
+        dyn Fn() -> Result<Arc<super::history_store::HistoryStore>, HistoryError> + Send + Sync,
+    > = Arc::new(move || interactive_open(&open_key));
+    let owner = current_owner().unwrap_or(OwnerIdentity {
+        pid: std::process::id(),
+        started_at: 0,
+    });
+    begin_for_session(
+        &session_key,
         peer_id,
         peer_name,
         connection_type,
-        OwnerIdentity { pid, started_at },
+        owner,
+        open,
+        Some(current_owner),
     )
-    .map(Some)
-}
-
-#[cfg(all(windows, not(raatik_history_harness)))]
-fn interactive_store() -> Result<Arc<super::history_store::HistoryStore>, HistoryError> {
-    use std::sync::OnceLock;
-    static SLOT: OnceLock<Arc<super::history_store::HistoryStore>> = OnceLock::new();
-    if let Some(store) = SLOT.get() {
-        return Ok(store.clone());
-    }
-    let path = hbb_common::config::Config::path("history/v1");
-    if path.as_os_str().is_empty() {
-        return Err(HistoryError::Io);
-    }
-    match SLOT.get_or_try_init(|| super::history_store::HistoryStore::open(path).map(Arc::new)) {
-        Ok(store) => Ok(store.clone()),
-        Err(err) => Err(err),
-    }
 }
 
 #[derive(Clone)]
@@ -463,6 +645,7 @@ enum TimeBase {
 
 struct IntervalInner {
     store: Arc<super::history_store::HistoryStore>,
+    session_key: String,
     record_id: String,
     peer_id: String,
     peer_name: String,
@@ -472,6 +655,8 @@ struct IntervalInner {
     time: TimeBase,
     inserted: AtomicBool,
     finished: AtomicBool,
+    close_requested: AtomicBool,
+    pending_finish: Mutex<Option<(u64, i64)>>,
     pending: AtomicUsize,
     pending_lock: Mutex<()>,
     pending_cv: Condvar,
@@ -487,6 +672,7 @@ impl HistoryInterval {
         owner: OwnerIdentity,
     ) -> Result<Self, HistoryError> {
         Self::open(
+            String::new(),
             store,
             peer_id,
             peer_name,
@@ -510,6 +696,7 @@ impl HistoryInterval {
     ) -> Result<Self, HistoryError> {
         let origin = monotonic_ms.load(Ordering::SeqCst);
         Self::open(
+            String::new(),
             store,
             peer_id,
             peer_name,
@@ -527,6 +714,31 @@ impl HistoryInterval {
         &self.inner.record_id
     }
 
+    pub fn session_key(&self) -> &str {
+        &self.inner.session_key
+    }
+
+    pub(crate) fn start_in_session(
+        session_key: &str,
+        store: Arc<super::history_store::HistoryStore>,
+        peer_id: String,
+        peer_name: String,
+        connection_type: String,
+        owner: OwnerIdentity,
+    ) -> Result<Self, HistoryError> {
+        Self::open(
+            session_key.to_owned(),
+            store,
+            peer_id,
+            peer_name,
+            connection_type,
+            owner,
+            TimeBase::System {
+                started: Instant::now(),
+            },
+        )
+    }
+
     pub fn checkpoint(&self) -> Result<(), HistoryError> {
         self.inner.checkpoint()
     }
@@ -536,6 +748,7 @@ impl HistoryInterval {
     }
 
     fn open(
+        session_key: String,
         store: Arc<super::history_store::HistoryStore>,
         peer_id: String,
         peer_name: String,
@@ -544,15 +757,15 @@ impl HistoryInterval {
         time: TimeBase,
     ) -> Result<Self, HistoryError> {
         if let Err(err) = validate_peer_id(&peer_id) {
-            report_failure("", err);
+            report_failure(&session_key, "", err);
             return Err(err);
         }
         if !CONNECTION_TYPES.contains(&connection_type.as_str()) {
-            report_failure("", HistoryError::InvalidInput);
+            report_failure(&session_key, "", HistoryError::InvalidInput);
             return Err(HistoryError::InvalidInput);
         }
         if owner.started_at == 0 {
-            report_failure("", HistoryError::Io);
+            report_failure(&session_key, "", HistoryError::Io);
             return Err(HistoryError::Io);
         }
         let peer_name = if peer_name.is_empty() {
@@ -560,10 +773,17 @@ impl HistoryInterval {
         } else {
             truncate_scalars(&peer_name, MAX_PEER_NAME_SCALARS)
         };
+        let record_id = Uuid::new_v4().hyphenated().to_string();
+        let session_key = if session_key.is_empty() {
+            record_id.clone()
+        } else {
+            session_key
+        };
         let started_at_utc_ms = wall_from_base(&time);
         let inner = Arc::new(IntervalInner {
             store,
-            record_id: Uuid::new_v4().hyphenated().to_string(),
+            session_key: session_key.clone(),
+            record_id,
             peer_id,
             peer_name,
             connection_type,
@@ -572,12 +792,14 @@ impl HistoryInterval {
             time,
             inserted: AtomicBool::new(false),
             finished: AtomicBool::new(false),
+            close_requested: AtomicBool::new(false),
+            pending_finish: Mutex::new(None),
             pending: AtomicUsize::new(0),
             pending_lock: Mutex::new(()),
             pending_cv: Condvar::new(),
             op: Mutex::new(()),
         });
-        register_live(&inner);
+        register_live(&session_key, &inner);
         let interval = Self { inner };
         let inserted = {
             let _op = interval
@@ -590,12 +812,13 @@ impl HistoryInterval {
                 .ensure_inserted(interval.inner.elapsed_ms(), interval.inner.wall_now())
         };
         if let Err(err) = inserted {
-            report_failure(&interval.inner.record_id, err);
+            report_failure(&interval.inner.session_key, &interval.inner.record_id, err);
             if matches!(err, HistoryError::Io | HistoryError::Busy) {
                 return Ok(interval);
             }
             return Err(err);
         }
+        interval.inner.note_write_ok();
         Ok(interval)
     }
 }
@@ -630,16 +853,16 @@ impl IntervalInner {
         let elapsed = self.elapsed_ms();
         let wall = self.wall_now();
         if let Err(err) = self.ensure_inserted(elapsed, wall) {
-            report_failure(&self.record_id, err);
+            report_failure(&self.session_key, &self.record_id, err);
             return Err(err);
         }
         match self.store.checkpoint(&self.record_id, elapsed, wall) {
             Ok(()) => {
-                clear_failure(&self.record_id);
+                self.note_write_ok();
                 Ok(())
             }
             Err(err) => {
-                report_failure(&self.record_id, err);
+                report_failure(&self.session_key, &self.record_id, err);
                 Err(err)
             }
         }
@@ -650,23 +873,40 @@ impl IntervalInner {
         if self.finished.load(Ordering::SeqCst) {
             return Ok(());
         }
-        let elapsed = self.elapsed_ms();
-        let wall = self.wall_now();
+        self.close_requested.store(true, Ordering::SeqCst);
+        let (elapsed, wall) = {
+            let mut pending = self
+                .pending_finish
+                .lock()
+                .unwrap_or_else(|err| err.into_inner());
+            if pending.is_none() {
+                *pending = Some((self.elapsed_ms(), self.wall_now()));
+            }
+            pending.as_ref().copied().expect("finish snapshot")
+        };
         if let Err(err) = self.ensure_inserted(elapsed, wall) {
-            report_failure(&self.record_id, err);
+            report_failure(&self.session_key, &self.record_id, err);
             return Err(err);
         }
         match self.store.finish(&self.record_id, elapsed, wall) {
             Ok(()) => {
                 self.finished.store(true, Ordering::SeqCst);
-                clear_failure(&self.record_id);
+                clear_failure(&self.session_key);
+                forget_active(&self.session_key);
                 Ok(())
             }
             Err(err) => {
-                report_failure(&self.record_id, err);
+                report_failure(&self.session_key, &self.record_id, err);
                 Err(err)
             }
         }
+    }
+
+    fn note_write_ok(&self) {
+        if self.close_requested.load(Ordering::SeqCst) && !self.finished.load(Ordering::SeqCst) {
+            return;
+        }
+        clear_failure(&self.session_key);
     }
 
     fn ensure_inserted(&self, elapsed_ms: u64, wall_ms: i64) -> Result<(), HistoryError> {
@@ -677,11 +917,13 @@ impl IntervalInner {
         match self.store.insert(&record) {
             Ok(()) => {
                 self.inserted.store(true, Ordering::SeqCst);
+                self.note_write_ok();
                 Ok(())
             }
             Err(HistoryError::InvalidInput) => match self.store.get(&self.record_id) {
                 Ok(_) => {
                     self.inserted.store(true, Ordering::SeqCst);
+                    self.note_write_ok();
                     Ok(())
                 }
                 Err(_) => Err(HistoryError::InvalidInput),
@@ -739,61 +981,27 @@ impl Drop for PendingCheckpoint<'_> {
     }
 }
 
-impl Drop for IntervalInner {
+impl Drop for HistoryInterval {
     fn drop(&mut self) {
-        if self.finished.load(Ordering::SeqCst) {
+        if self.inner.finished.load(Ordering::SeqCst) {
             return;
         }
-        self.finished.store(true, Ordering::SeqCst);
-        let elapsed = self.elapsed_ms();
-        let wall = self.wall_now();
-        let store = self.store.clone();
-        let record_id = self.record_id.clone();
-        let inserted = self.inserted.load(Ordering::SeqCst);
-        let record = self.active_record(elapsed, wall);
-        let persist = move || persist_final(&store, &record_id, inserted, &record, elapsed, wall);
+        if Arc::strong_count(&self.inner) > 1 {
+            return;
+        }
+        let inner = Arc::clone(&self.inner);
+        let run = move || {
+            let interval = HistoryInterval { inner };
+            if interval.finish().is_err() {
+                remember_active(interval.session_key(), &interval);
+            }
+        };
         if cfg!(test) {
-            let _ = persist();
+            run();
         } else {
             let _ = std::thread::Builder::new()
                 .name("raatik-history-finish".to_owned())
-                .spawn(persist);
-        }
-    }
-}
-
-fn persist_final(
-    store: &super::history_store::HistoryStore,
-    record_id: &str,
-    inserted: bool,
-    record: &HistoryRecord,
-    elapsed_ms: u64,
-    end_utc_ms: i64,
-) -> Result<(), HistoryError> {
-    if !inserted {
-        match store.insert(record) {
-            Ok(()) => {}
-            Err(HistoryError::InvalidInput) => match store.get(record_id) {
-                Ok(_) => {}
-                Err(err) => {
-                    report_failure(record_id, err);
-                    return Err(err);
-                }
-            },
-            Err(err) => {
-                report_failure(record_id, err);
-                return Err(err);
-            }
-        }
-    }
-    match store.finish(record_id, elapsed_ms, end_utc_ms) {
-        Ok(()) => {
-            clear_failure(record_id);
-            Ok(())
-        }
-        Err(err) => {
-            report_failure(record_id, err);
-            Err(err)
+                .spawn(run);
         }
     }
 }
@@ -825,27 +1033,110 @@ fn truncate_scalars(value: &str, max: usize) -> String {
     value.chars().take(max).collect()
 }
 
-fn register_live(inner: &Arc<IntervalInner>) {
+fn register_live(session_key: &str, inner: &Arc<IntervalInner>) {
     let mut live = LIVE_INTERVALS.lock().unwrap_or_else(|err| err.into_inner());
-    live.retain(|weak| weak.strong_count() > 0);
-    live.push(Arc::downgrade(inner));
-}
-
-fn report_failure(record_id: &str, err: HistoryError) {
-    *SAVE_WARNING
-        .lock()
-        .unwrap_or_else(|poison| poison.into_inner()) = Some(HistorySaveWarning {
-        text: HISTORY_SAVE_WARNING_TEXT.to_owned(),
-        action: HISTORY_SAVE_WARNING_ACTION.to_owned(),
-        record_id: record_id.to_owned(),
+    live.retain(|item| item.interval.strong_count() > 0);
+    live.push(LiveRef {
+        session_key: session_key.to_owned(),
+        interval: Arc::downgrade(inner),
     });
-    history_warn(format!("history save failed: {err}"));
 }
 
-fn clear_failure(record_id: &str) {
-    let mut guard = SAVE_WARNING.lock().unwrap_or_else(|err| err.into_inner());
-    if guard.as_ref().map(|warning| warning.record_id.as_str()) == Some(record_id) {
-        *guard = None;
+fn find_interval(session_key: &str) -> Option<HistoryInterval> {
+    if let Some(interval) = active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .get(session_key)
+        .cloned()
+    {
+        return Some(interval);
+    }
+    let mut live = LIVE_INTERVALS.lock().unwrap_or_else(|err| err.into_inner());
+    live.retain(|item| item.interval.strong_count() > 0);
+    live.iter().find_map(|item| {
+        let inner = item.interval.upgrade()?;
+        (item.session_key == session_key).then_some(HistoryInterval { inner })
+    })
+}
+
+fn remember_active(session_key: &str, interval: &HistoryInterval) {
+    active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .insert(session_key.to_owned(), interval.clone());
+}
+
+fn forget_active(session_key: &str) {
+    active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(session_key);
+}
+
+fn remember_pending(session_key: &str, pending: PendingBegin) {
+    pending_begins()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .insert(session_key.to_owned(), pending);
+}
+
+fn forget_pending(session_key: &str) {
+    pending_begins()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(session_key);
+}
+
+fn peek_pending(session_key: &str) -> Option<PendingBegin> {
+    pending_begins()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .get(session_key)
+        .cloned()
+}
+
+fn report_failure(session_key: &str, record_id: &str, err: HistoryError) {
+    if session_key.is_empty() {
+        history_warn(format!("history save failed: {err}"));
+        return;
+    }
+    warnings()
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .insert(
+            session_key.to_owned(),
+            HistorySaveWarning {
+                text: HISTORY_SAVE_WARNING_TEXT.to_owned(),
+                action: HISTORY_SAVE_WARNING_ACTION.to_owned(),
+                record_id: record_id.to_owned(),
+            },
+        );
+    history_warn(format!("history save failed: {err}"));
+    emit_status(session_key);
+}
+
+fn clear_failure(session_key: &str) {
+    if session_key.is_empty() {
+        return;
+    }
+    let removed = warnings()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(session_key)
+        .is_some();
+    if removed {
+        emit_status(session_key);
+    }
+}
+
+fn emit_status(session_key: &str) {
+    let hook = *STATUS_HOOK.lock().unwrap_or_else(|err| err.into_inner());
+    let Some(hook) = hook else {
+        return;
+    };
+    match history_save_warning(session_key) {
+        Some(warning) => hook(session_key, true, &warning.text, &warning.action),
+        None => hook(session_key, false, "", ""),
     }
 }
 

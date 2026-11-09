@@ -470,8 +470,9 @@ impl<T: InvokeUiSession> Remote<T> {
             (lc.get_option("alias"), lc.get_id().to_owned())
         };
         let peer_name = crate::raatik::snapshot_peer_name(&alias, &hostname, &peer_id);
+        let session_key = self.handler.history_session_key();
         let started = hbb_common::tokio::task::spawn_blocking(move || {
-            crate::raatik::begin_current_interval(peer_id, peer_name, kind)
+            crate::raatik::begin_current_interval(session_key, peer_id, peer_name, kind)
         })
         .await;
         match started {

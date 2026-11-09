@@ -17,8 +17,8 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::{
-        atomic::{AtomicI64, AtomicU64, Ordering},
-        Arc, Mutex, MutexGuard,
+        atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering},
+        Arc, Mutex, MutexGuard, OnceLock,
     },
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -1249,21 +1249,274 @@ fn failed_insert_retries_same_record() {
         started
     };
     let id = interval.record_id().to_owned();
-    let warning = history_save_warning().expect("save warning");
+    let warning = history_save_warning(&id).expect("save warning");
     assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
     assert_eq!(warning.action, HISTORY_SAVE_WARNING_ACTION);
     assert_eq!(warning.record_id, id);
     mono.store(3_000, Ordering::SeqCst);
-    retry_history_save().unwrap();
+    retry_history_save(&id).unwrap();
     let stored = store.get(&id).unwrap();
     assert_eq!(stored.record_id, id);
     assert_eq!(stored.started_at_utc_ms, 80_000);
     assert_eq!(stored.elapsed_ms, 3_000);
     assert_eq!(stored.status, "active");
     assert_eq!(stored.connection_type, "rdp");
-    assert!(history_save_warning().is_none());
+    assert!(history_save_warning(&id).is_none());
 }
 
 fn clear_history_warning() {
-    super::history::clear_history_save_warning();
+    super::history::set_history_status_hook(record_status);
+    STATUS_LOG.lock().unwrap().clear();
+    super::history::reset_history_sessions();
+}
+
+fn record_status(key: &str, show: bool, text: &str, action: &str) {
+    STATUS_LOG
+        .lock()
+        .unwrap()
+        .push((key.to_owned(), show, text.to_owned(), action.to_owned()));
+}
+
+static STATUS_LOG: Mutex<Vec<(String, bool, String, String)>> = Mutex::new(Vec::new());
+
+#[test]
+fn failed_open_does_not_publish_cell_and_later_open_does() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let source = include_str!("history.rs");
+    assert!(
+        !source.contains("get_or_try_init"),
+        "OnceLock::get_or_try_init is not in Rust 1.75"
+    );
+    assert!(
+        source.contains("get_or_init("),
+        "publish the opened store with get_or_init"
+    );
+
+    let slot = OnceLock::new();
+    let root = TempRoot::new();
+    let empty = super::history::open_history_store(&slot, "open-empty", true, || {
+        Ok(Arc::new(open_store(root.path())))
+    });
+    assert!(matches!(empty, Err(HistoryError::Io)));
+    assert!(slot.get().is_none());
+    let warning = history_save_warning("open-empty").expect("empty path warns");
+    assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
+    assert_eq!(warning.action, HISTORY_SAVE_WARNING_ACTION);
+    assert!(warning.record_id.is_empty());
+
+    let blocked = root.path().join("not-a-directory");
+    fs::write(&blocked, b"x").unwrap();
+    let failed = super::history::open_history_store(&slot, "open-a", false, || {
+        HistoryStore::open(blocked.clone()).map(Arc::new)
+    });
+    assert!(matches!(failed, Err(HistoryError::Io)));
+    assert!(slot.get().is_none());
+    assert!(history_save_warning("open-empty").is_some());
+    assert!(history_save_warning("open-a").is_some());
+
+    let opened = super::history::open_history_store(&slot, "open-a", false, || {
+        Ok(Arc::new(open_store(root.path())))
+    })
+    .expect("later open publishes");
+    assert!(slot.get().is_some());
+    let again =
+        super::history::open_history_store(&slot, "open-b", false, || Err(HistoryError::Io))
+            .expect("filled cell does not reopen");
+    assert!(Arc::ptr_eq(&opened, &again));
+    assert!(history_save_warning("open-b").is_none());
+    assert!(history_save_warning("open-a").is_some());
+    assert!(STATUS_LOG.lock().unwrap().iter().any(|event| {
+        event.0 == "open-empty"
+            && event.1
+            && event.2 == HISTORY_SAVE_WARNING_TEXT
+            && event.3 == HISTORY_SAVE_WARNING_ACTION
+    }));
+    super::history::clear_history_save_warning("open-a");
+    assert!(history_save_warning("open-a").is_none());
+    assert!(history_save_warning("open-empty").is_some());
+    assert!(STATUS_LOG
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|event| { event.0 == "open-a" && !event.1 && event.2.is_empty() }));
+}
+
+#[test]
+fn failed_finish_stays_retryable_with_same_record() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let (wall, mono) = manual_clocks(90_000, 0);
+    let mut slot = None;
+    admit_peer_info(&mut slot, 3, || {
+        start_at(&store, "123456", "Desk", "desktop", &wall, &mono)
+    })
+    .unwrap();
+    let id = slot.as_ref().unwrap().1.record_id().to_owned();
+    let key = slot.as_ref().unwrap().1.session_key().to_owned();
+    mono.store(5_000, Ordering::SeqCst);
+    {
+        let _fault = FaultGuard::arm(HistoryFault::Replace);
+        let err = finish_round(&mut slot, 3);
+        assert!(err.is_err(), "finish failure stays with the interval");
+    }
+    assert!(slot.is_some(), "failed finish does not drop the interval");
+    assert_eq!(slot.as_ref().unwrap().1.record_id(), id);
+    let still = store.get(&id).unwrap();
+    assert_eq!(still.status, "active");
+    assert_eq!(still.started_at_utc_ms, 90_000);
+    assert_eq!(still.record_id, id);
+
+    mono.store(50_000, Ordering::SeqCst);
+    wall.store(1, Ordering::SeqCst);
+    retry_history_save(&key).expect("same interval can finish again");
+    let done = store.get(&id).unwrap();
+    assert_eq!(done.record_id, id);
+    assert_eq!(done.started_at_utc_ms, 90_000);
+    assert_eq!(done.status, "completed");
+    assert_eq!(done.elapsed_ms, 5_000);
+    assert!(history_save_warning(&key).is_none());
+}
+
+#[test]
+fn warning_is_per_session_and_retry_reopens() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let cell = Arc::new(OnceLock::new());
+    let fail_open = Arc::new(AtomicBool::new(true));
+    let cell_open = cell.clone();
+    let fail_flag = fail_open.clone();
+    let store_open = store.clone();
+    let open: Arc<dyn Fn() -> Result<Arc<HistoryStore>, HistoryError> + Send + Sync> =
+        Arc::new(move || {
+            let cell_open = cell_open.clone();
+            let fail_flag = fail_flag.clone();
+            let store_open = store_open.clone();
+            super::history::open_history_store(&cell_open, "sess-a", false, || {
+                if fail_flag.swap(false, Ordering::SeqCst) {
+                    Err(HistoryError::Io)
+                } else {
+                    Ok(store_open.clone())
+                }
+            })
+        });
+    let started = super::history::begin_for_session(
+        "sess-a",
+        "123456".to_owned(),
+        "Desk".to_owned(),
+        "desktop".to_owned(),
+        test_owner(),
+        open.clone(),
+        None,
+    );
+    assert!(started.is_err());
+    assert!(cell.get().is_none());
+    let warning = history_save_warning("sess-a").expect("open failure warns");
+    assert!(warning.record_id.is_empty());
+    assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
+
+    let missing = super::history::begin_for_session(
+        "sess-missing",
+        "123456".to_owned(),
+        "Desk".to_owned(),
+        "desktop".to_owned(),
+        OwnerIdentity {
+            pid: 7,
+            started_at: 0,
+        },
+        open.clone(),
+        None,
+    );
+    assert!(matches!(missing, Err(HistoryError::Io)));
+    assert!(history_save_warning("sess-a").is_some());
+    assert!(history_save_warning("sess-missing").is_some());
+    let missing_retry = retry_history_save("sess-missing");
+    assert!(matches!(missing_retry, Err(HistoryError::Io)));
+    assert!(!matches!(missing_retry, Err(HistoryError::InvalidInput)));
+
+    let bad = super::history::begin_for_session(
+        "sess-bad",
+        String::new(),
+        "Desk".to_owned(),
+        "desktop".to_owned(),
+        test_owner(),
+        open.clone(),
+        None,
+    );
+    assert!(matches!(bad, Err(HistoryError::InvalidInput)));
+    assert!(cell.get().is_none());
+    assert!(history_save_warning("sess-a").is_some());
+    assert!(history_save_warning("sess-bad").is_some());
+    assert!(history_save_warning("sess-missing").is_some());
+
+    retry_history_save("sess-a").expect("retry opens and starts");
+    assert!(cell.get().is_some());
+    assert!(history_save_warning("sess-a").is_none());
+    assert!(history_save_warning("sess-bad").is_some());
+    assert!(history_save_warning("sess-missing").is_some());
+    let bad_again = retry_history_save("sess-bad");
+    assert!(matches!(bad_again, Err(HistoryError::InvalidInput)));
+    assert!(history_save_warning("sess-bad").is_some());
+
+    let store_ok = store.clone();
+    let open_ok: Arc<dyn Fn() -> Result<Arc<HistoryStore>, HistoryError> + Send + Sync> =
+        Arc::new(move || Ok(store_ok.clone()));
+    let created = super::history::begin_for_session(
+        "sess-ok",
+        "123456".to_owned(),
+        "Desk".to_owned(),
+        "file_transfer".to_owned(),
+        test_owner(),
+        open_ok.clone(),
+        None,
+    )
+    .expect("clean start");
+    assert!(created.is_some());
+    assert!(history_save_warning("sess-ok").is_none());
+    assert!(history_save_warning("sess-bad").is_some());
+
+    let saved_c = {
+        let _fault = FaultGuard::arm(HistoryFault::CreateTemp);
+        super::history::begin_for_session(
+            "sess-c",
+            "123456".to_owned(),
+            "Desk".to_owned(),
+            "camera".to_owned(),
+            test_owner(),
+            open_ok.clone(),
+            None,
+        )
+        .expect("interval stays after a failed insert")
+    };
+    let saved_d = {
+        let _fault = FaultGuard::arm(HistoryFault::CreateTemp);
+        super::history::begin_for_session(
+            "sess-d",
+            "654321".to_owned(),
+            "Other".to_owned(),
+            "terminal".to_owned(),
+            test_owner(),
+            open_ok,
+            None,
+        )
+        .expect("second session keeps its own failure")
+    };
+    let id_c = saved_c.as_ref().unwrap().record_id().to_owned();
+    let id_d = saved_d.as_ref().unwrap().record_id().to_owned();
+    assert!(history_save_warning("sess-c").is_some());
+    assert_eq!(history_save_warning("sess-d").unwrap().record_id, id_d);
+    retry_history_save("sess-c").unwrap();
+    assert!(history_save_warning("sess-c").is_none());
+    assert_eq!(history_save_warning("sess-d").unwrap().record_id, id_d);
+    assert_eq!(store.get(&id_c).unwrap().status, "active");
+    assert!(matches!(store.get(&id_d), Err(HistoryError::NotFound)));
+    assert!(history_save_warning("sess-bad").is_some());
+    super::history::finish_session("sess-a").unwrap();
+    super::history::finish_session("sess-ok").unwrap();
+    super::history::finish_session("sess-c").unwrap();
+    super::history::finish_session("sess-d").unwrap();
 }

@@ -10,8 +10,8 @@ pub(crate) use history::{
     admit_peer_info, finish_round, note_approval_canceled, note_login_failure, snapshot_peer_name,
 };
 pub use history::{
-    clear_history_save_warning, history_save_warning, retry_history_save, HistoryError,
-    HistoryInterval, HistoryPage, HistoryQuery, HistoryRecord, HistorySaveWarning, OwnerIdentity,
-    OwnerProbe, OwnerState,
+    clear_history_save_warning, history_save_warning, retry_history_save, set_history_status_hook,
+    HistoryError, HistoryInterval, HistoryPage, HistoryQuery, HistoryRecord, HistorySaveWarning,
+    OwnerIdentity, OwnerProbe, OwnerState,
 };
 pub use history_store::{HistoryStore, WindowsOwnerProbe};

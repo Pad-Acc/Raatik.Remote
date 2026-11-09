@@ -229,8 +229,9 @@ async fn start_forward_history(
         let peer_id = id.to_owned();
         let peer_name = crate::raatik::snapshot_peer_name(&alias, hostname, &peer_id);
         let kind = if is_rdp { "rdp" } else { "port_forward" }.to_owned();
+        let session_key = interface.history_session_key();
         match tokio::task::spawn_blocking(move || {
-            crate::raatik::begin_current_interval(peer_id, peer_name, kind)
+            crate::raatik::begin_current_interval(session_key, peer_id, peer_name, kind)
         })
         .await
         {

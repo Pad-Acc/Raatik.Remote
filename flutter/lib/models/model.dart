@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
 import 'package:flutter_hbb/consts.dart';
+import 'package:flutter_hbb/raatik/session/history_save_status.dart';
 import 'package:flutter_hbb/models/ab_model.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:flutter_hbb/models/cm_file_model.dart';
@@ -132,6 +133,11 @@ class FfiModel with ChangeNotifier {
   bool _showMyCursor = false;
   WeakReference<FFI> parent;
   late final SessionID sessionId;
+  String? _historySaveText;
+  String? _historySaveAction;
+
+  String? get historySaveText => _historySaveText;
+  String? get historySaveAction => _historySaveAction;
 
   RxBool waitForImageDialogShow = true.obs;
   Timer? waitForImageTimer;
@@ -340,6 +346,8 @@ class FfiModel with ChangeNotifier {
         handleMsgBox(evt, sessionId, peerId);
       } else if (name == 'toast') {
         handleToast(evt, sessionId, peerId);
+      } else if (name == 'history_save_status') {
+        handleHistorySaveStatus(evt);
       } else if (name == 'set_multiple_windows_session') {
         handleMultipleWindowsSession(evt, sessionId, peerId);
       } else if (name == 'peer_info') {
@@ -1047,6 +1055,43 @@ class FfiModel with ChangeNotifier {
         );
       }
     }
+  }
+
+  void handleHistorySaveStatus(Map<String, dynamic> evt) {
+    final show = evt['show'] == 'true';
+    final text = (evt['text'] ?? '').toString();
+    final action = (evt['action'] ?? '').toString();
+    setHistorySaveStatus(show, text, action);
+  }
+
+  void setHistorySaveStatus(bool show, String text, String action) {
+    if (show && text.isNotEmpty && action.isNotEmpty) {
+      _historySaveText = text;
+      _historySaveAction = action;
+    } else {
+      _historySaveText = null;
+      _historySaveAction = null;
+    }
+    notifyListeners();
+  }
+
+  /// Retry this session's history save. Does not reconnect or disconnect.
+  void retryHistorySave() {
+    unawaited(bind.sessionSetFlutterOption(
+      sessionId: sessionId,
+      k: 'raatik.history.retry',
+      v: '1',
+    ));
+  }
+
+  Widget historySaveOverlay(Widget child) {
+    return HistorySaveStatusOverlay(
+      listenable: this,
+      text: () => historySaveText,
+      actionLabel: () => historySaveAction,
+      onRetry: retryHistorySave,
+      child: child,
+    );
   }
 
   /// Show a message box with [type], [title] and [text].
@@ -2349,7 +2394,8 @@ class CanvasModel with ChangeNotifier {
       _x = fitted.offset.dx;
       _y = fitted.offset.dy;
     } else {
-      _scale = style == kRemoteViewStyleCustom ? (_customViewScale ?? 1.0) : 1.0;
+      _scale =
+          style == kRemoteViewStyleCustom ? (_customViewScale ?? 1.0) : 1.0;
       if (kIgnoreDpi) {
         if (style == kRemoteViewStyleOriginal) {
           _scale = 1.0 / _devicePixelRatio;

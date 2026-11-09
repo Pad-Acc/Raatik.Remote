@@ -123,11 +123,9 @@ pub const LOGIN_SCREEN_WAYLAND: &str = "Wayland login screen is not supported";
 #[cfg(target_os = "linux")]
 pub const SCRAP_UBUNTU_HIGHER_REQUIRED: &str = "ubuntu-21-04-required";
 #[cfg(target_os = "linux")]
-pub const SCRAP_OTHER_VERSION_OR_X11_REQUIRED: &str =
-    "wayland-requires-higher-linux-version";
+pub const SCRAP_OTHER_VERSION_OR_X11_REQUIRED: &str = "wayland-requires-higher-linux-version";
 #[cfg(target_os = "linux")]
-pub const SCRAP_XDP_PORTAL_UNAVAILABLE: &str =
-    "xdp-portal-unavailable";
+pub const SCRAP_XDP_PORTAL_UNAVAILABLE: &str = "xdp-portal-unavailable";
 pub const SCRAP_X11_REQUIRED: &str = "x11 expected";
 pub const SCRAP_X11_REF_URL: &str = "https://raatik.com";
 
@@ -2662,16 +2660,15 @@ impl LoginConfigHandler {
         };
         let mut avatar = get_builtin_option(keys::OPTION_AVATAR);
         if avatar.is_empty() {
-            avatar = serde_json::from_str::<serde_json::Value>(&LocalConfig::get_option(
-                "user_info",
-            ))
-            .ok()
-            .and_then(|x| {
-                x.get("avatar")
-                    .and_then(|x| x.as_str())
-                    .map(|x| x.trim().to_owned())
-            })
-            .unwrap_or_default();
+            avatar =
+                serde_json::from_str::<serde_json::Value>(&LocalConfig::get_option("user_info"))
+                    .ok()
+                    .and_then(|x| {
+                        x.get("avatar")
+                            .and_then(|x| x.as_str())
+                            .map(|x| x.trim().to_owned())
+                    })
+                    .unwrap_or_default();
         }
         avatar = resolve_avatar_url(avatar);
         let mut display_name = get_builtin_option(keys::OPTION_DISPLAY_NAME);
@@ -3452,11 +3449,7 @@ async fn consume_local_switch_sides_uuid(id: &str, uuid: &Uuid) -> bool {
         return false;
     }
     match conn.next_timeout(1000).await {
-        Ok(Some(crate::ipc::Data::SwitchSidesUuid(
-            returned_uuid,
-            returned_id,
-            Some(true),
-        ))) => {
+        Ok(Some(crate::ipc::Data::SwitchSidesUuid(returned_uuid, returned_id, Some(true)))) => {
             returned_uuid == uuid && returned_id == id
         }
         _ => false,
@@ -3709,6 +3702,9 @@ pub trait Interface: Send + Clone + 'static + Sized {
     /// Send message data to remote peer.
     fn send(&self, data: Data);
     fn msgbox(&self, msgtype: &str, title: &str, text: &str, link: &str);
+    fn history_session_key(&self) -> String {
+        String::new()
+    }
     fn handle_login_error(&self, err: &str) -> bool;
     fn handle_peer_info(&self, pi: PeerInfo);
     fn set_multiple_windows_session(&self, sessions: Vec<WindowsSession>);
@@ -3758,7 +3754,12 @@ pub trait Interface: Send + Clone + 'static + Sized {
             log::info!("Restart remote device, suppress connection error: {err}");
             // Flutter treats this as a reconnect control event. The text is kept
             // for legacy UI and existing translation reuse.
-            self.msgbox("restarting", "Restarting remote device", "Connection in progress. Please wait.", "");
+            self.msgbox(
+                "restarting",
+                "Restarting remote device",
+                "Connection in progress. Please wait.",
+                "",
+            );
             return;
         }
 

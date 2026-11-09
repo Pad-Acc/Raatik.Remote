@@ -92,7 +92,7 @@ class _PortForwardPageState extends State<PortForwardPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(
+    return _ffi.ffiModel.historySaveOverlay(Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: FutureBuilder(future: () async {
         if (!widget.isRDP) {
@@ -124,7 +124,7 @@ class _PortForwardPageState extends State<PortForwardPage>
         }
         return const Offstage();
       }),
-    );
+    ));
   }
 
   buildPrompt(BuildContext context) {
