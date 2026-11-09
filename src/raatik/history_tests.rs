@@ -2302,3 +2302,102 @@ fn sibling_finish_failure_keeps_warning_until_retry() {
     super::history::reset_history_sessions();
     drop(root);
 }
+
+#[test]
+fn sibling_checkpoint_failure_keeps_warning_until_retry() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let session = "flutter-sibling-checkpoint";
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let open = open_ready(store.clone());
+    // B is the first live interval, so find_interval returns the healthy connection.
+    let interval_b = super::history::begin_for_park(
+        session,
+        &super::history::new_forward_park_id(),
+        "430002".to_owned(),
+        "B".to_owned(),
+        "rdp".to_owned(),
+        test_owner(),
+        open.clone(),
+        None,
+    )
+    .expect("B starts")
+    .expect("B interval");
+    let id_b = interval_b.record_id().to_owned();
+    let alloc_b = super::history::interval_allocation(&interval_b);
+    let interval_a = super::history::begin_for_park(
+        session,
+        &super::history::new_forward_park_id(),
+        "430001".to_owned(),
+        "A".to_owned(),
+        "port_forward".to_owned(),
+        test_owner(),
+        open,
+        None,
+    )
+    .expect("A starts")
+    .expect("A interval");
+    let id_a = interval_a.record_id().to_owned();
+    assert_ne!(id_a, id_b);
+    let inserted_a = store.get(&id_a).unwrap();
+    assert_eq!(inserted_a.status, "active");
+    assert!(inserted_a.ended_at_utc_ms.is_none());
+    assert!(
+        history_save_warning(session).is_none(),
+        "a healthy open interval does not keep the warning by itself"
+    );
+    {
+        let _fault = FaultGuard::arm(HistoryFault::Replace);
+        let err = interval_a.checkpoint();
+        assert!(
+            matches!(err, Err(HistoryError::Io)),
+            "A's checkpoint stays retryable"
+        );
+    }
+    let failed_a = store.get(&id_a).unwrap();
+    assert_eq!(failed_a.record_id, id_a);
+    assert_eq!(failed_a.started_at_utc_ms, inserted_a.started_at_utc_ms);
+    assert_eq!(failed_a.elapsed_ms, inserted_a.elapsed_ms);
+    assert_eq!(
+        failed_a.checkpoint_at_utc_ms,
+        inserted_a.checkpoint_at_utc_ms
+    );
+    assert_eq!(failed_a.status, "active");
+    assert!(failed_a.ended_at_utc_ms.is_none());
+    // B's later successful write must not hide A's failed checkpoint.
+    interval_b.checkpoint().expect("B checkpoint");
+    let warning = history_save_warning(session).expect(
+        "A's checkpoint is still failed, so the session warning stays after B's successful write",
+    );
+    assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
+    assert_eq!(warning.action, HISTORY_SAVE_WARNING_ACTION);
+    let before_b = store.get(&id_b).unwrap();
+    assert_eq!(before_b.status, "active");
+    assert!(before_b.ended_at_utc_ms.is_none());
+
+    thread::sleep(Duration::from_millis(30));
+    retry_history_save(session).expect("one retry checkpoints A");
+    let done_a = store.get(&id_a).unwrap();
+    assert_eq!(done_a.record_id, id_a);
+    assert_eq!(done_a.started_at_utc_ms, inserted_a.started_at_utc_ms);
+    assert_eq!(done_a.peer_id, "430001");
+    assert_eq!(done_a.connection_type, "port_forward");
+    assert_eq!(done_a.status, "active");
+    assert!(done_a.ended_at_utc_ms.is_none());
+    assert!(
+        done_a.elapsed_ms > failed_a.elapsed_ms,
+        "retry checkpoints A's same record and does not finish it"
+    );
+    let after_b = store.get(&id_b).unwrap();
+    assert_eq!(after_b, before_b, "retry must not finish healthy B");
+    assert_eq!(after_b.status, "active");
+    assert!(after_b.ended_at_utc_ms.is_none());
+    assert_eq!(super::history::interval_allocation(&interval_b), alloc_b);
+    assert_eq!(page_records(&store).len(), 2);
+    assert!(history_save_warning(session).is_none());
+    drop(interval_a);
+    drop(interval_b);
+    super::history::reset_history_sessions();
+    drop(root);
+}

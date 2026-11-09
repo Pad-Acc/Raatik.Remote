@@ -395,8 +395,8 @@ fn retry_existing(interval: &HistoryInterval) -> Result<(), HistoryError> {
 
 pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
     // Pre-park ids first. A sibling that already has an interval is not pending,
-    // so this press also retries every uninserted row and every failed finish.
-    // A healthy open interval stays unfinished.
+    // so this press also retries every uninserted row, every failed checkpoint,
+    // and every failed finish. A healthy open interval stays unfinished.
     let mut failure = None;
     for pending in pending_for_session(session_key) {
         if let Err(err) = retry_one_pending(pending) {
@@ -845,6 +845,7 @@ struct IntervalInner {
     inserted: AtomicBool,
     finished: AtomicBool,
     close_requested: AtomicBool,
+    checkpoint_failed: AtomicBool,
     pending_finish: Mutex<Option<(u64, i64)>>,
     pending: AtomicUsize,
     pending_lock: Mutex<()>,
@@ -993,6 +994,7 @@ impl HistoryInterval {
             inserted: AtomicBool::new(false),
             finished: AtomicBool::new(false),
             close_requested: AtomicBool::new(false),
+            checkpoint_failed: AtomicBool::new(false),
             pending_finish: Mutex::new(None),
             pending: AtomicUsize::new(0),
             pending_lock: Mutex::new(()),
@@ -1058,10 +1060,12 @@ impl IntervalInner {
         }
         match self.store.checkpoint(&self.record_id, elapsed, wall) {
             Ok(()) => {
+                self.checkpoint_failed.store(false, Ordering::SeqCst);
                 self.note_write_ok();
                 Ok(())
             }
             Err(err) => {
+                self.checkpoint_failed.store(true, Ordering::SeqCst);
                 report_failure(&self.session_key, &self.record_id, err);
                 Err(err)
             }
@@ -1107,8 +1111,9 @@ impl IntervalInner {
         if self.close_requested.load(Ordering::SeqCst) && !self.finished.load(Ordering::SeqCst) {
             return;
         }
-        // Keep the warning until every sibling is inserted and any requested
-        // finish has returned Ok. A healthy open sibling does not count.
+        // Keep the warning until every sibling is inserted, any failed checkpoint
+        // of that same interval has later returned Ok, and any requested finish
+        // has returned Ok. A healthy open sibling does not count.
         if session_has_other_pending(&self.session_key, &self.park_key)
             || session_has_unresolved_sibling(&self.session_key, &self.record_id)
         {
@@ -1292,9 +1297,11 @@ fn interval_for_park(park_id: &str) -> Option<HistoryInterval> {
 }
 
 fn save_still_open(interval: &HistoryInterval) -> bool {
-    !interval.inner.inserted.load(Ordering::SeqCst)
-        || (interval.inner.close_requested.load(Ordering::SeqCst)
-            && !interval.inner.finished.load(Ordering::SeqCst))
+    let inner = &interval.inner;
+    !inner.inserted.load(Ordering::SeqCst)
+        || (inner.close_requested.load(Ordering::SeqCst) && !inner.finished.load(Ordering::SeqCst))
+        || (inner.checkpoint_failed.load(Ordering::SeqCst)
+            && !inner.finished.load(Ordering::SeqCst))
 }
 
 fn session_has_unresolved_sibling(session_key: &str, except_record_id: &str) -> bool {
