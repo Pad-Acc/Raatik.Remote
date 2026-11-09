@@ -204,12 +204,18 @@ async fn connect_and_login(
     if !buffer.is_empty() {
         allow_err!(stream.send_bytes(buffer.into()).await);
     }
-    Ok(Some(AuthenticatedForward { stream, history }))
+    let history_session_key = interface.history_session_key();
+    Ok(Some(AuthenticatedForward {
+        stream,
+        history,
+        history_session_key,
+    }))
 }
 
 struct AuthenticatedForward {
     stream: Stream,
     history: Option<crate::raatik::HistoryInterval>,
+    history_session_key: String,
 }
 
 async fn start_forward_history(
@@ -256,7 +262,8 @@ async fn run_forward(
     let mut forward = forward;
     let AuthenticatedForward {
         mut stream,
-        history,
+        mut history,
+        history_session_key,
     } = authenticated;
     let mut checkpoint_job: Option<tokio::task::JoinHandle<()>> = None;
     let mut checkpoint_timer = tokio::time::interval_at(
@@ -279,7 +286,10 @@ async fn run_forward(
                     break;
                 }
             },
-            _ = checkpoint_timer.tick(), if history.is_some() => {
+            _ = checkpoint_timer.tick(), if cfg!(windows) => {
+                if history.is_none() {
+                    crate::raatik::adopt_retried_forward(&mut history, &history_session_key);
+                }
                 if checkpoint_job.as_ref().is_some_and(|job| !job.is_finished()) {
                     continue;
                 }
@@ -296,6 +306,9 @@ async fn run_forward(
     }
     if let Some(job) = checkpoint_job {
         let _ = job.await;
+    }
+    if history.is_none() {
+        crate::raatik::adopt_retried_forward(&mut history, &history_session_key);
     }
     if let Some(interval) = history {
         let _ = tokio::task::spawn_blocking(move || {

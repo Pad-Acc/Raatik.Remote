@@ -402,6 +402,15 @@ impl<T: InvokeUiSession> Remote<T> {
         self.finalize_round(round).await;
     }
 
+    #[cfg(windows)]
+    fn adopt_retried_history(&mut self, round: u32) {
+        if self.history_interval.is_some() {
+            return;
+        }
+        let session_key = self.handler.history_session_key();
+        crate::raatik::adopt_retried_round(&mut self.history_interval, round, &session_key);
+    }
+
     fn queue_history_checkpoint(&mut self) {
         #[cfg(not(windows))]
         {
@@ -417,6 +426,7 @@ impl<T: InvokeUiSession> Remote<T> {
                 return;
             }
             self.history_checkpoint = None;
+            self.adopt_retried_history(self.history_round);
             let Some((_, interval)) = self.history_interval.clone() else {
                 return;
             };
@@ -434,6 +444,7 @@ impl<T: InvokeUiSession> Remote<T> {
             if let Some(job) = self.history_checkpoint.take() {
                 let _ = job.await;
             }
+            self.adopt_retried_history(round);
             let mut slot = self.history_interval.take();
             let restored = hbb_common::tokio::task::spawn_blocking(move || {
                 if let Err(err) = crate::raatik::finish_round(&mut slot, round) {

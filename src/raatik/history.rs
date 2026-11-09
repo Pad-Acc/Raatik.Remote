@@ -398,7 +398,7 @@ pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
             owner = next;
         }
     }
-    begin_for_session(
+    match begin_for_session(
         session_key,
         pending.peer_id,
         pending.peer_name,
@@ -406,8 +406,15 @@ pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
         owner,
         pending.open,
         pending.refresh_owner,
-    )
-    .map(|_| ())
+    ) {
+        Ok(Some(interval)) => {
+            // The retry thread has no transport. Keep this owner until io_loop or run_forward adopts it.
+            park_unadopted(session_key, interval);
+            Ok(())
+        }
+        Ok(None) => Ok(()),
+        Err(err) => Err(err),
+    }
 }
 
 /// Open the store before publishing it. A failed open leaves the cell empty.
@@ -481,7 +488,6 @@ pub(crate) fn begin_for_session(
     ) {
         Ok(interval) => {
             forget_pending(session_key);
-            remember_active(session_key, &interval);
             Ok(Some(interval))
         }
         Err(err) => Err(err),
@@ -516,6 +522,14 @@ pub(crate) fn reset_history_sessions() {
         interval.inner.finished.store(true, Ordering::SeqCst);
     }
     active.clear();
+    drop(active);
+    let mut parked = unadopted_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    for interval in parked.values() {
+        interval.inner.finished.store(true, Ordering::SeqCst);
+    }
+    parked.clear();
 }
 
 /// First authenticated PeerInfo of an empty slot starts one interval.
@@ -531,6 +545,31 @@ pub(crate) fn admit_peer_info(
     }
     *slot = Some((round, create()?));
     Ok(())
+}
+
+/// Move a retry-created interval into an empty round slot.
+/// The UUID, start, and `Instant` stay the ones retry created.
+pub(crate) fn adopt_retried_round(
+    slot: &mut Option<(u32, HistoryInterval)>,
+    round: u32,
+    session_key: &str,
+) {
+    if slot.is_some() {
+        return;
+    }
+    if let Some(interval) = take_unadopted(session_key) {
+        *slot = Some((round, interval));
+    }
+}
+
+/// Move a retry-created interval into an empty port-forward or RDP slot.
+pub(crate) fn adopt_retried_forward(slot: &mut Option<HistoryInterval>, session_key: &str) {
+    if slot.is_some() {
+        return;
+    }
+    if let Some(interval) = take_unadopted(session_key) {
+        *slot = Some(interval);
+    }
 }
 
 /// Finish only the interval that belongs to `round`.
@@ -893,6 +932,7 @@ impl IntervalInner {
                 self.finished.store(true, Ordering::SeqCst);
                 clear_failure(&self.session_key);
                 forget_active(&self.session_key);
+                forget_unadopted(&self.session_key);
                 Ok(())
             }
             Err(err) => {
@@ -1042,8 +1082,31 @@ fn register_live(session_key: &str, inner: &Arc<IntervalInner>) {
     });
 }
 
+#[cfg(test)]
+pub(crate) fn session_index_holds_live_interval(session_key: &str) -> bool {
+    let live = LIVE_INTERVALS.lock().unwrap_or_else(|err| err.into_inner());
+    live.iter()
+        .any(|item| item.session_key == session_key && item.interval.strong_count() > 0)
+}
+
+#[cfg(test)]
+pub(crate) fn session_index_holds_strong_owner(session_key: &str) -> bool {
+    active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .contains_key(session_key)
+}
+
 fn find_interval(session_key: &str) -> Option<HistoryInterval> {
     if let Some(interval) = active_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .get(session_key)
+        .cloned()
+    {
+        return Some(interval);
+    }
+    if let Some(interval) = unadopted_intervals()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
         .get(session_key)
@@ -1064,6 +1127,29 @@ fn remember_active(session_key: &str, interval: &HistoryInterval) {
         .lock()
         .unwrap_or_else(|err| err.into_inner())
         .insert(session_key.to_owned(), interval.clone());
+}
+
+fn unadopted_intervals() -> &'static Mutex<HashMap<String, HistoryInterval>> {
+    static SLOT: OnceLock<Mutex<HashMap<String, HistoryInterval>>> = OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn park_unadopted(session_key: &str, interval: HistoryInterval) {
+    unadopted_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .insert(session_key.to_owned(), interval);
+}
+
+fn take_unadopted(session_key: &str) -> Option<HistoryInterval> {
+    unadopted_intervals()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(session_key)
+}
+
+fn forget_unadopted(session_key: &str) {
+    let _ = take_unadopted(session_key);
 }
 
 fn forget_active(session_key: &str) {

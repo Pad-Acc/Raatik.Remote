@@ -1520,3 +1520,167 @@ fn warning_is_per_session_and_retry_reopens() {
     super::history::finish_session("sess-c").unwrap();
     super::history::finish_session("sess-d").unwrap();
 }
+
+fn open_after_one_failure(
+    session_key: &str,
+    store: Arc<HistoryStore>,
+) -> Arc<dyn Fn() -> Result<Arc<HistoryStore>, HistoryError> + Send + Sync> {
+    let cell = Arc::new(OnceLock::new());
+    let fail_once = Arc::new(AtomicBool::new(true));
+    let key = session_key.to_owned();
+    Arc::new(move || {
+        let cell = cell.clone();
+        let fail_once = fail_once.clone();
+        let store = store.clone();
+        let key = key.clone();
+        super::history::open_history_store(&cell, &key, false, || {
+            if fail_once.swap(false, Ordering::SeqCst) {
+                Err(HistoryError::Io)
+            } else {
+                Ok(store.clone())
+            }
+        })
+    })
+}
+
+fn retry_after_failed_open(
+    session_key: &str,
+    peer_id: &str,
+    connection_type: &str,
+) -> (TempRoot, Arc<HistoryStore>, HistoryRecord) {
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let open = open_after_one_failure(session_key, store.clone());
+    let failed = super::history::begin_for_session(
+        session_key,
+        peer_id.to_owned(),
+        "Desk".to_owned(),
+        connection_type.to_owned(),
+        test_owner(),
+        open,
+        None,
+    );
+    assert!(failed.is_err(), "first open fails before a record exists");
+    assert!(page_records(&store).is_empty());
+    retry_history_save(session_key).expect("retry creates one interval");
+    let records = page_records(&store);
+    assert_eq!(records.len(), 1, "retry inserts one record");
+    assert_eq!(records[0].status, "active");
+    assert_eq!(records[0].peer_id, peer_id);
+    assert_eq!(records[0].connection_type, connection_type);
+    assert!(history_save_warning(session_key).is_none());
+    let inserted = records.into_iter().next().unwrap();
+    (root, store, inserted)
+}
+
+#[test]
+fn retried_interval_adopts_into_empty_transport_slot() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let (round_root, round_store, inserted) =
+        retry_after_failed_open("sess-round", "123456", "desktop");
+    assert!(super::history::session_index_holds_live_interval(
+        "sess-round"
+    ));
+    assert!(!super::history::session_index_holds_strong_owner(
+        "sess-round"
+    ));
+    let mut round_slot: Option<(u32, HistoryInterval)> = None;
+    super::history::adopt_retried_round(&mut round_slot, 4, "sess-round");
+    let adopted = round_slot
+        .as_ref()
+        .map(|(_, interval)| interval.record_id().to_owned());
+    assert_eq!(adopted.as_deref(), Some(inserted.record_id.as_str()));
+    assert_eq!(page_records(&round_store).len(), 1);
+    assert_eq!(
+        round_slot.as_ref().unwrap().1.record_id(),
+        inserted.record_id
+    );
+    thread::sleep(Duration::from_millis(50));
+    round_slot
+        .as_ref()
+        .unwrap()
+        .1
+        .checkpoint()
+        .expect("adopted interval checkpoints");
+    let checkpointed = round_store.get(&inserted.record_id).unwrap();
+    assert_eq!(checkpointed.record_id, inserted.record_id);
+    assert_eq!(checkpointed.started_at_utc_ms, inserted.started_at_utc_ms);
+    assert_eq!(checkpointed.status, "active");
+    assert!(
+        checkpointed.elapsed_ms > inserted.elapsed_ms,
+        "checkpoint must advance the retried record"
+    );
+    finish_round(&mut round_slot, 4).unwrap();
+    let finished = round_store.get(&inserted.record_id).unwrap();
+    assert_eq!(finished.status, "completed");
+    assert_eq!(finished.record_id, inserted.record_id);
+    assert_eq!(finished.started_at_utc_ms, inserted.started_at_utc_ms);
+    assert!(finished.ended_at_utc_ms.is_some());
+    assert!(finished.elapsed_ms >= checkpointed.elapsed_ms);
+    assert_eq!(page_records(&round_store).len(), 1);
+    drop(round_root);
+
+    let (forward_root, forward_store, inserted) =
+        retry_after_failed_open("sess-forward", "246810", "port_forward");
+    let mut forward_slot: Option<HistoryInterval> = None;
+    super::history::adopt_retried_forward(&mut forward_slot, "sess-forward");
+    let adopted = forward_slot
+        .as_ref()
+        .map(|interval| interval.record_id().to_owned());
+    assert_eq!(adopted.as_deref(), Some(inserted.record_id.as_str()));
+    thread::sleep(Duration::from_millis(50));
+    forward_slot
+        .as_ref()
+        .unwrap()
+        .checkpoint()
+        .expect("forward slot checkpoints the retried record");
+    let checkpointed = forward_store.get(&inserted.record_id).unwrap();
+    assert_eq!(checkpointed.status, "active");
+    assert!(checkpointed.elapsed_ms > inserted.elapsed_ms);
+    assert_eq!(checkpointed.started_at_utc_ms, inserted.started_at_utc_ms);
+    forward_slot.take().unwrap().finish().unwrap();
+    let finished = forward_store.get(&inserted.record_id).unwrap();
+    assert_eq!(finished.status, "completed");
+    assert_eq!(finished.record_id, inserted.record_id);
+    assert!(finished.ended_at_utc_ms.is_some());
+    assert_eq!(page_records(&forward_store).len(), 1);
+    drop(forward_root);
+}
+
+#[test]
+fn drop_finalizes_when_session_index_is_weak() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let open: Arc<dyn Fn() -> Result<Arc<HistoryStore>, HistoryError> + Send + Sync> = Arc::new({
+        let store = store.clone();
+        move || Ok(store.clone())
+    });
+    let owner = super::history::begin_for_session(
+        "sess-drop",
+        "123456".to_owned(),
+        "Desk".to_owned(),
+        "rdp".to_owned(),
+        test_owner(),
+        open,
+        None,
+    )
+    .expect("start")
+    .expect("interval");
+    let indexed = super::history::session_index_holds_live_interval("sess-drop");
+    let strong = super::history::session_index_holds_strong_owner("sess-drop");
+    let id = owner.record_id().to_owned();
+    assert_eq!(store.get(&id).unwrap().status, "active");
+    drop(owner);
+    let status = store.get(&id).unwrap().status;
+    assert!(
+        indexed && !strong && status == "completed",
+        "indexed={indexed} strong={strong} status={status}"
+    );
+    let finished = store.get(&id).unwrap();
+    assert!(finished.ended_at_utc_ms.is_some());
+    assert_eq!(finished.connection_type, "rdp");
+    drop(root);
+}
