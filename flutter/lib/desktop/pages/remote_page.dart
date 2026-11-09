@@ -728,8 +728,10 @@ class _ViewStyleUpdater extends StatelessWidget {
       onDispose: canvasModel.clearViewportSize,
       updateImageWidgetSize: inputModel.updateImageWidgetSize,
       updateViewportSize: canvasModel.updateViewportSize,
-      updateViewStyle: () =>
-          canvasModel.updateViewStyle(refreshMousePos: false),
+      updateViewStyle: (latestLayoutSize) => canvasModel.updateViewStyle(
+        refreshMousePos: false,
+        latestLayoutSize: latestLayoutSize,
+      ),
       measuredViewport: () => canvasModel.measuredViewport,
       fitCommittedFor: () => canvasModel.measuredFitCommittedFor,
       dropSupersededFit: canvasModel.dropSupersededMeasuredFit,

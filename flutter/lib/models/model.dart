@@ -2210,6 +2210,8 @@ class CanvasModel with ChangeNotifier {
   Size _size = Size.zero;
   Size? _measuredViewport;
   Size? _measuredFitCommittedFor;
+  // Session custom scale before the device-pixel-ratio divide.
+  double? _customViewScale;
   // the tabbar over the image
   // double tabBarHeight = 0.0;
   // the window border's width
@@ -2314,7 +2316,8 @@ class CanvasModel with ChangeNotifier {
   }
 
   /// Drops a fit that still names a size a newer measurement replaced.
-  /// A newer stored viewport is left in place.
+  /// A newer stored viewport is left in place. Clearing both on desktop
+  /// restores the window fallback before returning.
   void dropSupersededMeasuredFit(RaatikSupersededFitDrop drop) {
     final next = applySupersededMeasuredFitDrop(
       viewport: _measuredViewport,
@@ -2323,6 +2326,42 @@ class CanvasModel with ChangeNotifier {
     );
     _measuredViewport = next.viewport;
     _measuredFitCommittedFor = next.committed;
+    if (drop != RaatikSupersededFitDrop.clearViewportAndCommit ||
+        !(isDesktop || isWebDesktop)) {
+      return;
+    }
+    updateSize();
+    final displayWidth = getDisplayWidth();
+    final displayHeight = getDisplayHeight();
+    final style = _lastViewStyle.style;
+    _devicePixelRatio = ui.window.devicePixelRatio;
+    final fitted = geometryForViewStyle(
+      style: style,
+      viewport: Size(size.width, size.height),
+      remote: Size(displayWidth.toDouble(), displayHeight.toDouble()),
+      customScale: _customViewScale ?? 1.0,
+      devicePixelRatio: _devicePixelRatio,
+      ignoreDpi: kIgnoreDpi,
+    );
+    if (fitted != null) {
+      _scale = fitted.scale;
+      _x = fitted.offset.dx;
+      _y = fitted.offset.dy;
+    } else {
+      _scale = style == kRemoteViewStyleCustom ? (_customViewScale ?? 1.0) : 1.0;
+      if (kIgnoreDpi) {
+        if (style == kRemoteViewStyleOriginal) {
+          _scale = 1.0 / _devicePixelRatio;
+        } else if (_scale != 0 && style == kRemoteViewStyleCustom) {
+          _scale /= _devicePixelRatio;
+        }
+      }
+      _resetCanvasOffset(displayWidth, displayHeight);
+    }
+    final overflow = _x < 0 || y < 0;
+    if (_imageOverflow.value != overflow) {
+      _imageOverflow.value = overflow;
+    }
   }
 
   Size getSize() {
@@ -2375,7 +2414,11 @@ class CanvasModel with ChangeNotifier {
 
   updateSize() => _size = getSize();
 
-  updateViewStyle({refreshMousePos = true, notify = true}) async {
+  updateViewStyle({
+    refreshMousePos = true,
+    notify = true,
+    Size? Function()? latestLayoutSize,
+  }) async {
     // This call fits [pendingViewport]. A newer store or a clear invalidates it.
     final pendingViewport = _measuredViewport;
     final style = await bind.sessionGetViewStyle(sessionId: sessionId);
@@ -2393,9 +2436,17 @@ class CanvasModel with ChangeNotifier {
         debugPrintStack(stackTrace: stack);
         customScale = 1.0;
       }
+      _customViewScale = customScale ?? 1.0;
       if (_measuredViewport != pendingViewport) {
         return;
       }
+    }
+
+    if (skipSupersededViewStyleWrite(
+      latestSize: latestLayoutSize?.call(),
+      pendingViewport: pendingViewport,
+    )) {
+      return;
     }
 
     updateSize();

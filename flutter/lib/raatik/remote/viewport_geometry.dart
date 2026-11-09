@@ -770,6 +770,19 @@ class RaatikMeasuredFitFields {
   final Size? committed;
 }
 
+/// Whether the captured view-style write should be skipped.
+///
+/// A null [latestSize] means the caller did not supply a layout size, so the
+/// write stays. The same size as [pendingViewport] writes. Any other size is
+/// already newer and must not be written.
+bool skipSupersededViewStyleWrite({
+  required Size? latestSize,
+  required Size? pendingViewport,
+}) {
+  if (latestSize == null) return false;
+  return latestSize != pendingViewport;
+}
+
 /// Decides whether the captured size is still the one to keep.
 ///
 /// The same mounted size refreshes and changes nothing. A newer layout whose
@@ -887,7 +900,9 @@ class RaatikViewStyleUpdater extends StatefulWidget {
   final Widget child;
   final void Function(Size size) updateImageWidgetSize;
   final void Function(Size size) updateViewportSize;
-  final Future<void> Function() updateViewStyle;
+  /// Called with a getter for the updater's current layout size. Read that
+  /// getter after the view-style awaits; a newer size skips the captured write.
+  final Future<void> Function(Size? Function() latestLayoutSize) updateViewStyle;
   final VoidCallback refresh;
   final Size? Function()? measuredViewport;
   final Size? Function()? fitCommittedFor;
@@ -930,7 +945,8 @@ class _RaatikViewStyleUpdaterState extends State<RaatikViewStyleUpdater> {
                 size: currentSize,
                 updateImageWidgetSize: widget.updateImageWidgetSize,
                 updateViewportSize: widget.updateViewportSize,
-                updateViewStyle: widget.updateViewStyle,
+                updateViewStyle: () =>
+                    widget.updateViewStyle(() => _lastSize),
                 stillMounted: () => mounted,
                 latestSize: () => _lastSize,
                 measuredViewport: widget.measuredViewport,

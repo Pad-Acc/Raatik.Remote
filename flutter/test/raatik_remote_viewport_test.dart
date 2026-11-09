@@ -36,6 +36,8 @@ class _InputSpy {
   final List<RaatikSupersededFitDrop> drops = [];
   Size? measuredViewport;
   Size? fitCommittedFor;
+  Size? latestLayoutSize;
+  Size? committedAtDrop;
   Future<void> Function()? duringStyle;
 
   void changeResolution() => resolution += 1;
@@ -111,8 +113,15 @@ class _ImageProbeState extends State<_ImageProbe> {
         _fit.store(size);
         _publish();
       },
-      updateViewStyle: () async {
+      updateViewStyle: (latestLayoutSize) async {
         await widget.spy.style();
+        widget.spy.latestLayoutSize = latestLayoutSize();
+        if (skipSupersededViewStyleWrite(
+          latestSize: widget.spy.latestLayoutSize,
+          pendingViewport: _fit.pending,
+        )) {
+          return;
+        }
         _fit.commitPending();
         _publish();
       },
@@ -120,6 +129,7 @@ class _ImageProbeState extends State<_ImageProbe> {
       fitCommittedFor: () => _fit.committed,
       dropSupersededFit: (drop) {
         widget.spy.drops.add(drop);
+        widget.spy.committedAtDrop = _fit.committed;
         _fit.applyDrop(drop);
         _publish();
       },
@@ -268,6 +278,14 @@ void main() {
     expect(spy.quality, 0);
     expect(spy.log.take(4).toList(), ['image', 'viewport', 'style', 'refresh']);
     expect(spy.imageSizes.single, viewport.size);
+    expect(spy.latestLayoutSize, viewport.size);
+    expect(
+      skipSupersededViewStyleWrite(
+        latestSize: spy.latestLayoutSize,
+        pendingViewport: viewport.size,
+      ),
+      isFalse,
+    );
 
     final image = tester.getRect(find.byKey(const Key('raatik-fitted-image')));
     _expectInside(viewport, image);
@@ -725,6 +743,15 @@ void main() {
     expect(spy.log, ['image', 'viewport', 'style']);
     expect(spy.imageSizes, [const Size(640, 672)]);
     expect(spy.drops, [RaatikSupersededFitDrop.clearViewportAndCommit]);
+    expect(spy.latestLayoutSize, const Size(900, 700));
+    expect(
+      skipSupersededViewStyleWrite(
+        latestSize: spy.latestLayoutSize,
+        pendingViewport: const Size(640, 672),
+      ),
+      isTrue,
+    );
+    expect(spy.committedAtDrop, isNull);
     expect(spy.measuredViewport, isNull);
     expect(spy.fitCommittedFor, isNull);
     expect(spy.resolution, 0);

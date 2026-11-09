@@ -1211,4 +1211,80 @@ void main() {
       committed: captured,
     );
   });
+
+  test('newer layout size skips the captured view-style write', () {
+    const pending = Size(640, 672);
+    const newer = Size(900, 700);
+    expect(
+      skipSupersededViewStyleWrite(
+        latestSize: null,
+        pendingViewport: pending,
+      ),
+      isFalse,
+    );
+    expect(
+      skipSupersededViewStyleWrite(
+        latestSize: pending,
+        pendingViewport: pending,
+      ),
+      isFalse,
+    );
+    expect(
+      skipSupersededViewStyleWrite(
+        latestSize: newer,
+        pendingViewport: pending,
+      ),
+      isTrue,
+    );
+    expect(
+      skipSupersededViewStyleWrite(
+        latestSize: newer,
+        pendingViewport: null,
+      ),
+      isTrue,
+    );
+  });
+
+  test('window fallback replaces the captured adaptive scale', () {
+    const remote = Size(1920, 1080);
+    const captured = Size(640, 672);
+    const window = Size(1000, 600);
+    final stale = geometryForViewStyle(
+      style: 'adaptive',
+      viewport: captured,
+      remote: remote,
+    )!;
+    final restored = geometryForViewStyle(
+      style: 'adaptive',
+      viewport: window,
+      remote: remote,
+    )!;
+    expect(restored.scale, isNot(closeTo(stale.scale, 1e-9)));
+    final fitted = fitRemoteViewport(window, remote)!;
+    expect(restored.scale, fitted.scale);
+    expect(restored.offset, fitted.offset);
+
+    final original = geometryForViewStyle(
+      style: 'original',
+      viewport: window,
+      remote: remote,
+      devicePixelRatio: 2,
+    )!;
+    expect(original.scale, closeTo(0.5, 1e-9));
+    expect(original.offset.dx, closeTo((1000 - 1920 * 0.5) / 2, 1e-9));
+    expect(original.offset.dy, closeTo((600 - 1080 * 0.5) / 2, 1e-9));
+    expect(original.offset.dx < 0 || original.offset.dy < 0, isFalse);
+
+    final custom = geometryForViewStyle(
+      style: 'custom',
+      viewport: window,
+      remote: remote,
+      customScale: 2,
+      devicePixelRatio: 2,
+    )!;
+    expect(custom.scale, closeTo(1, 1e-9));
+    expect(custom.offset.dx, closeTo((1000 - 1920 * 1) / 2, 1e-9));
+    expect(custom.offset.dy, closeTo((600 - 1080 * 1) / 2, 1e-9));
+    expect(custom.offset.dx < 0 || custom.offset.dy < 0, isTrue);
+  });
 }
