@@ -17,6 +17,9 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../common.dart';
+import '../../raatik/dialogs/modal_keys.dart';
+import '../../raatik/text/identifier_widgets.dart';
+import '../../raatik/theme/tokens.dart';
 import '../../common/widgets/chat_page.dart';
 import '../../models/file_model.dart';
 import '../../models/platform_model.dart';
@@ -480,9 +483,9 @@ class _CmHeaderState extends State<_CmHeader>
                   maxLines: 1,
                 )),
                 FittedBox(
-                  child: Text(
-                    "(${client.peerId})",
-                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  child: RaatikIdentifierText(
+                    client.peerId,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
                 if (client.type_() == ClientType.terminal)
@@ -1060,33 +1063,40 @@ class _CmControlPanel extends StatelessWidget {
         model.showElevation &&
         client.type_() == ClientType.remote;
     final showAccept = model.approveMode != 'password';
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Offstage(
-          offstage: !showElevation || !showAccept,
-          child: buildButton(context, color: Colors.green[700], onClick: () {
-            handleAccept(context);
-            handleElevate(context);
-            windowManager.minimize();
-          },
-              text: 'Accept and Elevate',
-              icon: Icon(
-                Icons.security_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
-              textColor: Colors.white,
-              tooltip: 'accept_and_elevate_btn_tooltip'),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (showAccept)
-              Expanded(
-                child: Column(
-                  children: [
-                    buildButton(
+    return RaatikModalScope(
+      role: RaatikModalRole.approval,
+      onAccept: () {
+        handleAccept(context);
+        windowManager.minimize();
+      },
+      onReject: handleDisconnect,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Offstage(
+            offstage: !showElevation || !showAccept,
+            child: buildButton(context, color: Colors.green[700], onClick: () {
+              handleAccept(context);
+              handleElevate(context);
+              windowManager.minimize();
+            },
+                text: 'Accept and Elevate',
+                icon: Icon(
+                  Icons.security_rounded,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                textColor: Colors.white,
+                tooltip: 'accept_and_elevate_btn_tooltip'),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (showAccept)
+                Expanded(
+                  child: RaatikModalAction(
+                    focus: RaatikModalFocus.accept,
+                    child: buildButton(
                       context,
                       color: MyTheme.accent,
                       onClick: () {
@@ -1096,22 +1106,26 @@ class _CmControlPanel extends StatelessWidget {
                       text: 'Accept',
                       textColor: Colors.white,
                     ),
-                  ],
+                  ),
+                ),
+              Expanded(
+                child: RaatikModalAction(
+                  focus: RaatikModalFocus.reject,
+                  autofocus: true,
+                  child: buildButton(
+                    context,
+                    color: Colors.transparent,
+                    border: Border.all(color: Colors.grey),
+                    onClick: handleDisconnect,
+                    text: 'Cancel',
+                    textColor: null,
+                  ),
                 ),
               ),
-            Expanded(
-              child: buildButton(
-                context,
-                color: Colors.transparent,
-                border: Border.all(color: Colors.grey),
-                onClick: handleDisconnect,
-                text: 'Cancel',
-                textColor: null,
-              ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     ).marginOnly(bottom: buttonBottomMargin);
   }
 
@@ -1143,7 +1157,7 @@ class _CmControlPanel extends StatelessWidget {
     }
     final borderRadius = BorderRadius.circular(10.0);
     final btn = Container(
-      height: 28,
+      height: RaatikTokens.minTarget,
       decoration: BoxDecoration(
           color: color, borderRadius: borderRadius, border: border),
       child: InkWell(

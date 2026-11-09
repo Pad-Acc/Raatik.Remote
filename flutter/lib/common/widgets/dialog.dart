@@ -18,6 +18,7 @@ import 'package:flutter_hbb/utils/http_service.dart' as http;
 
 import '../../common.dart';
 import '../../models/model.dart';
+import '../../raatik/dialogs/modal_keys.dart';
 import '../../models/platform_model.dart';
 import '../../raatik/bidi/ltr_isolate.dart';
 import 'address_book.dart';
@@ -983,7 +984,13 @@ _connectDialog(
               child: Padding(
                 padding: EdgeInsetsDirectional.only(start: 12, bottom: 2),
                 child: SelectableText(
-                  errUsername.value,
+                  raatikRedactSecret(
+                    raatikRedactSecret(
+                      errUsername.value,
+                      osPasswordController?.text ?? '',
+                    ),
+                    passwordController?.text ?? '',
+                  ),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.error,
                     fontSize: 12,
@@ -1035,6 +1042,7 @@ _connectDialog(
     }
 
     return CustomAlertDialog(
+      modalRole: RaatikModalRole.credential,
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1058,11 +1066,13 @@ _connectDialog(
           icon: Icon(Icons.close_rounded),
           onPressed: cancel,
           isOutline: true,
+          focusRole: RaatikModalFocus.cancel,
         ),
         dialogButton(
           'OK',
           icon: Icon(Icons.done_rounded),
           onPressed: submit,
+          focusRole: RaatikModalFocus.submit,
         ),
       ],
       onSubmit: submit,

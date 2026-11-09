@@ -466,10 +466,15 @@ List<TTextMenu> toolbarControls(BuildContext context, String id, FFI ffi) {
   }
 
   if (isDefaultConn && isDesktop) {
+    final fileAllowed = perms['file'] != false;
     v.add(
       TTextMenu(
-          child: Text(translate('Transfer file')),
-          onPressed: () => connectWithToken(isFileTransfer: true)),
+          child: Text(fileAllowed
+              ? translate('Transfer file')
+              : '${translate('Transfer file')} — ${translate('one-way-file-transfer-tip')}'),
+          onPressed: fileAllowed
+              ? () => connectWithToken(isFileTransfer: true)
+              : null),
     );
     v.add(
       TTextMenu(

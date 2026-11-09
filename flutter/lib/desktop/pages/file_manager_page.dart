@@ -21,6 +21,8 @@ import 'package:flutter_hbb/web/dummy.dart'
     if (dart.library.html) 'package:flutter_hbb/web/web_unique.dart';
 
 import '../../consts.dart';
+import '../../raatik/bidi/ltr_isolate.dart';
+import '../../raatik/files/transfer_surface.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../common.dart';
 import '../../models/model.dart';
@@ -164,19 +166,27 @@ class _FileManagerPageState extends State<FileManagerPage>
       OverlayEntry(builder: (_) {
         return willPopScope(Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Row(
-            children: [
-              if (!isWeb)
-                Flexible(
-                    flex: 3,
-                    child: dropArea(FileManagerView(
-                        model.localController, _ffi, _mouseFocusScope))),
-              Flexible(
-                  flex: 3,
-                  child: dropArea(FileManagerView(
-                      model.remoteController, _ffi, _mouseFocusScope))),
-              Flexible(flex: 2, child: statusList())
-            ],
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final permitted = _ffi.ffiModel.permissions['file'] != false;
+              return RaatikFileTransferSurface(
+                width: constraints.maxWidth,
+                localLabel: translate('Local Computer'),
+                remoteLabel: translate('Remote Computer'),
+                overflowLabel: translate('More'),
+                disabledReason: translate('one-way-file-transfer-tip'),
+                transferLabel: translate('Transfer file'),
+                transferPermitted: permitted,
+                local: isWeb
+                    ? null
+                    : dropArea(FileManagerView(
+                        model.localController, _ffi, _mouseFocusScope)),
+                remote: dropArea(FileManagerView(
+                    model.remoteController, _ffi, _mouseFocusScope)),
+                status: statusList(),
+                onTransfer: _transferCurrentSelection,
+              );
+            },
           ),
         ));
       })
@@ -256,7 +266,7 @@ class _FileManagerPageState extends State<FileManagerPage>
                                 waitDuration: Duration(milliseconds: 500),
                                 message: item.jobName,
                                 child: ExtendedText(
-                                  item.jobName,
+                                  ltrIsolate(item.jobName),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   overflowWidget: TextOverflowWidget(
@@ -267,11 +277,13 @@ class _FileManagerPageState extends State<FileManagerPage>
                               Tooltip(
                                 waitDuration: Duration(milliseconds: 500),
                                 message: status,
-                                child: Text(status,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: MyTheme.darkGray,
-                                    )).marginOnly(top: 6),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: RaatikWrappingError(
+                                    message: status,
+                                    maxLines: 4,
+                                  ),
+                                ),
                               ),
                               Offstage(
                                 offstage: item.type != JobType.transfer ||
@@ -381,7 +393,26 @@ class _FileManagerPageState extends State<FileManagerPage>
         ..size = FileSystemEntity.isDirectorySync(f.path) ? 0 : f.lengthSync());
     }
     final otherSideData = model.localController.directoryData();
-    model.remoteController.sendFiles(items, otherSideData);
+    raatikInvokePermitted(_ffi.ffiModel.permissions['file'] != false, () {
+      model.remoteController.sendFiles(items, otherSideData);
+    });
+  }
+
+  void _transferCurrentSelection() {
+    final permitted = _ffi.ffiModel.permissions['file'] != false;
+    raatikInvokePermitted(permitted, () {
+      for (final controller in [
+        model.localController,
+        model.remoteController,
+      ]) {
+        if (!SelectedItems.valid(controller.selectedItems.items)) continue;
+        controller.sendFiles(
+          controller.selectedItems,
+          controller.getOtherSideDirectoryData(),
+        );
+        controller.selectedItems.clear();
+      }
+    });
   }
 }
 
@@ -906,7 +937,9 @@ class _FileManagerViewState extends State<FileManagerView> {
                             : MyTheme.accent,
                       ),
                     ),
-                    onPressed: SelectedItems.valid(selectedItems.items)
+                    onPressed: widget._ffi.ffiModel.permissions['file'] !=
+                                false &&
+                            SelectedItems.valid(selectedItems.items)
                         ? () {
                             final otherSideData =
                                 controller.getOtherSideDirectoryData();
@@ -1201,14 +1234,14 @@ class _FileManagerViewState extends State<FileManagerView> {
                                                         .labelColor),
                                               ),
                                         Expanded(
-                                            child: Text(entry.name.nonBreaking,
-                                                style: TextStyle(
-                                                    color: selectedItems.items
-                                                            .contains(entry)
-                                                        ? Colors.white
-                                                        : null),
-                                                overflow:
-                                                    TextOverflow.ellipsis))
+                                            child: RaatikFileNameText(
+                                          entry.name.nonBreaking,
+                                          style: TextStyle(
+                                              color: selectedItems.items
+                                                      .contains(entry)
+                                                  ? Colors.white
+                                                  : null),
+                                        ))
                                       ]),
                                     )),
                               ),

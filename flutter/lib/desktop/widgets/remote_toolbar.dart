@@ -13,6 +13,8 @@ import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/plugin/widgets/desc_ui.dart';
 import 'package:flutter_hbb/plugin/common.dart';
 import 'package:flutter_hbb/raatik/bidi/ltr_isolate.dart';
+import 'package:flutter_hbb/raatik/layout/breakpoints.dart';
+import 'package:flutter_hbb/raatik/toolbar/session_toolbar.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
@@ -814,55 +816,82 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
 
   Widget _buildToolbar(
       BuildContext context, _ToolbarEdge edge, bool isHorizontal) {
-    // Primary actions stay visible; less-used tools go under overflow «بیشتر».
-    final List<Widget> primaryItems = [];
-    primaryItems.add(Obx(() {
-      final privacyModeState = PrivacyModeState.find(widget.id);
-      if ((privacyModeState.isEmpty ||
-              allowDisplaySwitchInPrivacyMode(pi, privacyModeState.value)) &&
-          pi.displaysCount.value > 1 &&
-          mainGetLocalBoolOptionSync(kOptionAllowMonitorSwitchMainToolbar)) {
-        return _MainMonitorSwitchButton(id: widget.id, ffi: widget.ffi);
-      } else {
-        return const Offstage();
-      }
-    }));
-
-    primaryItems.add(Obx(() {
-      final privacyModeState = PrivacyModeState.find(widget.id);
-      if ((privacyModeState.isEmpty ||
-              allowDisplaySwitchInPrivacyMode(pi, privacyModeState.value)) &&
-          pi.displaysCount.value > 1) {
-        return _MonitorMenu(
-            id: widget.id,
-            ffi: widget.ffi,
-            edge: edge,
-            setRemoteState: widget.setRemoteState);
-      } else {
-        return Offstage();
-      }
-    }));
-
-    primaryItems
-        .add(_ControlMenu(id: widget.id, ffi: widget.ffi, state: widget.state));
-    primaryItems.add(_DisplayMenu(
-      id: widget.id,
-      ffi: widget.ffi,
-      state: widget.state,
-      setFullscreen: _setFullscreen,
-    ));
-    // Do not show keyboard for camera connection type.
-    if (widget.ffi.connType == ConnType.defaultConn) {
-      primaryItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
-    }
-    primaryItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
-    // Active voice-call chrome stays visible (session-critical).
-    if (!isWeb) {
-      primaryItems.add(_VoiceCallMenu(id: widget.id, ffi: widget.ffi));
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
+        final tools = <RaatikToolbarTool>[
+          RaatikToolbarTool(
+            id: RaatikSessionTool.display,
+            label: translate('Display'),
+            child: Obx(() {
+              final privacyModeState = PrivacyModeState.find(widget.id);
+              if ((privacyModeState.isEmpty ||
+                      allowDisplaySwitchInPrivacyMode(
+                          pi, privacyModeState.value)) &&
+                  pi.displaysCount.value > 1 &&
+                  mainGetLocalBoolOptionSync(
+                      kOptionAllowMonitorSwitchMainToolbar)) {
+                return _MainMonitorSwitchButton(id: widget.id, ffi: widget.ffi);
+              }
+              return const Offstage();
+            }),
+          ),
+          RaatikToolbarTool(
+            id: RaatikSessionTool.display,
+            label: translate('Display'),
+            child: Obx(() {
+              final privacyModeState = PrivacyModeState.find(widget.id);
+              if ((privacyModeState.isEmpty ||
+                      allowDisplaySwitchInPrivacyMode(
+                          pi, privacyModeState.value)) &&
+                  pi.displaysCount.value > 1) {
+                return _MonitorMenu(
+                    id: widget.id,
+                    ffi: widget.ffi,
+                    edge: edge,
+                    setRemoteState: widget.setRemoteState);
+              }
+              return const Offstage();
+            }),
+          ),
+          RaatikToolbarTool(
+            id: RaatikSessionTool.image,
+            label: translate('Image'),
+            child: _DisplayMenu(
+              id: widget.id,
+              ffi: widget.ffi,
+              state: widget.state,
+              setFullscreen: _setFullscreen,
+            ),
+          ),
+          RaatikToolbarTool(
+            id: RaatikSessionTool.control,
+            label: translate('Control'),
+            child: _ControlMenu(
+                id: widget.id, ffi: widget.ffi, state: widget.state),
+          ),
+          if (widget.ffi.connType == ConnType.defaultConn)
+            RaatikToolbarTool(
+              id: RaatikSessionTool.keyboard,
+              label: translate('Keyboard'),
+              child: _KeyboardMenu(id: widget.id, ffi: widget.ffi),
+            ),
+          RaatikToolbarTool(
+            id: RaatikSessionTool.chat,
+            label: translate('Chat'),
+            child: _ChatMenu(id: widget.id, ffi: widget.ffi),
+          ),
+          if (!isWeb)
+            RaatikToolbarTool(
+              id: RaatikSessionTool.audio,
+              label: translate('Audio'),
+              child: _VoiceCallMenu(id: widget.id, ffi: widget.ffi),
+            ),
+        ];
+        final partition = raatikPartitionToolbar(
+          windowClass:
+              raatikWindowClassFor(MediaQuery.sizeOf(context).width),
+          tools: tools,
+        );
         return Theme(
           data: themeData(vertical: !isHorizontal),
           child: RaatikRemoteToolbarBar(
@@ -871,16 +900,22 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
                 : constraints.maxHeight,
             edge: _publicToolbarEdge(edge),
             brandLabel: _buildBrandLabel(),
-            primaryItems: primaryItems,
+            primaryItems: partition.primary,
             moreMenu: _MoreMenu(
               id: widget.id,
               ffi: widget.ffi,
               iconOnly: !isHorizontal,
+              leading: partition.overflow,
             ),
-            closeMenu: _CloseMenu(
-              id: widget.id,
-              ffi: widget.ffi,
-              iconOnly: !isHorizontal,
+            closeMenu: Padding(
+              padding: isHorizontal
+                  ? const EdgeInsetsDirectional.only(start: 8)
+                  : EdgeInsets.zero,
+              child: _CloseMenu(
+                id: widget.id,
+                ffi: widget.ffi,
+                iconOnly: !isHorizontal,
+              ),
             ),
             barColor: _ToolbarTheme.barColor,
             elevation: _ToolbarTheme.elevation,
@@ -989,16 +1024,18 @@ class _PinMenu extends StatelessWidget {
   }
 }
 
-/// Overflow menu for less-used remote-session tools (T1 «بیشتر»).
+/// Overflow menu for less-used remote-session tools.
 class _MoreMenu extends StatelessWidget {
   final String id;
   final FFI ffi;
   final bool iconOnly;
+  final List<Widget> leading;
   const _MoreMenu({
     Key? key,
     required this.id,
     required this.ffi,
     this.iconOnly = false,
+    this.leading = const <Widget>[],
   }) : super(key: key);
 
   @override
@@ -1011,97 +1048,38 @@ class _MoreMenu extends StatelessWidget {
     final showCad = ffi.connType == ConnType.defaultConn &&
         ffiModel.keyboard &&
         ffi.ffiModel.pi.platform == kPeerPlatformWindows;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: _ToolbarTheme.buttonHMargin,
-        vertical: _ToolbarTheme.buttonVMargin,
-      ),
-      child: Semantics(
-        label: translate('More'),
-        button: true,
-        child: PopupMenuButton<String>(
-          tooltip: translate('More'),
-          offset: const Offset(0, 8),
-          onSelected: (value) {
-            switch (value) {
-              case 'mobile':
-                ffi.dialogManager.setMobileActionsOverlayVisible(
-                    !ffi.dialogManager.mobileActionsOverlayVisible.value);
-                break;
-              case 'record':
-                recordingModel.toggle();
-                break;
-              case 'cad':
-                bind.sessionCtrlAltDel(sessionId: ffi.sessionId);
-                break;
-              case 'lock':
-                bind.sessionLockScreen(sessionId: ffi.sessionId);
-                break;
-            }
-          },
-          itemBuilder: (context) {
-            final items = <PopupMenuEntry<String>>[];
-            if (showMobile) {
-              items.add(PopupMenuItem(
-                value: 'mobile',
-                child: Text(translate('Mobile Actions')),
-              ));
-            }
-            if (showRecord) {
-              items.add(PopupMenuItem(
-                value: 'record',
-                child: Text(translate(recordingModel.start
-                    ? 'Stop session recording'
-                    : 'Start session recording')),
-              ));
-            }
-            if (showCad) {
-              items.add(PopupMenuItem(
-                value: 'cad',
-                child: Text(translate('Insert Ctrl + Alt + Del')),
-              ));
-            }
-            if (ffi.connType == ConnType.defaultConn && ffiModel.keyboard) {
-              items.add(PopupMenuItem(
-                value: 'lock',
-                child: Text(translate('Insert Lock')),
-              ));
-            }
-            if (items.isEmpty) {
-              items.add(PopupMenuItem(
-                enabled: false,
-                child: Text(translate('More')),
-              ));
-            }
-            return items;
-          },
-          child: Material(
-            color: _ToolbarTheme.chipColor,
-            borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
-            child: Padding(
-              padding: iconOnly
-                  ? const EdgeInsets.all(8)
-                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: iconOnly
-                  ? const Icon(Icons.more_horiz, color: Colors.white, size: 22)
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.more_horiz,
-                            color: Colors.white, size: 22),
-                        const SizedBox(width: 4),
-                        Text(
-                          translate('More'),
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 13),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-        ),
-      ),
+    final items = <Widget>[...leading];
+    if (showMobile) {
+      items.add(TextButton(
+        onPressed: () => ffi.dialogManager.setMobileActionsOverlayVisible(
+            !ffi.dialogManager.mobileActionsOverlayVisible.value),
+        child: Text(translate('Mobile Actions')),
+      ));
+    }
+    if (showRecord) {
+      items.add(TextButton(
+        onPressed: recordingModel.toggle,
+        child: Text(translate(recordingModel.start
+            ? 'Stop session recording'
+            : 'Start session recording')),
+      ));
+    }
+    if (showCad) {
+      items.add(TextButton(
+        onPressed: () => bind.sessionCtrlAltDel(sessionId: ffi.sessionId),
+        child: Text(translate('Insert Ctrl + Alt + Del')),
+      ));
+    }
+    if (ffi.connType == ConnType.defaultConn && ffiModel.keyboard) {
+      items.add(TextButton(
+        onPressed: () => bind.sessionLockScreen(sessionId: ffi.sessionId),
+        child: Text(translate('Insert Lock')),
+      ));
+    }
+    return RaatikLabelledOverflow(
+      label: translate('More'),
+      iconOnly: iconOnly,
+      children: items,
     );
   }
 }

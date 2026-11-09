@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/dialogs/dialog_style.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 import 'package:flutter_hbb/raatik/theme/tokens.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
+import 'package:flutter_hbb/raatik/toolbar/session_toolbar.dart';
 import 'package:flutter_hbb/raatik/toolbar/toolbar_action.dart';
+
+import 'raatik_test_app.dart';
 
 Widget _toolbarAtWidth(double width) => MaterialApp(
       theme: buildRaatikLightTheme(),
@@ -350,6 +354,143 @@ void main() {
           (ink.decoration as BoxDecoration?)?.border as Border?;
       expect(border?.top.color, raatikToolbarFocusRingColor);
       expect(border?.top.width, raatikToolbarFocusRingWidth);
+    });
+  });
+
+  group('RaatikSessionToolbar', () {
+    Future<void> pumpSession(
+      WidgetTester tester, {
+      required double width,
+      required Locale locale,
+      required List<RaatikToolbarTool> tools,
+      FocusNode? overflowFocus,
+    }) async {
+      final size = Size(width, 680);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(testApp(
+        RaatikSessionToolbar(
+          windowWidth: width,
+          overflowFocus: overflowFocus,
+          brandLabel: const Text('RaatikDesk'),
+          close: const ColoredBox(
+            key: Key('session-disconnect'),
+            color: RaatikTokens.danger,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Text('Disconnect'),
+            ),
+          ),
+          tools: tools,
+        ),
+        size: size,
+        locale: locale,
+        textScaler: locale.languageCode == 'fa'
+            ? const TextScaler.linear(2)
+            : const TextScaler.linear(1),
+      ));
+      await tester.pump();
+    }
+
+    List<RaatikToolbarTool> sampleTools({required VoidCallback onTransfer}) {
+      return [
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.display,
+          label: 'Display',
+          child: Text('Display', key: Key('tool-display')),
+        ),
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.image,
+          label: 'Image',
+          child: Text('Image', key: Key('tool-image')),
+        ),
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.control,
+          label: 'Control',
+          child: Text('Control', key: Key('tool-control')),
+        ),
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.keyboard,
+          label: 'Keyboard',
+          child: Text('Keyboard', key: Key('tool-keyboard')),
+        ),
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.chat,
+          label: 'Chat',
+          child: Text('Chat', key: Key('tool-chat')),
+        ),
+        const RaatikToolbarTool(
+          id: RaatikSessionTool.record,
+          label: 'Record',
+          hidden: true,
+          child: Text('Record', key: Key('tool-record')),
+        ),
+        RaatikToolbarTool(
+          id: RaatikSessionTool.fileTransfer,
+          label: 'Transfer',
+          enabled: false,
+          disabledReason: 'File transfer is denied',
+          child: TextButton(
+            key: const Key('tool-transfer'),
+            onPressed: onTransfer,
+            child: const Text('Transfer'),
+          ),
+        ),
+      ];
+    }
+
+    testWidgets('narrow toolbar uses a labelled overflow and keeps disconnect last',
+        (tester) async {
+      var transferCalls = 0;
+      final overflowFocus = FocusNode();
+      addTearDown(overflowFocus.dispose);
+      await pumpSession(
+        tester,
+        width: 480,
+        locale: const Locale('fa'),
+        overflowFocus: overflowFocus,
+        tools: sampleTools(onTransfer: () => transferCalls++),
+      );
+
+      expect(find.text('RaatikDesk'), findsNothing);
+      expect(find.text('More'), findsOneWidget);
+      expect(find.byKey(const Key('tool-image')), findsOneWidget);
+      expect(find.byKey(const Key('tool-chat')), findsOneWidget);
+      expect(find.byKey(const Key('tool-control')), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.button == true &&
+              widget.properties.label == 'More',
+        ),
+        findsWidgets,
+      );
+
+      overflowFocus.requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('tool-control')), findsOneWidget);
+      expect(find.byKey(const Key('tool-display')), findsOneWidget);
+      expect(find.byKey(const Key('tool-record')), findsNothing);
+      expect(find.text('File transfer is denied'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const Key('tool-transfer')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(transferCalls, 0);
+
+      final more = tester.getRect(find.byKey(RaatikLabelledOverflow.buttonKey));
+      final close = tester.getRect(find.byKey(const Key('session-disconnect')));
+      expect(close.right, lessThanOrEqualTo(more.left));
+      expect(more.left - close.right, greaterThanOrEqualTo(8));
+      final disconnect = tester
+          .widget<ColoredBox>(find.byKey(const Key('session-disconnect')));
+      expect(disconnect.color, RaatikTokens.danger);
+      expect(tester.takeException(), isNull);
     });
   });
 }

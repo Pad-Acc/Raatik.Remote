@@ -12,6 +12,7 @@ import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:get/get.dart';
 
 import '../../models/platform_model.dart';
+import '../../raatik/bidi/ltr_isolate.dart';
 
 /// File Transfer for multi tabs
 class FileManagerTabPage extends StatefulWidget {
@@ -38,7 +39,7 @@ class _FileManagerTabPageState extends State<FileManagerTabPage> {
     tabController.onRemoved = (_, id) => onRemoveId(id);
     tabController.add(TabInfo(
         key: params['id'],
-        label: params['id'],
+        label: ltrIsolate('${params['id']}'),
         selectedIcon: selectedIcon,
         unselectedIcon: unselectedIcon,
         onTabCloseButton: () async {
@@ -75,7 +76,7 @@ class _FileManagerTabPageState extends State<FileManagerTabPage> {
         windowOnTop(windowId());
         tabController.add(TabInfo(
             key: id,
-            label: id,
+            label: ltrIsolate('$id'),
             selectedIcon: selectedIcon,
             unselectedIcon: unselectedIcon,
             onTabCloseButton: () async {

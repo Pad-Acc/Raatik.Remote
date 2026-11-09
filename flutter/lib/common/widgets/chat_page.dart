@@ -2,6 +2,7 @@ import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
+import 'package:flutter_hbb/raatik/chat/composer_keys.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
@@ -82,6 +83,17 @@ class ChatPage extends StatelessWidget implements PageShape {
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Consumer<ChatModel>(
           builder: (context, chatModel, child) {
+            raatikBindChatInput(
+              node: chatModel.inputNode,
+              controller: chatModel.textController,
+              onSend: (text) {
+                chatModel.send(ChatMessage(
+                  text: text,
+                  user: chatModel.me,
+                  createdAt: DateTime.now(),
+                ));
+              },
+            );
             final readOnly = type == ChatPageType.mobileMain &&
                     (chatModel.currentKey.connId == ChatModel.clientModeID ||
                         gFFI.serverModel.clients.every((e) =>

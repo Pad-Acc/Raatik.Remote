@@ -12,6 +12,7 @@ import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/desktop/widgets/refresh_wrapper.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/raatik/dialogs/dialog_style.dart';
+import 'package:flutter_hbb/raatik/dialogs/modal_keys.dart';
 import 'package:flutter_hbb/raatik/text/digits.dart';
 import 'package:flutter_hbb/raatik/theme/app_theme.dart';
 import 'package:flutter_hbb/raatik/theme/my_theme_merge.dart' as my_theme_merge;
@@ -893,7 +894,8 @@ class CustomAlertDialog extends StatelessWidget {
       this.contentPadding,
       this.contentBoxConstraints = const BoxConstraints(maxWidth: 500),
       this.onSubmit,
-      this.onCancel})
+      this.onCancel,
+      this.modalRole})
       : super(key: key);
 
   final Widget? title;
@@ -904,6 +906,7 @@ class CustomAlertDialog extends StatelessWidget {
   final BoxConstraints contentBoxConstraints;
   final Function()? onSubmit;
   final Function()? onCancel;
+  final RaatikModalRole? modalRole;
 
   @override
   Widget build(BuildContext context) {
@@ -925,6 +928,16 @@ class CustomAlertDialog extends StatelessWidget {
       node: scopeNode,
       autofocus: true,
       onKey: (node, key) {
+        if (modalRole != null) {
+          return raatikCustomDialogKey(
+            role: modalRole!,
+            key: key,
+            scope: node,
+            onAccept: onSubmit,
+            onCancel: onCancel,
+            focusContext: FocusManager.instance.primaryFocus?.context,
+          );
+        }
         if (key.logicalKey == LogicalKeyboardKey.escape) {
           if (key is RawKeyDownEvent) {
             onCancel?.call();
@@ -2828,11 +2841,13 @@ Widget dialogButton(String text,
     bool isOutline = false,
     Widget? icon,
     TextStyle? style,
-    ButtonStyle? buttonStyle}) {
+    ButtonStyle? buttonStyle,
+    RaatikModalFocus? focusRole}) {
+  final Widget button;
   if (isDesktop || isWebDesktop) {
     final minSize = raatikDialogButtonMinSize;
     if (isOutline) {
-      return icon == null
+      button = icon == null
           ? OutlinedButton(
               style: OutlinedButton.styleFrom(minimumSize: minSize)
                   .merge(buttonStyle),
@@ -2847,7 +2862,7 @@ Widget dialogButton(String text,
               label: Text(translate(text), style: style),
             );
     } else {
-      return icon == null
+      button = icon == null
           ? ElevatedButton(
               style:
                   ElevatedButton.styleFrom(elevation: 0, minimumSize: minSize)
@@ -2865,7 +2880,7 @@ Widget dialogButton(String text,
             );
     }
   } else {
-    return TextButton(
+    button = TextButton(
       onPressed: onPressed,
       child: Text(
         translate(text),
@@ -2873,6 +2888,8 @@ Widget dialogButton(String text,
       ),
     );
   }
+  if (focusRole == null) return button;
+  return RaatikDialogAction(focus: focusRole, child: button);
 }
 
 int versionCmp(String v1, String v2) {

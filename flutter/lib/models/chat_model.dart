@@ -17,6 +17,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../consts.dart';
 import '../common.dart';
+import '../raatik/chat/composer_keys.dart';
 import '../common/widgets/overlay.dart';
 import '../main.dart';
 import 'model.dart';
@@ -120,28 +121,16 @@ class ChatModel with ChangeNotifier {
 
   ChatModel(this.parent) {
     sessionId = parent.target!.sessionId;
-    inputNode = FocusNode(
-      onKey: (_, event) {
-        bool isShiftPressed = event.isKeyPressed(LogicalKeyboardKey.shiftLeft);
-        bool isEnterPressed = event.isKeyPressed(LogicalKeyboardKey.enter);
-
-        // don't send empty messages
-        if (isEnterPressed && isEnterPressed && textController.text.isEmpty) {
-          return KeyEventResult.handled;
-        }
-
-        if (isEnterPressed && !isShiftPressed) {
-          final ChatMessage message = ChatMessage(
-            text: textController.text,
-            user: me,
-            createdAt: DateTime.now(),
-          );
-          send(message);
-          textController.clear();
-          return KeyEventResult.handled;
-        }
-
-        return KeyEventResult.ignored;
+    inputNode = FocusNode();
+    raatikBindChatInput(
+      node: inputNode,
+      controller: textController,
+      onSend: (text) {
+        send(ChatMessage(
+          text: text,
+          user: me,
+          createdAt: DateTime.now(),
+        ));
       },
     );
   }
