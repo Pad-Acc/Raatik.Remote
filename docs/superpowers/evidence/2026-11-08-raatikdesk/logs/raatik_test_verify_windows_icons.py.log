@@ -1,0 +1,12 @@
+started: 2026-11-09T22:10:59.7014106+03:30
+cwd: D:\Projects\RAATIK\RaatikRemote\rustdesk
+command: rtk proxy python raatik/test_verify_windows_icons.py
+----
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.180s
+
+OK
+----
+exit: 0
+ended: 2026-11-09T22:11:00.4209134+03:30

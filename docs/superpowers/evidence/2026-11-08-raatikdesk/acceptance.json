@@ -1,0 +1,890 @@
+{
+  "purpose": "Native acceptance results for 4c54a322cd99056fe954e8395d4091d861f9d76d. Release is not accepted. Sample acceptance-cases.json stays not-run.",
+  "visual": [
+    {
+      "id": "N-home-480",
+      "surface": "home",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-home-640",
+      "surface": "home",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-home-1024",
+      "surface": "home",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-home-1366",
+      "surface": "home",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-settings-480",
+      "surface": "settings",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-settings-640",
+      "surface": "settings",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-settings-1024",
+      "surface": "settings",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-settings-1366",
+      "surface": "settings",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-history-480",
+      "surface": "history",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-history-640",
+      "surface": "history",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-history-1024",
+      "surface": "history",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-history-1366",
+      "surface": "history",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-approval-480",
+      "surface": "approval",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-approval-640",
+      "surface": "approval",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-approval-1024",
+      "surface": "approval",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-approval-1366",
+      "surface": "approval",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-credential_error-480",
+      "surface": "credential_error",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-credential_error-640",
+      "surface": "credential_error",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-credential_error-1024",
+      "surface": "credential_error",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-credential_error-1366",
+      "surface": "credential_error",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-remote-480",
+      "surface": "remote",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-remote-640",
+      "surface": "remote",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-remote-1024",
+      "surface": "remote",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-remote-1366",
+      "surface": "remote",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-chat-480",
+      "surface": "chat",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-chat-640",
+      "surface": "chat",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-chat-1024",
+      "surface": "chat",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-chat-1366",
+      "surface": "chat",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-file_transfer-480",
+      "surface": "file_transfer",
+      "width": 480,
+      "height": 680,
+      "dpi": 100,
+      "language": "fa",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-file_transfer-640",
+      "surface": "file_transfer",
+      "width": 640,
+      "height": 720,
+      "dpi": 125,
+      "language": "en",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-file_transfer-1024",
+      "surface": "file_transfer",
+      "width": 1024,
+      "height": 768,
+      "dpi": 150,
+      "language": "fa",
+      "theme": "dark",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "N-file_transfer-1366",
+      "surface": "file_transfer",
+      "width": 1366,
+      "height": 768,
+      "dpi": 200,
+      "language": "en",
+      "theme": "light",
+      "text_scale": 1,
+      "status": "blocked",
+      "expected": "No overflow; every permitted action reachable; matches UI-C contracts",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    }
+  ],
+  "functional": [
+    {
+      "id": "F01",
+      "task": "UI-3",
+      "scenario": "remote corner clicks",
+      "expected": "At each DPI100/125/150/200 and fullscreen, all corners visible; pointer within one remote pixel",
+      "status": "blocked",
+      "evidence": {
+        "reason": "Two-device 100/125/150/200% DPI matrix was not run. Only this workstation was available; there is no second Windows device here.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F02",
+      "task": "HI-2",
+      "scenario": "authentication fails then success",
+      "expected": "Zero records for failure; one record after PeerInfo",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F03",
+      "task": "HI-2",
+      "scenario": "reconnect 30s/60s offline/20s",
+      "expected": "Two intervals of30000/20000ms, excluding offline",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F04",
+      "task": "HI-1",
+      "scenario": "two process note+checkpoint",
+      "expected": "No lost note/duration; stale note revision conflicts",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F05",
+      "task": "HI-2",
+      "scenario": "kill owning process after checkpoint",
+      "expected": "Interrupted; exact end unknown; lower-bound duration",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F06",
+      "task": "HI-3",
+      "scenario": "write failure",
+      "expected": "Support continues; visible warning; no saved-success",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F07",
+      "task": "UP-1",
+      "scenario": "publish RaatikDesk",
+      "expected": "AutoFi/Updater catalogs and license behavior unchanged",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F08",
+      "task": "UP-3",
+      "scenario": "session starts during UAC",
+      "expected": "Installer reacquires gate, returns ActiveConnections before mutation",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F09",
+      "task": "UP-3",
+      "scenario": "hash mismatch",
+      "expected": "No executable launched; token invalid",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F10",
+      "task": "UP-4",
+      "scenario": "UAC deny",
+      "expected": "Old app remains usable; no config/history changes",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F11",
+      "task": "UP-4",
+      "scenario": "portable launch",
+      "expected": "--noinstall supplied; no service created; same identity/history",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F12",
+      "task": "UP-3",
+      "scenario": "failure after each payload overwrite",
+      "expected": "Rollback restores old bytes/registry/service; truthful error",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F13",
+      "task": "UP-3",
+      "scenario": "poisoned unpack cache",
+      "expected": "Fresh protected extraction; cached payload never executed",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F14",
+      "task": "UP-3",
+      "scenario": "unknown legacy process",
+      "expected": "StateUnknown; no process killed",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F15",
+      "task": "UP-4",
+      "scenario": "ready+60seconds idle",
+      "expected": "Zero apply calls until fresh explicit click",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F16",
+      "task": "IN-1",
+      "scenario": "successful installed update",
+      "expected": "New runtime version; same ID/server/config/history/note",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F17",
+      "task": "UI-1",
+      "scenario": "incoming-only/outgoing-only",
+      "expected": "Original permissions preserved across navigation and deep links",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F18",
+      "task": "UI-4",
+      "scenario": "keyboard and text scale2",
+      "expected": "All eight surfaces compact480x680 no overflow; tab/Escape safe",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F19",
+      "task": "UP-3",
+      "scenario": "power-loss simulation mid transaction",
+      "expected": "Rerun worker rolls back pending journal; recovery evidence retained",
+      "status": "deferred",
+      "evidence": {
+        "reason": "Operator deferred UP-1, UP-2, UP-3, and UP-4. Catalog, uploader, download, install, and portable-update rows were not run. Deferred is not passed.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    },
+    {
+      "id": "F20",
+      "task": "HI-2",
+      "scenario": "all six outgoing types",
+      "expected": "One interval per authenticated actual transport, none for listener idle",
+      "status": "not-run",
+      "evidence": {
+        "reason": "Native scenario was not executed. A widget test, history harness, HTML snapshot, or Python checker is not native acceptance.",
+        "testedCommit": "4c54a322cd99056fe954e8395d4091d861f9d76d",
+        "command": null,
+        "log": null
+      }
+    }
+  ],
+  "geometry": [
+    {
+      "viewport": [
+        1000,
+        600
+      ],
+      "remote": [
+        1920,
+        1080
+      ],
+      "scale": 0.5208333333333334,
+      "offset": [
+        0,
+        18.75
+      ]
+    },
+    {
+      "viewport": [
+        600,
+        1000
+      ],
+      "remote": [
+        1920,
+        1080
+      ],
+      "scale": 0.3125,
+      "offset": [
+        0,
+        331.25
+      ]
+    },
+    {
+      "viewport": [
+        1280,
+        720
+      ],
+      "remote": [
+        1280,
+        720
+      ],
+      "scale": 1,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  ]
+}

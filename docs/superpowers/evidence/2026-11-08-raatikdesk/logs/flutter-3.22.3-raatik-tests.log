@@ -1,0 +1,516 @@
+started: 2026-11-09T22:10:50.5068742+03:30
+cwd: D:\Projects\RAATIK\RaatikRemote\rustdesk\flutter
+command: rtk proxy D:\Toolchains\Flutter\3.22.3\bin\flutter.bat test --no-pub test/raatik_app_shell_test.dart test/raatik_auxiliary_surfaces_test.dart test/raatik_bidi_test.dart test/raatik_breakpoints_test.dart test/raatik_digits_test.dart test/raatik_history_dates_test.dart test/raatik_history_save_status_test.dart test/raatik_history_test.dart test/raatik_home_layout_test.dart test/raatik_identifier_widgets_test.dart test/raatik_remote_viewport_test.dart test/raatik_responsive_matrix_test.dart test/raatik_rtl_home_test.dart test/raatik_service_gate_test.dart test/raatik_settings_behavior_test.dart test/raatik_settings_icon_test.dart test/raatik_settings_shell_test.dart test/raatik_svc_status_poller_test.dart test/raatik_text_styles_test.dart test/raatik_theme_test.dart test/raatik_tokens_test.dart test/raatik_toolbar_dialog_test.dart test/raatik_viewport_geometry_test.dart test/raatik_window_chrome_test.dart
+excluded: test/raatik_test_app.dart (shared harness, no test main)
+pubspec.lock.sha256.before: 5B1D1903F9B7E4D8EBAED2CC127EE16EEB60CB0B23CB490EE53825D174FBCBC3
+package_config.json.sha256.before: 1479FF18623C81B35310B29378837E01453FBEA217434DB6D13E376229E794BC
+----
+
+  ╔════════════════════════════════════════════════════════════════════════════╗
+  ║                 Welcome to Flutter! - https://flutter.dev                  ║
+  ║                                                                            ║
+  ║ The Flutter tool uses Google Analytics to anonymously report feature usage ║
+  ║ statistics and basic crash reports. This data is used to help improve      ║
+  ║ Flutter tools over time.                                                   ║
+  ║                                                                            ║
+  ║ Flutter tool analytics are not sent on the very first run. To disable      ║
+  ║ reporting, type 'flutter config --no-analytics'. To display the current    ║
+  ║ setting, type 'flutter config'. If you opt out of analytics, an opt-out    ║
+  ║ event will be sent, and then no further information will be sent by the    ║
+  ║ Flutter tool.                                                              ║
+  ║                                                                            ║
+  ║ By downloading the Flutter SDK, you agree to the Google Terms of Service.  ║
+  ║ The Google Privacy Policy describes how data is handled in this service.   ║
+  ║                                                                            ║
+  ║ Moreover, Flutter includes the Dart SDK, which may send usage metrics and  ║
+  ║ crash reports to Google.                                                   ║
+  ║                                                                            ║
+  ║ Read about data we send with crash reports:                                ║
+  ║ https://flutter.dev/docs/reference/crash-reporting                         ║
+  ║                                                                            ║
+  ║ See Google's privacy policy:                                               ║
+  ║ https://policies.google.com/privacy                                        ║
+  ║                                                                            ║
+  ║ To disable animations in this tool, use                                    ║
+  ║ 'flutter config --no-cli-animations'.                                      ║
+  ╚════════════════════════════════════════════════════════════════════════════╝
+
+00:00 +0: loading D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_app_shell_test.dart
+00:00 +0: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_app_shell_test.dart: UI-C06 destination switch shows the history page
+00:01 +1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +2: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +3: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +4: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +5: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +6: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +7: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:01 +8: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +9: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +10: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +11: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +12: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +13: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +14: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +15: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +16: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +17: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +18: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +19: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +20: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +21: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +22: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +23: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:02 +24: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:03 +25: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:03 +26: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:03 +27: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:03 +28: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact RTL at 200% rejects once, blocks a denied transfer, and stays exception-free
+00:03 +29: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +30: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +31: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +32: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +33: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +34: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +35: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +36: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +37: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +38: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +39: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +40: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +41: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +42: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +43: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +44: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +45: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +46: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +47: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +48: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +49: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +50: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_bidi_test.dart: FakeHomePage credential ID uses formatIDForDisplay under fa
+00:03 +51: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: tab stays inside the approval dialog
+00:03 +52: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: tab stays inside the approval dialog
+00:03 +53: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_app_shell_test.dart: shell 1920x1080 fa
+00:03 +54: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_app_shell_test.dart: shell 1920x1080 fa
+00:03 +55: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +56: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +57: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +58: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +59: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +60: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +61: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +62: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +63: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +64: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +65: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +66: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +67: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +68: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +69: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:03 +70: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Escape cancels credentials without connecting and a long error wraps without the password
+00:04 +71: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_app_shell_test.dart: hidden Security and Network deep links cannot bypass the gate
+00:04 +72: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: Enter submits only the focused chat action
+00:04 +73: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: compact file names and ids stay in LTR isolates and wide shows both panels
+00:04 +74: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: file surface omits transfer unless a caller supplies one
+00:04 +75: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: cancelling a transfer does not start one
+00:04 +76: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_auxiliary_surfaces_test.dart: medium toolbar keeps control in the bar and hides a blocked tool
+00:04 +77: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_save_status_test.dart: retry stays on this session and does not reconnect
+00:05 +78: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_save_status_test.dart: retry stays on this session and does not reconnect
+00:05 +79: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_save_status_test.dart: retry stays on this session and does not reconnect
+00:05 +80: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_save_status_test.dart: retry stays on this session and does not reconnect
+00:05 +81: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_save_status_test.dart: retry stays on this session and does not reconnect
+00:06 +82: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:06 +83: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:09 +84: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:09 +85: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:09 +86: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +87: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +88: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +89: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +90: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +91: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +92: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +93: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:10 +94: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:11 +95: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:11 +96: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:11 +97: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:11 +98: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:11 +99: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:11 +100: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:13 +101: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:13 +102: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:13 +103: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +104: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +105: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +106: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +107: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +108: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +109: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +110: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:14 +111: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:15 +112: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:15 +113: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:15 +114: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:15 +115: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +116: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +117: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +118: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +119: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +120: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +121: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:16 +122: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:17 +123: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:17 +124: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:19 +125: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:19 +126: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:19 +127: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:20 +128: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:20 +129: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:20 +130: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:20 +131: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:20 +132: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:21 +132 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:21 +132 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_icon_test.dart: desktop_tab_page Settings ActionIcon uses Icons.settings not IconFont.menu [E]
+  Expected: true
+    Actual: <false>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 474:18  expect
+  test\raatik_settings_icon_test.dart 11:5            main.<fn>
+  
+00:21 +133 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:21 +134 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:21 +135 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:21 +136 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:22 +137 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:22 +138 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:22 +139 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:22 +140 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:22 +141 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:23 +142 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:23 +143 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:23 +144 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:23 +145 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:24 +146 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:24 +147 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:24 +148 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:24 +149 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:24 +150 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:24 +151 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:25 +152 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:25 +153 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: persian digit search stays raw, limit is 20, and newest is first
+00:25 +154 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 800x600 en ThemeMode.dark RaatikServicePhase.starting
+00:25 +155 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_home_layout_test.dart: RaatikHomeLayout incoming-only omits connect panel in compact layout at 600
+00:25 +156 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:25 +157 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:25 +158 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:25 +159 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +160 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +161 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +162 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +163 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +164 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +165 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +166 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:26 +167 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:27 +168 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:27 +169 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:27 +170 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:27 +171 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:27 +172 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a slow search cannot replace a newer query
+00:28 +173 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:28 +174 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:28 +175 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:28 +176 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:28 +177 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:29 +178 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:30 +179 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:30 +180 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:30 +181 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:30 +182 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:31 +183 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:31 +184 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:31 +185 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:31 +186 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout compact dropdown is 44 logical pixels
+00:31 +187 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +188 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +189 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +190 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +191 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +192 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +193 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: empty, error, and partial warnings stay distinct
+00:31 +194 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout medium width uses a 64px icon rail
+00:31 +195 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout medium width uses a 64px icon rail
+00:31 +196 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1024x600 fa ThemeMode.dark RaatikServicePhase.ready
+00:32 +197 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1024x600 fa ThemeMode.dark RaatikServicePhase.ready
+00:32 +198 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: history_unavailable disables refresh and does not claim an empty history
+00:32 +199 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout wide section list is 200 and content is capped at 900
+00:32 +200 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout wide section list is 200 and content is capped at 900
+00:32 +201 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:32 +202 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:32 +203 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:32 +204 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:33 +205 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:33 +206 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:33 +207 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:33 +208 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:33 +209 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+
+Warning: A call to tap() with finder "Found 1 widget with key [<'raatik-history-date-today'>]: [
+  DropdownMenuItem<HistoryDateFilter>-[<'raatik-history-date-today'>],
+]" derived an Offset (Offset(248.0, 158.0)) that would not hit test on the specified widget.
+Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
+The finder corresponds to this RenderBox: RenderConstrainedBox#a45ff relayoutBoundary=up33 NEEDS-PAINT
+The hit test result at that offset is: HitTestResult(RenderPointerListener#66abf@Offset(248.0, 24.0), RenderSemanticsAnnotations#0574a@Offset(248.0, 24.0), RenderMouseRegion#27031@Offset(248.0, 24.0), RenderSemanticsAnnotations#58228@Offset(248.0, 24.0), RenderAnimatedOpacity#6c148@Offset(248.0, 24.0), RenderRepaintBoundary#3f5bf@Offset(248.0, 24.0), RenderIndexedSemantics#c7a5a@Offset(248.0, 24.0), RenderSliverList@(mainAxis: 72.0, crossAxis: 248.0), RenderPointerListener#4d668@Offset(248.0, 80.0), RenderSemanticsGestureHandler#e42e7@Offset(248.0, 80.0), RenderPointerListener#dd2e6@Offset(248.0, 80.0), _RenderScrollSemantics#cf5bf@Offset(248.0, 80.0), RenderRepaintBoundary#c804d@Offset(248.0, 80.0), RenderCustomPaint#e13e3@Offset(248.0, 80.0), RenderMouseRegion#e4ab4@Offset(248.0, 80.0), RenderPointerListener#19342@Offset(248.0, 80.0), RenderSemanticsGestureHandler#b41ad@Offset(248.0, 80.0), RenderPointerListener#5c1c3@Offset(248.0, 80.0), RenderRepaintBoundary#69aea@Offset(248.0, 80.0), _RenderInkFeatures#7b05a@Offset(248.0, 80.0), RenderCustomPaint#30a01@Offset(248.0, 80.0), RenderClipPath#24da7@Offset(248.0, 80.0), RenderClipRRect#b97ea@Offset(248.0, 80.0), RenderSemanticsAnnotations#a00a3@Offset(248.0, 80.0), RenderCustomPaint#d9bb3@Offset(248.0, 80.0), RenderAnimatedOpacity#56529@Offset(248.0, 80.0), RenderCustomSingleChildLayoutBox#4c75c@Offset(248.0, 158.0), _RenderLayoutBuilder#d2ff6@Offset(248.0, 158.0), RenderRepaintBoundary#54db9@Offset(248.0, 158.0), RenderIgnorePointer#621af@Offset(248.0, 158.0), RenderRepaintBoundary#815eb@Offset(248.0, 158.0), RenderSemanticsAnnotations#58d37@Offset(248.0, 158.0), RenderOffstage#c4f6f@Offset(248.0, 158.0), RenderSemanticsAnnotations#527a2@Offset(248.0, 158.0), _RenderTheater#460ea@Offset(248.0, 158.0), RenderAbsorbPointer#85849@Offset(248.0, 158.0), RenderPointerListener#2ef42@Offset(248.0, 158.0), RenderSemanticsAnnotations#11522@Offset(248.0, 158.0), RenderSemanticsAnnotations#8d200@Offset(248.0, 158.0), RenderSemanticsAnnotations#c9dbf@Offset(248.0, 158.0), RenderTapRegionSurface#631ff@Offset(248.0, 158.0), RenderSemanticsAnnotations#9b492@Offset(248.0, 158.0), RenderSemanticsAnnotations#5e87a@Offset(248.0, 158.0), RenderSemanticsAnnotations#4a96f@Offset(248.0, 158.0), HitTestEntry<HitTestTarget>#e3235(_ReusableRenderView#c81f1), HitTestEntry<HitTestTarget>#24f35(<AutomatedTestWidgetsFlutterBinding>))
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:1933:25)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1784:12)
+#2      WidgetController.tap (package:flutter_test/src/controller.dart:1032:18)
+#3      main.<anonymous closure> (file:///D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart:374:18)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:183:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1017:5)
+<asynchronous suspension>
+#6      StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+To silence this warning, pass "warnIfMissed: false" to "tap()".
+To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to true.
+
+00:33 +210 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:33 +211 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +212 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +213 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +214 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +215 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +216 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +217 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +218 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +219 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +220 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +221 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: date filter resets the page and keeps the search text
+00:34 +222 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout selected wide item uses the selected icon
+00:34 +223 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout selected wide item uses the selected icon
+00:34 +224 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout selected wide item uses the selected icon
+00:34 +225 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_theme_test.dart: MyTheme live path lightTheme and darkTheme text buttons keep 44px minimum height
+00:34 +226 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:34 +227 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:34 +228 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:34 +229 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:34 +230 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:34 +231 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:34 +232 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +233 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +234 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +235 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +236 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +237 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +238 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: shows jalali date, lower-bound duration, and clock rollback copy
+00:35 +239 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1024x600 en ThemeMode.system RaatikServicePhase.stopped
+00:35 +240 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout wide list with account stays plugin, account, printer, about
+00:35 +241 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: english locale uses gregorian dates and english duration copy
+00:35 +242 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: english locale uses gregorian dates and english duration copy
+00:35 +243 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout content stays centered beside the wide list
+00:36 +244 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout content stays centered beside the wide list
+00:36 +245 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: active row refreshes every 30 seconds only while visible
+00:36 +246 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: active row refreshes every 30 seconds only while visible
+00:37 +247 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: active row refreshes every 30 seconds only while visible
+00:37 +248 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +249 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +250 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +251 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +252 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +253 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +254 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +255 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +256 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:37 +257 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:38 +258 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:38 +259 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_settings_shell_test.dart: RaatikSettingsShell layout no horizontal overflow at 480, 800, or 1366
+00:38 +260 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +261 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +262 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +263 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +264 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +265 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +266 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +267 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +268 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +269 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +270 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +271 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +272 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +273 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +274 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +275 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +276 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +277 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +278 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +279 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +280 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +281 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +282 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +283 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +284 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +285 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +286 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +287 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +288 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +289 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +290 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +291 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +292 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:39 +293 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar toolbar actions are 44px targets
+00:40 +294 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a pasted Windows newline reaches the store as LF
+00:40 +295 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a pasted Windows newline reaches the store as LF
+00:40 +296 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a pasted Windows newline reaches the store as LF
+00:40 +297 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: a pasted Windows newline reaches the store as LF
+00:40 +298 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar 600px hides brand and keeps More/Disconnect outside scroll
+00:40 +299 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikRemoteToolbarBar 600px hides brand and keeps More/Disconnect outside scroll
+00:40 +300 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +301 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +302 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +303 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +304 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +305 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +306 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +307 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_window_chrome_test.dart: RaatikWindowBrand shows logo, title, and semantic label
+00:41 +308 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: revision conflict keeps the draft and does not save again
+00:41 +309 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: revision conflict keeps the draft and does not save again
+00:41 +310 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: revision conflict keeps the draft and does not save again
+00:41 +311 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_history_test.dart: revision conflict keeps the draft and does not save again
+00:41 +312 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar narrow toolbar uses a labelled overflow and keeps disconnect last
+00:42 +313 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar narrow toolbar uses a labelled overflow and keeps disconnect last
+00:42 +314 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar narrow toolbar uses a labelled overflow and keeps disconnect last
+00:42 +315 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar narrow toolbar uses a labelled overflow and keeps disconnect last
+00:42 +316 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar narrow toolbar uses a labelled overflow and keeps disconnect last
+00:42 +317 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.light RaatikServicePhase.starting
+00:42 +318 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar disabled tool ignores Enter and an enabled tool fires once
+00:43 +319 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar disabled tool ignores Enter and an enabled tool fires once
+00:43 +320 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.light RaatikServicePhase.ready
+00:43 +321 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar overflow menu takes focus and Enter runs the first item
+00:43 +322 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.light RaatikServicePhase.failed
+00:43 +323 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar escape closes the overflow menu without running an item
+00:43 +324 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.dark RaatikServicePhase.stopped
+00:43 +325 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar pointer activation runs an overflow item and closes the menu
+00:43 +326 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: RaatikSessionToolbar pointer activation runs an overflow item and closes the menu
+00:43 +327 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.dark RaatikServicePhase.connecting
+00:44 +328 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: closed menu entry takes overflow focus ahead of a later button
+00:44 +329 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.dark RaatikServicePhase.ready
+00:44 +330 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: opened overflow submenu keeps More up until an item is chosen
+00:45 +331 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.dark RaatikServicePhase.failed
+00:45 +332 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_toolbar_dialog_test.dart: escape closes an open overflow submenu before More
+00:45 +333 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.system RaatikServicePhase.stopped
+00:45 +334 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.system RaatikServicePhase.starting
+00:45 +335 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.system RaatikServicePhase.connecting
+00:45 +336 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.system RaatikServicePhase.ready
+00:46 +337 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1366x768 en ThemeMode.system RaatikServicePhase.failed
+00:46 +338 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.light RaatikServicePhase.stopped
+00:46 +339 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.light RaatikServicePhase.starting
+00:47 +340 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.light RaatikServicePhase.connecting
+00:47 +341 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.light RaatikServicePhase.ready
+00:47 +342 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.light RaatikServicePhase.failed
+00:47 +343 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.dark RaatikServicePhase.stopped
+00:47 +344 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.dark RaatikServicePhase.starting
+00:47 +345 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.dark RaatikServicePhase.connecting
+00:47 +346 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.dark RaatikServicePhase.ready
+00:47 +347 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.dark RaatikServicePhase.failed
+00:47 +348 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.system RaatikServicePhase.stopped
+00:48 +349 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.system RaatikServicePhase.starting
+00:48 +350 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.system RaatikServicePhase.connecting
+00:48 +351 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.system RaatikServicePhase.ready
+00:48 +352 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 fa ThemeMode.system RaatikServicePhase.failed
+00:48 +353 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.light RaatikServicePhase.stopped
+00:48 +354 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.light RaatikServicePhase.starting
+00:48 +355 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.light RaatikServicePhase.connecting
+00:49 +356 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.light RaatikServicePhase.ready
+00:49 +357 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.light RaatikServicePhase.failed
+00:49 +358 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.dark RaatikServicePhase.stopped
+00:49 +359 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.dark RaatikServicePhase.starting
+00:49 +360 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.dark RaatikServicePhase.connecting
+00:50 +361 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.dark RaatikServicePhase.ready
+00:50 +362 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.dark RaatikServicePhase.failed
+00:50 +363 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.system RaatikServicePhase.stopped
+00:50 +364 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.system RaatikServicePhase.starting
+00:50 +365 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.system RaatikServicePhase.connecting
+00:50 +366 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.system RaatikServicePhase.ready
+00:50 +367 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — home home 1920x1080 en ThemeMode.system RaatikServicePhase.failed
+00:50 +368 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 800x600 fa ThemeMode.light
+00:51 +369 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 800x600 fa ThemeMode.dark
+00:51 +370 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 800x600 fa ThemeMode.system
+00:51 +371 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 800x600 en ThemeMode.light
+00:51 +372 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 800x600 en ThemeMode.dark
+00:51 +373 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 800x600 en ThemeMode.system
+00:52 +374 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1024x600 fa ThemeMode.light
+00:52 +375 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1024x600 fa ThemeMode.dark
+00:52 +376 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1024x600 fa ThemeMode.system
+00:52 +377 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1024x600 en ThemeMode.light
+00:52 +378 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1024x600 en ThemeMode.dark
+00:52 +379 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1024x600 en ThemeMode.system
+00:52 +380 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1366x768 fa ThemeMode.light
+00:53 +381 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1366x768 fa ThemeMode.dark
+00:53 +382 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1366x768 fa ThemeMode.system
+00:53 +383 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1366x768 en ThemeMode.light
+00:53 +384 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1366x768 en ThemeMode.dark
+00:53 +385 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1366x768 en ThemeMode.system
+00:54 +386 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1920x1080 fa ThemeMode.light
+00:54 +387 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1920x1080 fa ThemeMode.dark
+00:54 +388 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1920x1080 fa ThemeMode.system
+00:54 +389 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1920x1080 en ThemeMode.light
+00:54 +390 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1920x1080 en ThemeMode.dark
+00:54 +391 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — settings settings 1920x1080 en ThemeMode.system
+00:54 +392 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 800x600 fa ThemeMode.light
+00:55 +393 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 800x600 fa ThemeMode.dark
+00:55 +394 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 800x600 fa ThemeMode.system
+00:55 +395 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 800x600 en ThemeMode.light
+00:55 +396 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 800x600 en ThemeMode.dark
+00:55 +397 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 800x600 en ThemeMode.system
+00:55 +398 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1024x600 fa ThemeMode.light
+00:55 +399 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1024x600 fa ThemeMode.dark
+00:55 +400 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1024x600 fa ThemeMode.system
+00:55 +401 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1024x600 en ThemeMode.light
+00:55 +402 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1024x600 en ThemeMode.dark
+00:56 +403 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1024x600 en ThemeMode.system
+00:56 +404 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1366x768 fa ThemeMode.light
+00:56 +405 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1366x768 fa ThemeMode.dark
+00:56 +406 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1366x768 fa ThemeMode.system
+00:56 +407 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1366x768 en ThemeMode.light
+00:56 +408 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1366x768 en ThemeMode.dark
+00:56 +409 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1366x768 en ThemeMode.system
+00:56 +410 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1920x1080 fa ThemeMode.light
+00:56 +411 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1920x1080 fa ThemeMode.dark
+00:56 +412 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1920x1080 fa ThemeMode.system
+00:56 +413 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1920x1080 en ThemeMode.light
+00:57 +414 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1920x1080 en ThemeMode.dark
+00:57 +415 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — toolbar toolbar 1920x1080 en ThemeMode.system
+00:57 +416 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 800x600 fa ThemeMode.light
+00:57 +417 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 800x600 fa ThemeMode.dark
+00:58 +418 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 800x600 fa ThemeMode.system
+00:58 +419 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 800x600 en ThemeMode.light
+00:59 +420 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 800x600 en ThemeMode.dark
+00:59 +421 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 800x600 en ThemeMode.system
+00:59 +422 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1024x600 fa ThemeMode.light
+01:00 +423 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1024x600 fa ThemeMode.dark
+01:00 +424 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1024x600 fa ThemeMode.system
+01:01 +425 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1024x600 en ThemeMode.light
+01:01 +426 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1024x600 en ThemeMode.dark
+01:02 +427 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1024x600 en ThemeMode.system
+01:02 +428 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1366x768 fa ThemeMode.light
+01:02 +429 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1366x768 fa ThemeMode.dark
+01:02 +430 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1366x768 fa ThemeMode.system
+01:03 +431 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1366x768 en ThemeMode.light
+01:03 +432 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1366x768 en ThemeMode.dark
+01:03 +433 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1366x768 en ThemeMode.system
+01:04 +434 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1920x1080 fa ThemeMode.light
+01:04 +435 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1920x1080 fa ThemeMode.dark
+01:04 +436 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1920x1080 fa ThemeMode.system
+01:04 +437 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1920x1080 en ThemeMode.light
+01:05 +438 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1920x1080 en ThemeMode.dark
+01:05 +439 -1: D:/Projects/RAATIK/RaatikRemote/rustdesk/flutter/test/raatik_responsive_matrix_test.dart: Raatik responsive matrix — preview app preview app 1920x1080 en ThemeMode.system
+01:05 +440 -1: Some tests failed.
+----
+exit: 1
+pubspec.lock.sha256.after: 5B1D1903F9B7E4D8EBAED2CC127EE16EEB60CB0B23CB490EE53825D174FBCBC3
+package_config.json.sha256.after: 1479FF18623C81B35310B29378837E01453FBEA217434DB6D13E376229E794BC
+lock_unchanged: True
+package_config_unchanged: True
+ended: 2026-11-09T22:12:01.2142133+03:30

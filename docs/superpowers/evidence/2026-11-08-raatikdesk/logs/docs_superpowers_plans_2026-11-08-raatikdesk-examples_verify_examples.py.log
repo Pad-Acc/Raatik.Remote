@@ -1,0 +1,8 @@
+started: 2026-11-09T22:10:59.1804343+03:30
+cwd: D:\Projects\RAATIK\RaatikRemote\rustdesk
+command: rtk proxy python docs/superpowers/plans/2026-11-08-raatikdesk-examples/verify_examples.py
+----
+PASS: 3 fixture files; 32 native visual cases; 20 functional cases; examples only.
+----
+exit: 0
+ended: 2026-11-09T22:10:59.4900627+03:30

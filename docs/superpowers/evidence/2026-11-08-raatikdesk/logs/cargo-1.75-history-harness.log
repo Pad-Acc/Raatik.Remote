@@ -1,0 +1,58 @@
+started: 2026-11-09T22:10:55.9043547+03:30
+cwd: D:\Projects\RAATIK\RaatikRemote\rustdesk\target\raatik-history-check
+command: rtk cargo +1.75.0 test --offline --lib raatik::history_tests -- --test-threads=1
+RUSTFLAGS: [--cfg raatik_history_harness]
+----
+    Blocking waiting for file lock on package cache
+    Finished test [unoptimized + debuginfo] target(s) in 3.74s
+     Running unittests src\lib.rs (target\debug\deps\raatik_history_check-678c4a654e4c1356.exe)
+
+running 42 tests
+test raatik::history_tests::corrupt_sibling_does_not_hide_good_record ... ok
+test raatik::history_tests::dead_owner_keeps_lower_bound ... ok
+test raatik::history_tests::drop_finalizes_when_session_index_is_weak ... ok
+test raatik::history_tests::drop_or_error_finalizes_interval ... ok
+test raatik::history_tests::dropped_forward_guard_finishes_parked_interval ... ok
+test raatik::history_tests::duplicate_peer_info_one_record ... ok
+test raatik::history_tests::failed_finish_stays_retryable_with_same_record ... ok
+test raatik::history_tests::failed_insert_retries_same_record ... ok
+test raatik::history_tests::failed_open_does_not_publish_cell_and_later_open_does ... ok
+test raatik::history_tests::failed_replace_keeps_previous_record ... ok
+test raatik::history_tests::finish_is_idempotent_and_keeps_note ... ok
+test raatik::history_tests::fixtures_round_trip ... ok
+test raatik::history_tests::future_schema_preserved ... ok
+test raatik::history_tests::insert_validates_record_and_query_limits ... ok
+test raatik::history_tests::note_revision_conflict ... ok
+test raatik::history_tests::note_scalar_limits_and_blank_clearing ... ok
+test raatik::history_tests::note_survives_checkpoint ... ok
+test raatik::history_tests::one_retry_parks_each_failed_forward_start ... ok
+test raatik::history_tests::port_forward_logs_each_authenticated_transport ... ok
+test raatik::history_tests::reconnect_excludes_wait_time ... ok
+test raatik::history_tests::retried_interval_adopts_into_empty_transport_slot ... ok
+test raatik::history_tests::same_start_sorts_by_record_id ... ok
+test raatik::history_tests::search_normalizes_digits_and_arabic_letters_without_changing_display ... ok
+test raatik::history_tests::sibling_checkpoint_failure_keeps_warning_until_retry ... ok
+test raatik::history_tests::sibling_finish_failure_keeps_warning_until_retry ... ok
+test raatik::history_tests::sibling_forward_park_ids_stay_independent ... ok
+test raatik::history_tests::sibling_insert_failure_keeps_warning_until_retry ... ok
+test raatik::history_tests::stale_disconnect_leaves_new_round_active ... ok
+test raatik::history_tests::successful_sibling_keeps_failed_forward_pending ... ok
+test raatik::history_tests::two_process_writers ... ok
+test raatik::history_tests::unauthenticated_transport_has_no_history ... ok
+test raatik::history_tests::unknown_owner_is_not_dead ... ok
+test raatik::history_tests::wall_clock_rollback_keeps_elapsed ... ok
+test raatik::history_tests::warning_is_per_session_and_retry_reopens ... ok
+test raatik::history_tests::windows_owner_probe_creation_time ... ok
+test raatik::history_tests::wire_fixture_query_get_and_note_steps ... ok
+test raatik::history_tests::wire_note_scalar_limit_and_plain_text ... ok
+test raatik::history_tests::wire_oversized_note_conflict_and_disk_full_keep_bytes ... ok
+test raatik::history_tests::wire_query_reports_warnings_and_root_io_without_an_empty_success ... ok
+test raatik::history_tests::wire_refresh_recovers_dead_owner_without_inventing_an_end ... ok
+test raatik::history_tests::wire_rejects_invalid_json_unknown_keys_and_bounds ... ok
+test raatik::history_tests::writer_process_helper ... ok
+
+test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.47s
+
+----
+exit: 0
+ended: 2026-11-09T22:11:08.7815432+03:30
