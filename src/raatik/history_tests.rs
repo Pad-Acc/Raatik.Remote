@@ -1,7 +1,7 @@
 use super::history::{
-    admit_peer_info, finish_round, history_save_warning, note_approval_canceled,
-    note_login_failure, retry_history_save, snapshot_peer_name, HistoryInterval, OwnerIdentity,
-    HISTORY_SAVE_WARNING_ACTION, HISTORY_SAVE_WARNING_TEXT,
+    admit_peer_info, finish_round, history_save_warning, history_wire, note_approval_canceled,
+    note_login_failure, retry_history_save, snapshot_peer_name, HistoryInterval, HistoryPage,
+    OwnerIdentity, HISTORY_SAVE_WARNING_ACTION, HISTORY_SAVE_WARNING_TEXT,
 };
 use super::history_store::{
     checkpoint_after_barrier, process_creation_filetime, set_history_fault, HistoryFault,
@@ -2400,4 +2400,335 @@ fn sibling_checkpoint_failure_keeps_warning_until_retry() {
     drop(interval_b);
     super::history::reset_history_sessions();
     drop(root);
+}
+
+fn wire_query(search: &str, from: Option<i64>, to: Option<i64>, offset: u32, limit: u32) -> String {
+    serde_json::json!({
+        "search": search,
+        "from_utc_ms": from,
+        "to_utc_ms": to,
+        "offset": offset,
+        "limit": limit,
+    })
+    .to_string()
+}
+
+struct DeadProbe;
+
+impl OwnerProbe for DeadProbe {
+    fn state(&self, _pid: u32, _started_at: u64) -> OwnerState {
+        OwnerState::Dead
+    }
+}
+
+#[test]
+fn wire_rejects_invalid_json_unknown_keys_and_bounds() {
+    assert_eq!(
+        history_wire::parse_query_json("{").unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::parse_query_json("[]").unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::parse_query_json("").unwrap_err(),
+        "invalid_query"
+    );
+    let unknown =
+        r#"{"search":"","from_utc_ms":null,"to_utc_ms":null,"offset":0,"limit":20,"extra":true}"#;
+    assert_eq!(
+        history_wire::parse_query_json(unknown).unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::parse_query_json(
+            r#"{"from_utc_ms":null,"to_utc_ms":null,"offset":0,"limit":20}"#
+        )
+        .unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::parse_query_json(
+            r#"{"search":null,"from_utc_ms":null,"to_utc_ms":null,"offset":0,"limit":20}"#
+        )
+        .unwrap_err(),
+        "invalid_query"
+    );
+    for raw in [
+        wire_query("", None, None, 0, 0),
+        wire_query("", None, None, 0, 101),
+        wire_query("", Some(5), Some(5), 0, 20),
+        wire_query("", Some(6), Some(5), 0, 20),
+        wire_query(&"a".repeat(257), None, None, 0, 20),
+    ] {
+        assert_eq!(
+            history_wire::parse_query_json(&raw).unwrap_err(),
+            "invalid_query",
+            "{raw}"
+        );
+    }
+    assert_eq!(
+        history_wire::parse_query_json(
+            r#"{"search":"","from_utc_ms":null,"to_utc_ms":null,"offset":-1,"limit":20}"#
+        )
+        .unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::parse_query_json(
+            r#"{"search":"","from_utc_ms":null,"to_utc_ms":null,"offset":4294967296,"limit":20}"#
+        )
+        .unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::parse_query_json(
+            r#"{"search":"","from_utc_ms":null,"to_utc_ms":null,"offset":1.5,"limit":20}"#
+        )
+        .unwrap_err(),
+        "invalid_query"
+    );
+    assert!(history_wire::parse_query_json(&wire_query("", None, None, 0, 100)).is_ok());
+    assert!(
+        history_wire::parse_query_json(&wire_query(&"a".repeat(256), None, None, u32::MAX, 1))
+            .is_ok()
+    );
+    assert_eq!(
+        history_wire::history_access(false, false).unwrap_err(),
+        "history_unavailable"
+    );
+    assert_eq!(
+        history_wire::history_access(false, true).unwrap_err(),
+        "history_unavailable"
+    );
+    assert_eq!(
+        history_wire::history_access(true, true).unwrap_err(),
+        "history_unavailable"
+    );
+    assert!(history_wire::history_access(true, false).is_ok());
+}
+
+#[test]
+fn wire_note_scalar_limit_and_plain_text() {
+    assert_eq!(
+        history_wire::note_for_wire(&"ا".repeat(2001)).unwrap_err(),
+        "invalid_note"
+    );
+    assert_eq!(
+        history_wire::note_for_wire(&"\u{1F600}".repeat(2001)).unwrap_err(),
+        "invalid_note"
+    );
+    assert_eq!(
+        history_wire::note_for_wire("ok\u{0001}").unwrap_err(),
+        "invalid_note"
+    );
+    assert_eq!(
+        history_wire::note_for_wire(&"ا".repeat(2000))
+            .unwrap()
+            .chars()
+            .count(),
+        2000
+    );
+    assert_eq!(history_wire::note_for_wire("a\r\nb").unwrap(), "a\nb");
+    assert_eq!(history_wire::note_for_wire(" \t ").unwrap(), "");
+    assert_eq!(
+        history_wire::note_for_wire("پیگیری\tفردا").unwrap(),
+        "پیگیری\tفردا"
+    );
+}
+
+#[test]
+fn wire_fixture_query_get_and_note_steps() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = open_store(root.path());
+    let file = fixtures();
+    for record in &file.records {
+        store.insert(record).unwrap();
+    }
+    for query in &file.queries {
+        let raw = serde_json::to_string(&query.input).unwrap();
+        let encoded = history_wire::query_with(&store, &raw).expect("fixture query");
+        let page: HistoryPage = serde_json::from_str(&encoded).unwrap();
+        assert_eq!(page.total, query.expected_total);
+        let ids: Vec<_> = page
+            .records
+            .iter()
+            .map(|record| record.record_id.as_str())
+            .collect();
+        assert_eq!(
+            ids,
+            query
+                .expected_ids
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>()
+        );
+        assert!(!encoded.contains("password"));
+    }
+    let got = history_wire::get_with(&store, COMPLETED_ID).unwrap();
+    let record: HistoryRecord = serde_json::from_str(&got).unwrap();
+    assert_eq!(record.record_id, COMPLETED_ID);
+    assert_eq!(record.note, "");
+    assert_eq!(
+        history_wire::get_with(&store, "not-a-uuid").unwrap_err(),
+        "invalid_query"
+    );
+    assert_eq!(
+        history_wire::get_with(&store, "99999999-9999-4999-8999-999999999999").unwrap_err(),
+        "not_found"
+    );
+
+    for step in &file.note_steps {
+        let result = history_wire::save_note_with(
+            &store,
+            &step.record_id,
+            step.expected_revision,
+            &step.note,
+        );
+        match &step.error {
+            Some(code) => assert_eq!(result.unwrap_err(), code.as_str()),
+            None => {
+                let updated: HistoryRecord = serde_json::from_str(&result.unwrap()).unwrap();
+                assert_eq!(updated.note_revision, step.result_revision.unwrap());
+                if step.note.chars().all(|c| c.is_whitespace()) {
+                    assert_eq!(updated.note, "");
+                } else {
+                    assert_eq!(updated.note, step.note);
+                }
+            }
+        }
+    }
+    let kept = store.get(COMPLETED_ID).unwrap();
+    assert_eq!(kept.note, "");
+    assert_eq!(kept.note_revision, 2);
+}
+
+#[test]
+fn wire_oversized_note_conflict_and_disk_full_keep_bytes() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = open_store(root.path());
+    let record = record_by_id(&fixtures(), COMPLETED_ID);
+    store.insert(&record).unwrap();
+    let before = fs::read(record_file(root.path(), COMPLETED_ID)).unwrap();
+
+    let too_long = history_wire::save_note_with(&store, COMPLETED_ID, 0, &"ن".repeat(2001));
+    assert_eq!(too_long.unwrap_err(), "invalid_note");
+    assert_eq!(
+        fs::read(record_file(root.path(), COMPLETED_ID)).unwrap(),
+        before
+    );
+
+    let saved = history_wire::save_note_with(&store, COMPLETED_ID, 0, "پیگیری فردا").unwrap();
+    let updated: HistoryRecord = serde_json::from_str(&saved).unwrap();
+    assert_eq!(updated.note_revision, 1);
+    let accepted =
+        history_wire::save_note_with(&store, COMPLETED_ID, 1, &"ب".repeat(2000)).unwrap();
+    let long_note: HistoryRecord = serde_json::from_str(&accepted).unwrap();
+    assert_eq!(long_note.note.chars().count(), 2000);
+    assert_eq!(long_note.note_revision, 2);
+    let same = history_wire::save_note_with(&store, COMPLETED_ID, 2, &"ب".repeat(2000)).unwrap();
+    let unchanged: HistoryRecord = serde_json::from_str(&same).unwrap();
+    assert_eq!(unchanged.note_revision, 2);
+
+    let conflict = history_wire::save_note_with(&store, COMPLETED_ID, 0, "قدیمی");
+    assert_eq!(conflict.unwrap_err(), "note_conflict");
+    let disk = store.get(COMPLETED_ID).unwrap();
+    assert_eq!(disk.note.chars().count(), 2000);
+    assert_eq!(disk.note_revision, 2);
+
+    let previous = fs::read(record_file(root.path(), COMPLETED_ID)).unwrap();
+    let io = {
+        let _fault = FaultGuard::arm(HistoryFault::Replace);
+        history_wire::save_note_with(&store, COMPLETED_ID, 2, "بعد از پر شدن دیسک")
+    };
+    let err = io.unwrap_err();
+    assert_eq!(err, "history_io");
+    assert!(!err.contains('\\'));
+    assert!(!err.contains(root.path().to_string_lossy().as_ref()));
+    assert_eq!(
+        fs::read(record_file(root.path(), COMPLETED_ID)).unwrap(),
+        previous
+    );
+    assert_eq!(store.get(COMPLETED_ID).unwrap().note_revision, 2);
+}
+
+#[test]
+fn wire_query_reports_warnings_and_root_io_without_an_empty_success() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = open_store(root.path());
+    let good = record_by_id(&fixtures(), COMPLETED_ID);
+    store.insert(&good).unwrap();
+    let future_id = "44444444-4444-4444-8444-444444444444";
+    let future_path = record_file(root.path(), future_id);
+    let future_bytes =
+        b"{\n  \"schema\": 2,\n  \"record_id\": \"44444444-4444-4444-8444-444444444444\"\n}\n";
+    fs::write(&future_path, future_bytes).unwrap();
+    fs::write(
+        record_file(root.path(), "55555555-5555-4555-8555-555555555555"),
+        b"\xff",
+    )
+    .unwrap();
+
+    let encoded = history_wire::query_with(&store, &wire_query("", None, None, 0, 20)).unwrap();
+    let page: HistoryPage = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(page.total, 1);
+    assert_eq!(page.records[0].record_id, COMPLETED_ID);
+    assert_eq!(
+        page.warnings,
+        vec![
+            "unreadable_records".to_string(),
+            "future_schema".to_string()
+        ]
+    );
+    assert!(!encoded.contains("بعضی از سابقه‌ها"));
+    assert_eq!(fs::read(&future_path).unwrap(), future_bytes);
+    assert_eq!(
+        history_wire::get_with(&store, future_id).unwrap_err(),
+        "future_schema"
+    );
+    assert_eq!(
+        history_wire::save_note_with(&store, future_id, 0, "پیگیری فردا").unwrap_err(),
+        "future_schema"
+    );
+    assert_eq!(fs::read(&future_path).unwrap(), future_bytes);
+
+    let offset =
+        history_wire::query_with(&store, &wire_query("", None, None, u32::MAX, 20)).unwrap();
+    let offset_page: HistoryPage = serde_json::from_str(&offset).unwrap();
+    assert!(offset_page.records.is_empty());
+    assert!(offset_page.total >= 1);
+
+    let path = root.path().to_path_buf();
+    fs::remove_dir_all(&path).unwrap();
+    fs::write(&path, b"not-a-directory").unwrap();
+    let err = history_wire::query_with(&store, &wire_query("", None, None, 0, 20)).unwrap_err();
+    assert_eq!(err, "history_io");
+    assert!(!err.contains("not-a-directory"));
+    let blocked = HistoryStore::open(path.clone());
+    assert!(matches!(blocked, Err(HistoryError::Io)));
+    fs::remove_file(&path).unwrap();
+}
+
+#[test]
+fn wire_refresh_recovers_dead_owner_without_inventing_an_end() {
+    let _guard = lock_tests();
+    let root = TempRoot::new();
+    let store = open_store(root.path());
+    let active = record_by_id(&fixtures(), ACTIVE_ID);
+    store.insert(&active).unwrap();
+    let encoded =
+        history_wire::query_refresh(&store, &DeadProbe, &wire_query("", None, None, 0, 20))
+            .unwrap();
+    let page: HistoryPage = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(page.records.len(), 1);
+    assert_eq!(page.records[0].status, "interrupted");
+    assert_eq!(page.records[0].ended_at_utc_ms, None);
+    assert_eq!(page.records[0].elapsed_ms, active.elapsed_ms);
+    let stored = store.get(ACTIVE_ID).unwrap();
+    assert_eq!(stored.status, "interrupted");
+    assert_eq!(stored.ended_at_utc_ms, None);
 }

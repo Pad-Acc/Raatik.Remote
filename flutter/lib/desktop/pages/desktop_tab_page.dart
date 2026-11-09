@@ -6,6 +6,8 @@ import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
+import 'package:flutter_hbb/raatik/history/history_page.dart';
+import 'package:flutter_hbb/raatik/history/history_repository.dart';
 import 'package:flutter_hbb/raatik/navigation/app_shell.dart';
 import 'package:get/get.dart';
 import 'package:window_manager/window_manager.dart';
@@ -70,6 +72,9 @@ class _DesktopTabPageState extends State<DesktopTabPage> {
         key: const ValueKey(kTabLabelSettingPage),
         initialTabkey: SettingsTabKey.general,
       ),
+      history: raatikHistoryEnabled(incomingOnly: _incomingOnly)
+          ? const RaatikHistoryPage(repository: FfiHistoryRepository())
+          : null,
     );
     tabController.add(TabInfo(
         key: kTabLabelHomePage,

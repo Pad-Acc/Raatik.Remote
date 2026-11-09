@@ -9,6 +9,8 @@ use std::{
 };
 use uuid::Uuid;
 
+pub(crate) mod history_wire;
+
 pub(crate) const MAX_RECORD_BYTES: usize = 32_768;
 pub(crate) const MAX_NOTE_SCALARS: usize = 2_000;
 const MAX_PEER_ID_SCALARS: usize = 1_024;
@@ -1518,4 +1520,67 @@ fn history_warn(message: impl std::fmt::Display) {
     hbb_common::log::warn!("{}", message);
     #[cfg(raatik_history_harness)]
     let _ = message;
+}
+
+#[cfg(not(raatik_history_harness))]
+pub fn query_history_for_ui(query_json: String) -> Result<String, String> {
+    match ui_store()? {
+        Some(store) => history_wire::query_refresh(
+            &store,
+            &super::history_store::WindowsOwnerProbe,
+            &query_json,
+        ),
+        None => Err(history_wire::CODE_UNAVAILABLE.to_string()),
+    }
+}
+
+#[cfg(not(raatik_history_harness))]
+pub fn get_history_for_ui(record_id: String) -> Result<String, String> {
+    match ui_store()? {
+        Some(store) => history_wire::get_with(&store, &record_id),
+        None => Err(history_wire::CODE_UNAVAILABLE.to_string()),
+    }
+}
+
+#[cfg(not(raatik_history_harness))]
+pub fn save_history_note_for_ui(
+    record_id: String,
+    expected_revision: u64,
+    note: String,
+) -> Result<String, String> {
+    match ui_store()? {
+        Some(store) => history_wire::save_note_with(&store, &record_id, expected_revision, &note),
+        None => Err(history_wire::CODE_UNAVAILABLE.to_string()),
+    }
+}
+
+#[cfg(not(raatik_history_harness))]
+fn ui_store() -> Result<Option<Arc<super::history_store::HistoryStore>>, String> {
+    if history_wire::history_access(cfg!(windows), history_service_session()).is_err() {
+        return Ok(None);
+    }
+    open_ui_store()
+}
+
+#[cfg(all(not(raatik_history_harness), windows))]
+fn history_service_session() -> bool {
+    crate::platform::is_root()
+}
+
+#[cfg(all(not(raatik_history_harness), not(windows)))]
+fn history_service_session() -> bool {
+    false
+}
+
+#[cfg(all(not(raatik_history_harness), windows))]
+fn open_ui_store() -> Result<Option<Arc<super::history_store::HistoryStore>>, String> {
+    match interactive_open("history-ui") {
+        Ok(store) => Ok(Some(store)),
+        Err(err) => Err(history_wire::store_failure_code(err).to_string()),
+    }
+}
+
+#[cfg(all(not(raatik_history_harness), not(windows)))]
+fn open_ui_store() -> Result<Option<Arc<super::history_store::HistoryStore>>, String> {
+    Ok(None)
 }

@@ -11,7 +11,7 @@ use crate::{
     input::*,
     ui_interface::{self, *},
 };
-use flutter_rust_bridge::{StreamSink, SyncReturn};
+use flutter_rust_bridge::{frb, StreamSink, SyncReturn};
 #[cfg(feature = "plugin_framework")]
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use hbb_common::allow_err;
@@ -2484,6 +2484,26 @@ pub fn is_incoming_only() -> SyncReturn<bool> {
 
 pub fn is_outgoing_only() -> SyncReturn<bool> {
     SyncReturn(config::is_outgoing_only())
+}
+
+/// Disk work runs on FRB's async worker. Do not wrap these in `SyncReturn`.
+#[frb]
+pub fn raatik_history_query(query_json: String) -> Result<String, String> {
+    crate::raatik::query_history_for_ui(query_json)
+}
+
+#[frb]
+pub fn raatik_history_get(record_id: String) -> Result<String, String> {
+    crate::raatik::get_history_for_ui(record_id)
+}
+
+#[frb]
+pub fn raatik_history_save_note(
+    record_id: String,
+    expected_revision: u64,
+    note: String,
+) -> Result<String, String> {
+    crate::raatik::save_history_note_for_ui(record_id, expected_revision, note)
 }
 
 pub fn is_custom_client() -> SyncReturn<bool> {

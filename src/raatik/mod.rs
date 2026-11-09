@@ -18,4 +18,6 @@ pub use history::{
     HistoryError, HistoryInterval, HistoryPage, HistoryQuery, HistoryRecord, HistorySaveWarning,
     OwnerIdentity, OwnerProbe, OwnerState,
 };
+#[cfg(not(raatik_history_harness))]
+pub use history::{get_history_for_ui, query_history_for_ui, save_history_note_for_ui};
 pub use history_store::{HistoryStore, WindowsOwnerProbe};
