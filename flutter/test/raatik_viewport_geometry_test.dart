@@ -20,7 +20,8 @@ void main() {
   });
 
   test('fit table and pointer samples', () {
-    final wide = fitRemoteViewport(const Size(1000, 600), const Size(1920, 1080))!;
+    final wide =
+        fitRemoteViewport(const Size(1000, 600), const Size(1920, 1080))!;
     _expectRemote(
       remotePointFromViewport(
         localPosition: const Offset(500, 300),
@@ -32,7 +33,8 @@ void main() {
       const Offset(960, 540),
     );
 
-    final tall = fitRemoteViewport(const Size(600, 1000), const Size(1920, 1080))!;
+    final tall =
+        fitRemoteViewport(const Size(600, 1000), const Size(1920, 1080))!;
     expect(tall.scale, closeTo(0.3125, 1e-9));
     expect(tall.offset.dx, 0);
     expect(tall.offset.dy, closeTo(331.25, 1e-9));
@@ -47,7 +49,8 @@ void main() {
       const Offset(960, 540),
     );
 
-    final same = fitRemoteViewport(const Size(1280, 720), const Size(1280, 720))!;
+    final same =
+        fitRemoteViewport(const Size(1280, 720), const Size(1280, 720))!;
     expect(same.scale, 1);
     expect(same.offset, Offset.zero);
     _expectRemote(
@@ -91,7 +94,8 @@ void main() {
   });
 
   test('nonfinite or nonpositive dimensions are rejected', () {
-    expect(fitRemoteViewport(const Size(double.nan, 10), const Size(10, 10)), isNull);
+    expect(fitRemoteViewport(const Size(double.nan, 10), const Size(10, 10)),
+        isNull);
     expect(
       fitRemoteViewport(const Size(double.infinity, 10), const Size(10, 10)),
       isNull,
@@ -919,5 +923,221 @@ void main() {
       onChangeQuality: () => log.add('quality'),
     );
     expect(log, ['image', 'viewport', 'style']);
+  });
+
+  test('superseded fit decision follows the captured size', () {
+    const captured = Size(640, 672);
+    const newer = Size(900, 700);
+
+    RaatikSupersededFitDecision decide({
+      bool mounted = true,
+      Size? latest,
+      Size? measuredViewport,
+      Size? fitCommittedFor,
+    }) {
+      return decideSupersededMeasuredFit(
+        mounted: mounted,
+        captured: captured,
+        latest: latest,
+        measuredViewport: measuredViewport,
+        fitCommittedFor: fitCommittedFor,
+      );
+    }
+
+    final same = decide(
+      latest: captured,
+      measuredViewport: captured,
+      fitCommittedFor: captured,
+    );
+    expect(same.refresh, isTrue);
+    expect(same.drop, RaatikSupersededFitDrop.none);
+
+    final notStoredYet = decide(
+      latest: newer,
+      measuredViewport: captured,
+      fitCommittedFor: captured,
+    );
+    expect(notStoredYet.refresh, isFalse);
+    expect(
+      notStoredYet.drop,
+      RaatikSupersededFitDrop.clearViewportAndCommit,
+    );
+
+    final commitOnly = decide(
+      latest: newer,
+      measuredViewport: newer,
+      fitCommittedFor: captured,
+    );
+    expect(commitOnly.refresh, isFalse);
+    expect(commitOnly.drop, RaatikSupersededFitDrop.clearCommitOnly);
+
+    final alreadyReplaced = decide(
+      latest: newer,
+      measuredViewport: newer,
+      fitCommittedFor: newer,
+    );
+    expect(alreadyReplaced.refresh, isFalse);
+    expect(alreadyReplaced.drop, RaatikSupersededFitDrop.none);
+
+    final unmounted = decide(
+      mounted: false,
+      latest: newer,
+      measuredViewport: captured,
+      fitCommittedFor: captured,
+    );
+    expect(unmounted.refresh, isFalse);
+    expect(unmounted.drop, RaatikSupersededFitDrop.none);
+
+    final kept = applySupersededMeasuredFitDrop(
+      viewport: captured,
+      committed: captured,
+      drop: RaatikSupersededFitDrop.none,
+    );
+    expect(kept.viewport, captured);
+    expect(kept.committed, captured);
+    final cleared = applySupersededMeasuredFitDrop(
+      viewport: captured,
+      committed: captured,
+      drop: RaatikSupersededFitDrop.clearViewportAndCommit,
+    );
+    expect(cleared.viewport, isNull);
+    expect(cleared.committed, isNull);
+    final commitCleared = applySupersededMeasuredFitDrop(
+      viewport: newer,
+      committed: captured,
+      drop: RaatikSupersededFitDrop.clearCommitOnly,
+    );
+    expect(commitCleared.viewport, newer);
+    expect(commitCleared.committed, isNull);
+  });
+
+  test('superseded measurement drops only the captured fit', () async {
+    const captured = Size(640, 672);
+    const newer = Size(900, 700);
+
+    Future<void> check({
+      required bool mounted,
+      required Size? latest,
+      required Size? viewportAfterStyle,
+      required Size? committedAfterStyle,
+      required bool refresh,
+      required RaatikSupersededFitDrop? drop,
+      required Size? viewport,
+      required Size? committed,
+    }) async {
+      final log = <String>[];
+      final drops = <RaatikSupersededFitDrop>[];
+      Size? stored = captured;
+      Size? fit;
+      var resolutions = 0;
+      var qualities = 0;
+      await applyMeasuredViewportSize(
+        size: captured,
+        updateImageWidgetSize: (_) => log.add('image'),
+        updateViewportSize: (size) {
+          log.add('viewport');
+          stored = size;
+          fit = null;
+        },
+        updateViewStyle: () async {
+          log.add('style');
+          stored = viewportAfterStyle;
+          fit = committedAfterStyle;
+        },
+        stillMounted: () => mounted,
+        latestSize: () => latest,
+        measuredViewport: () => stored,
+        fitCommittedFor: () => fit,
+        dropSupersededFit: (action) {
+          log.add('drop');
+          drops.add(action);
+          final next = applySupersededMeasuredFitDrop(
+            viewport: stored,
+            committed: fit,
+            drop: action,
+          );
+          stored = next.viewport;
+          fit = next.committed;
+        },
+        refresh: () => log.add('refresh'),
+        onChangeResolution: () => resolutions += 1,
+        onChangeQuality: () => qualities += 1,
+      );
+      expect(resolutions, 0);
+      expect(qualities, 0);
+      expect(log, [
+        'image',
+        'viewport',
+        'style',
+        if (drop != null) 'drop',
+        if (refresh) 'refresh',
+      ]);
+      expect(drops, drop == null ? isEmpty : [drop]);
+      expect(stored, viewport);
+      expect(fit, committed);
+    }
+
+    var ignored = false;
+    await applyMeasuredViewportSize(
+      size: Size.zero,
+      updateImageWidgetSize: (_) => ignored = true,
+      updateViewportSize: (_) => ignored = true,
+      updateViewStyle: () async => ignored = true,
+      refresh: () => ignored = true,
+      latestSize: () => newer,
+      dropSupersededFit: (_) => ignored = true,
+    );
+    expect(ignored, isFalse);
+
+    await check(
+      mounted: true,
+      latest: captured,
+      viewportAfterStyle: captured,
+      committedAfterStyle: captured,
+      refresh: true,
+      drop: null,
+      viewport: captured,
+      committed: captured,
+    );
+    await check(
+      mounted: true,
+      latest: newer,
+      viewportAfterStyle: captured,
+      committedAfterStyle: captured,
+      refresh: false,
+      drop: RaatikSupersededFitDrop.clearViewportAndCommit,
+      viewport: null,
+      committed: null,
+    );
+    await check(
+      mounted: true,
+      latest: newer,
+      viewportAfterStyle: newer,
+      committedAfterStyle: captured,
+      refresh: false,
+      drop: RaatikSupersededFitDrop.clearCommitOnly,
+      viewport: newer,
+      committed: null,
+    );
+    await check(
+      mounted: true,
+      latest: newer,
+      viewportAfterStyle: newer,
+      committedAfterStyle: newer,
+      refresh: false,
+      drop: null,
+      viewport: newer,
+      committed: newer,
+    );
+    await check(
+      mounted: false,
+      latest: newer,
+      viewportAfterStyle: captured,
+      committedAfterStyle: captured,
+      refresh: false,
+      drop: null,
+      viewport: captured,
+      committed: captured,
+    );
   });
 }

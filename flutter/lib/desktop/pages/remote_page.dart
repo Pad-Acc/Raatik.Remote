@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_hbb/models/state_model.dart';
@@ -708,10 +707,10 @@ class _RemotePageState extends State<RemotePage>
   bool get wantKeepAlive => true;
 }
 
-/// A widget that tracks the view size and updates CanvasModel.updateViewStyle()
-/// and InputModel.updateImageWidgetSize() only when size actually changes.
-/// This avoids scheduling post-frame callbacks on every LayoutBuilder rebuild.
-class _ViewStyleUpdater extends StatefulWidget {
+/// Tracks the image viewport and applies only the latest size.
+/// Dispose clears the stored viewport. A superseded fit is dropped by
+/// [RaatikViewStyleUpdater] after view style returns.
+class _ViewStyleUpdater extends StatelessWidget {
   final CanvasModel canvasModel;
   final InputModel inputModel;
   final Widget child;
@@ -724,54 +723,22 @@ class _ViewStyleUpdater extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<_ViewStyleUpdater> createState() => _ViewStyleUpdaterState();
-}
-
-class _ViewStyleUpdaterState extends State<_ViewStyleUpdater> {
-  Size? _lastSize;
-  bool _callbackScheduled = false;
-
-  @override
-  void dispose() {
-    widget.canvasModel.clearViewportSize();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final newSize = Size(constraints.maxWidth, constraints.maxHeight);
-        // Ignore zero, NaN, and infinity. Apply only the latest size after layout.
-        if (!isUsableViewportSize(newSize)) {
-          return widget.child;
+    return RaatikViewStyleUpdater(
+      onDispose: canvasModel.clearViewportSize,
+      updateImageWidgetSize: inputModel.updateImageWidgetSize,
+      updateViewportSize: canvasModel.updateViewportSize,
+      updateViewStyle: () =>
+          canvasModel.updateViewStyle(refreshMousePos: false),
+      measuredViewport: () => canvasModel.measuredViewport,
+      fitCommittedFor: () => canvasModel.measuredFitCommittedFor,
+      dropSupersededFit: canvasModel.dropSupersededMeasuredFit,
+      refresh: () {
+        if (!isMobile) {
+          inputModel.refreshMousePos();
         }
-        if (_lastSize != newSize) {
-          _lastSize = newSize;
-          if (!_callbackScheduled) {
-            _callbackScheduled = true;
-            SchedulerBinding.instance.addPostFrameCallback((_) async {
-              _callbackScheduled = false;
-              final currentSize = _lastSize;
-              if (!mounted || currentSize == null) return;
-              await applyMeasuredViewportSize(
-                size: currentSize,
-                updateImageWidgetSize: widget.inputModel.updateImageWidgetSize,
-                updateViewportSize: widget.canvasModel.updateViewportSize,
-                updateViewStyle: () =>
-                    widget.canvasModel.updateViewStyle(refreshMousePos: false),
-                stillMounted: () => mounted,
-                refresh: () {
-                  if (!isMobile) {
-                    widget.inputModel.refreshMousePos();
-                  }
-                },
-              );
-            });
-          }
-        }
-        return widget.child;
       },
+      child: child,
     );
   }
 }

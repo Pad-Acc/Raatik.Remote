@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/remote/viewport_geometry.dart';
 import 'package:flutter_hbb/raatik/toolbar/remote_toolbar_bar.dart';
@@ -24,9 +23,20 @@ class _InputSpy {
 
   void viewport(Size size) => log.add('viewport');
 
-  Future<void> style() async => log.add('style');
+  Future<void> style() async {
+    log.add('style');
+    final hook = duringStyle;
+    if (hook != null) {
+      await hook();
+    }
+  }
 
   void refresh() => log.add('refresh');
+
+  final List<RaatikSupersededFitDrop> drops = [];
+  Size? measuredViewport;
+  Size? fitCommittedFor;
+  Future<void> Function()? duringStyle;
 
   void changeResolution() => resolution += 1;
 
@@ -54,88 +64,123 @@ class _ImageProbe extends StatefulWidget {
   State<_ImageProbe> createState() => _ImageProbeState();
 }
 
-class _ImageProbeState extends State<_ImageProbe> {
-  Size? _lastSize;
-  bool _scheduled = false;
+class _MeasuredFit {
+  Size? viewport;
+  Size? committed;
+  Size? pending;
 
-  void _offer(Size size) {
-    if (!isUsableViewportSize(size) || _lastSize == size) return;
-    _lastSize = size;
-    if (_scheduled) return;
-    _scheduled = true;
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _scheduled = false;
-      final current = _lastSize;
-      if (!mounted || current == null) return;
-      await applyMeasuredViewportSize(
-        size: current,
-        updateImageWidgetSize: widget.spy.image,
-        updateViewportSize: widget.spy.viewport,
-        updateViewStyle: widget.spy.style,
-        refresh: widget.spy.refresh,
-        onChangeResolution: widget.spy.changeResolution,
-        onChangeQuality: widget.spy.changeQuality,
-      );
-    });
+  void store(Size size) {
+    pending = size;
+    if (viewport != size) {
+      committed = null;
+    }
+    viewport = size;
+  }
+
+  void commitPending() {
+    if (viewport != null && viewport == pending) {
+      committed = pending;
+    }
+  }
+
+  void applyDrop(RaatikSupersededFitDrop drop) {
+    final next = applySupersededMeasuredFitDrop(
+      viewport: viewport,
+      committed: committed,
+      drop: drop,
+    );
+    viewport = next.viewport;
+    committed = next.committed;
+  }
+}
+
+class _ImageProbeState extends State<_ImageProbe> {
+  final _MeasuredFit _fit = _MeasuredFit();
+
+  void _publish() {
+    widget.spy.measuredViewport = _fit.viewport;
+    widget.spy.fitCommittedFor = _fit.committed;
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = Size(constraints.maxWidth, constraints.maxHeight);
-        _offer(size);
-        final geometry = geometryForViewStyle(
-          style: widget.viewStyle,
-          viewport: size,
-          remote: widget.remoteSize,
-          customScale: widget.customScale,
-          devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-        );
-        return SizedBox.expand(
-          child: Listener(
-            onPointerSignal: (event) {
-              if (event is PointerScrollEvent) {
-                widget.spy.wheels.add(event.scrollDelta);
-              }
-            },
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (details) {
-                if (widget.relativeMouse) {
-                  widget.spy.relative.add(details.localPosition);
-                  return;
+    return RaatikViewStyleUpdater(
+      updateImageWidgetSize: widget.spy.image,
+      updateViewportSize: (size) {
+        widget.spy.viewport(size);
+        _fit.store(size);
+        _publish();
+      },
+      updateViewStyle: () async {
+        await widget.spy.style();
+        _fit.commitPending();
+        _publish();
+      },
+      measuredViewport: () => _fit.viewport,
+      fitCommittedFor: () => _fit.committed,
+      dropSupersededFit: (drop) {
+        widget.spy.drops.add(drop);
+        _fit.applyDrop(drop);
+        _publish();
+      },
+      refresh: widget.spy.refresh,
+      onChangeResolution: widget.spy.changeResolution,
+      onChangeQuality: widget.spy.changeQuality,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          final geometry = geometryForViewStyle(
+            style: widget.viewStyle,
+            viewport: size,
+            remote: widget.remoteSize,
+            customScale: widget.customScale,
+            devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+          );
+          return SizedBox.expand(
+            child: Listener(
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent) {
+                  widget.spy.wheels.add(event.scrollDelta);
                 }
-                if (geometry == null) return;
-                final point = remotePointFromViewport(
-                  localPosition: details.localPosition,
-                  imageOffset: geometry.offset,
-                  scale: geometry.scale,
-                  remoteOrigin: widget.remoteOrigin,
-                  remoteSize: widget.remoteSize,
-                );
-                if (point != null) widget.spy.absolute.add(point);
               },
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (geometry != null)
-                    Positioned(
-                      left: geometry.offset.dx,
-                      top: geometry.offset.dy,
-                      width: widget.remoteSize.width * geometry.scale,
-                      height: widget.remoteSize.height * geometry.scale,
-                      child: const ColoredBox(
-                        key: Key('raatik-fitted-image'),
-                        color: Color(0xFF0284C7),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (details) {
+                  if (widget.relativeMouse) {
+                    widget.spy.relative.add(details.localPosition);
+                    return;
+                  }
+                  if (geometry == null) return;
+                  final point = remotePointFromViewport(
+                    localPosition: details.localPosition,
+                    imageOffset: geometry.offset,
+                    scale: geometry.scale,
+                    remoteOrigin: widget.remoteOrigin,
+                    remoteSize: widget.remoteSize,
+                  );
+                  if (point != null) widget.spy.absolute.add(point);
+                },
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (geometry != null)
+                      Positioned(
+                        left: geometry.offset.dx,
+                        top: geometry.offset.dy,
+                        width: widget.remoteSize.width * geometry.scale,
+                        height: widget.remoteSize.height * geometry.scale,
+                        child: const ColoredBox(
+                          key: Key('raatik-fitted-image'),
+                          color: Color(0xFF0284C7),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -217,7 +262,8 @@ void main() {
       find.byKey(RaatikRemoteViewportLayout.imageViewportKey),
     );
     expect(viewport.size.width, closeTo(640, 0.01));
-    expect(viewport.size.height, closeTo(720 - RaatikRemoteToolbarBar.barHeight, 0.01));
+    expect(viewport.size.height,
+        closeTo(720 - RaatikRemoteToolbarBar.barHeight, 0.01));
     expect(spy.resolution, 0);
     expect(spy.quality, 0);
     expect(spy.log.take(4).toList(), ['image', 'viewport', 'style', 'refresh']);
@@ -251,7 +297,8 @@ void main() {
     expect(spy.quality, 0);
   });
 
-  testWidgets('hidden toolbar reserves only the collapse hitbox', (tester) async {
+  testWidgets('hidden toolbar reserves only the collapse hitbox',
+      (tester) async {
     final spy = _InputSpy();
     await _pump(tester, spy: spy, window: _window, toolbarShown: false);
     final viewport = tester.getSize(
@@ -291,7 +338,8 @@ void main() {
     final viewport = tester.getSize(
       find.byKey(RaatikRemoteViewportLayout.imageViewportKey),
     );
-    expect(viewport.width, closeTo(640 - RaatikRemoteToolbarBar.barHeight, 0.01));
+    expect(
+        viewport.width, closeTo(640 - RaatikRemoteToolbarBar.barHeight, 0.01));
     expect(viewport.height, closeTo(720, 0.01));
     expect(shown.resolution, 0);
     expect(shown.quality, 0);
@@ -319,7 +367,8 @@ void main() {
         window: _window,
         devicePixelRatio: dpr,
       );
-      final image = tester.getRect(find.byKey(const Key('raatik-fitted-image')));
+      final image =
+          tester.getRect(find.byKey(const Key('raatik-fitted-image')));
       await tester.tapAt(image.center);
       await tester.pump();
       expect(spy.absolute, hasLength(1));
@@ -385,7 +434,8 @@ void main() {
     expect(custom.absolute.single.dy, closeTo(372, 1));
   });
 
-  testWidgets('scrolled scrollbar image maps the content point', (tester) async {
+  testWidgets('scrolled scrollbar image maps the content point',
+      (tester) async {
     const remote = Size(400, 800);
     final points = <Offset?>[];
     final controller = ScrollController();
@@ -426,7 +476,8 @@ void main() {
     );
     controller.jumpTo(120);
     await tester.pump();
-    final viewportTopLeft = tester.getTopLeft(find.byType(SingleChildScrollView));
+    final viewportTopLeft =
+        tester.getTopLeft(find.byType(SingleChildScrollView));
     await tester.tapAt(viewportTopLeft + const Offset(10, 10));
     await tester.pump();
 
@@ -485,7 +536,8 @@ void main() {
     );
     controller.jumpTo(120);
     await tester.pump();
-    final viewportTopLeft = tester.getTopLeft(find.byType(SingleChildScrollView));
+    final viewportTopLeft =
+        tester.getTopLeft(find.byType(SingleChildScrollView));
     await tester.tapAt(viewportTopLeft + const Offset(10, 10));
     await tester.pump();
 
@@ -552,14 +604,17 @@ void main() {
       ),
     );
     expect(controller.offset, 0);
-    final image = tester.getTopLeft(find.byKey(const Key('raatik-scrollbar-zero-image')));
+    final image =
+        tester.getTopLeft(find.byKey(const Key('raatik-scrollbar-zero-image')));
     await tester.tapAt(image + const Offset(10, 10));
     await tester.pump();
 
     expect(points, hasLength(1));
     _expectNear(points.single!, const Offset(10, 10));
-    expect(points.single!.dx, isNot(closeTo(10 - (canvas.width - remote.width) / 2, 0.5)));
-    expect(points.single!.dy, isNot(closeTo(10 - (canvas.height - remote.height) / 2, 0.5)));
+    expect(points.single!.dx,
+        isNot(closeTo(10 - (canvas.width - remote.width) / 2, 0.5)));
+    expect(points.single!.dy,
+        isNot(closeTo(10 - (canvas.height - remote.height) / 2, 0.5)));
   });
 
   testWidgets('hidden toolbar slot can show the bar again', (tester) async {
@@ -588,10 +643,12 @@ void main() {
       viewport.height,
       closeTo(720 - RaatikRemoteToolbarBar.collapseExtent, 0.01),
     );
-    expect(viewport.height, isNot(closeTo(720 - RaatikRemoteToolbarBar.barHeight, 0.01)));
+    expect(viewport.height,
+        isNot(closeTo(720 - RaatikRemoteToolbarBar.barHeight, 0.01)));
     final slot = find.byKey(RaatikRemoteViewportLayout.collapseSlotKey);
     expect(
-      find.descendant(of: slot, matching: find.byKey(const Key('raatik-toolbar-show'))),
+      find.descendant(
+          of: slot, matching: find.byKey(const Key('raatik-toolbar-show'))),
       findsOneWidget,
     );
     await tester.tap(find.byKey(const Key('raatik-toolbar-show')));
@@ -624,4 +681,101 @@ void main() {
     expect(spy.resolution, 0);
     expect(spy.quality, 0);
   });
+
+  testWidgets('superseded layout drops the captured fit before refresh',
+      (tester) async {
+    final spy = _InputSpy();
+    final hostKey = GlobalKey<_ViewportSizeHostState>();
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1200, 900);
+    addTearDown(() {
+      tester.view.resetDevicePixelRatio();
+      tester.view.resetPhysicalSize();
+    });
+    spy.duringStyle = () async {
+      final host = tester.element(find.byKey(hostKey));
+      hostKey.currentState!.resize(const Size(900, 700));
+      tester.binding.buildOwner!.buildScope(host);
+      tester.renderObject(find.byKey(hostKey)).owner!.flushLayout();
+    };
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(size: Size(1200, 900), devicePixelRatio: 1),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: _ViewportSizeHost(
+              key: hostKey,
+              size: const Size(640, 672),
+              child: _ImageProbe(
+                spy: spy,
+                remoteSize: _remote,
+                remoteOrigin: Offset.zero,
+                viewStyle: 'adaptive',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getSize(find.byKey(hostKey)), const Size(900, 700));
+    expect(spy.log, ['image', 'viewport', 'style']);
+    expect(spy.imageSizes, [const Size(640, 672)]);
+    expect(spy.drops, [RaatikSupersededFitDrop.clearViewportAndCommit]);
+    expect(spy.measuredViewport, isNull);
+    expect(spy.fitCommittedFor, isNull);
+    expect(spy.resolution, 0);
+    expect(spy.quality, 0);
+
+    spy.duringStyle = null;
+    await tester.pump();
+
+    expect(spy.log, [
+      'image',
+      'viewport',
+      'style',
+      'image',
+      'viewport',
+      'style',
+      'refresh',
+    ]);
+    expect(spy.imageSizes, [const Size(640, 672), const Size(900, 700)]);
+    expect(spy.drops, [RaatikSupersededFitDrop.clearViewportAndCommit]);
+    expect(spy.measuredViewport, const Size(900, 700));
+    expect(spy.fitCommittedFor, const Size(900, 700));
+    expect(spy.resolution, 0);
+    expect(spy.quality, 0);
+  });
+}
+
+class _ViewportSizeHost extends StatefulWidget {
+  const _ViewportSizeHost({
+    super.key,
+    required this.size,
+    required this.child,
+  });
+
+  final Size size;
+  final Widget child;
+
+  @override
+  State<_ViewportSizeHost> createState() => _ViewportSizeHostState();
+}
+
+class _ViewportSizeHostState extends State<_ViewportSizeHost> {
+  late Size _size = widget.size;
+
+  void resize(Size size) => setState(() => _size = size);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _size.width,
+      height: _size.height,
+      child: widget.child,
+    );
+  }
 }

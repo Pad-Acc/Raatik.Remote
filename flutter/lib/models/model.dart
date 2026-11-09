@@ -2313,6 +2313,18 @@ class CanvasModel with ChangeNotifier {
     _measuredFitCommittedFor = null;
   }
 
+  /// Drops a fit that still names a size a newer measurement replaced.
+  /// A newer stored viewport is left in place.
+  void dropSupersededMeasuredFit(RaatikSupersededFitDrop drop) {
+    final next = applySupersededMeasuredFitDrop(
+      viewport: _measuredViewport,
+      committed: _measuredFitCommittedFor,
+      drop: drop,
+    );
+    _measuredViewport = next.viewport;
+    _measuredFitCommittedFor = next.committed;
+  }
+
   Size getSize() {
     final measured = _measuredViewport;
     if (!isMobile && measured != null) {

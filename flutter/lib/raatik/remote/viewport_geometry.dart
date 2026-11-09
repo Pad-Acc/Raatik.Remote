@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 
 /// Fitted remote image inside one measured viewport.
 class RemoteViewportGeometry {
@@ -722,9 +724,97 @@ RaatikPointerExit decideRaatikPointerExit({
 
 bool _measuredViewportStillMounted() => true;
 
+/// What to do with a fit after view style returns.
+enum RaatikSupersededFitDrop {
+  /// Leave the stored viewport and the commit unchanged.
+  none,
+
+  /// The newer callback has not stored yet. Clear both.
+  clearViewportAndCommit,
+
+  /// A newer viewport is already stored. Clear only the old commit.
+  clearCommitOnly,
+}
+
+/// Refresh and drop choice for one captured measurement.
+class RaatikSupersededFitDecision {
+  const RaatikSupersededFitDecision({
+    required this.refresh,
+    required this.drop,
+  });
+
+  final bool refresh;
+  final RaatikSupersededFitDrop drop;
+}
+
+/// Stored viewport and the size its fit was committed for.
+class RaatikMeasuredFitFields {
+  const RaatikMeasuredFitFields({this.viewport, this.committed});
+
+  final Size? viewport;
+  final Size? committed;
+}
+
+/// Decides whether the captured size is still the one to keep.
+///
+/// The same mounted size refreshes and changes nothing. A newer layout whose
+/// stored viewport is still the capture clears both. A newer layout whose
+/// viewport was already replaced clears only a commit that still names the
+/// capture. Anything else, including an unmounted updater, changes nothing
+/// and does not refresh.
+RaatikSupersededFitDecision decideSupersededMeasuredFit({
+  required bool mounted,
+  required Size captured,
+  required Size? latest,
+  required Size? measuredViewport,
+  required Size? fitCommittedFor,
+}) {
+  if (!mounted || latest == captured) {
+    return RaatikSupersededFitDecision(
+      refresh: mounted && latest == captured,
+      drop: RaatikSupersededFitDrop.none,
+    );
+  }
+  if (measuredViewport == captured) {
+    return const RaatikSupersededFitDecision(
+      refresh: false,
+      drop: RaatikSupersededFitDrop.clearViewportAndCommit,
+    );
+  }
+  if (fitCommittedFor == captured) {
+    return const RaatikSupersededFitDecision(
+      refresh: false,
+      drop: RaatikSupersededFitDrop.clearCommitOnly,
+    );
+  }
+  return const RaatikSupersededFitDecision(
+    refresh: false,
+    drop: RaatikSupersededFitDrop.none,
+  );
+}
+
+/// Applies [drop] to a stored viewport and its commit.
+RaatikMeasuredFitFields applySupersededMeasuredFitDrop({
+  required Size? viewport,
+  required Size? committed,
+  required RaatikSupersededFitDrop drop,
+}) {
+  switch (drop) {
+    case RaatikSupersededFitDrop.none:
+      return RaatikMeasuredFitFields(viewport: viewport, committed: committed);
+    case RaatikSupersededFitDrop.clearViewportAndCommit:
+      return const RaatikMeasuredFitFields();
+    case RaatikSupersededFitDrop.clearCommitOnly:
+      return RaatikMeasuredFitFields(viewport: viewport);
+  }
+}
+
 /// Applies one changed measurement. Unusable sizes are ignored.
-/// Call order is image size, viewport size, view style, then one refresh.
-/// Refresh runs only when [stillMounted] is true after view style returns.
+/// Call order is image size, viewport size, view style, then one refresh
+/// when the captured size is still current.
+/// After view style returns, [decideSupersededMeasuredFit] drops a fit that
+/// still names a captured size the layout has already replaced, and skips
+/// refresh. An unmounted updater skips refresh and does not drop.
 /// [onChangeResolution] and [onChangeQuality] are not called.
 Future<void> applyMeasuredViewportSize({
   required Size size,
@@ -735,11 +825,111 @@ Future<void> applyMeasuredViewportSize({
   bool Function() stillMounted = _measuredViewportStillMounted,
   VoidCallback? onChangeResolution,
   VoidCallback? onChangeQuality,
+  Size? Function()? latestSize,
+  Size? Function()? measuredViewport,
+  Size? Function()? fitCommittedFor,
+  void Function(RaatikSupersededFitDrop drop)? dropSupersededFit,
 }) async {
   if (!isUsableViewportSize(size)) return;
   updateImageWidgetSize(size);
   updateViewportSize(size);
   await updateViewStyle();
-  if (!stillMounted()) return;
+  final decision = decideSupersededMeasuredFit(
+    mounted: stillMounted(),
+    captured: size,
+    latest: latestSize != null ? latestSize() : size,
+    measuredViewport: measuredViewport?.call(),
+    fitCommittedFor: fitCommittedFor?.call(),
+  );
+  if (decision.drop != RaatikSupersededFitDrop.none) {
+    dropSupersededFit?.call(decision.drop);
+  }
+  if (!decision.refresh) return;
   refresh();
+}
+
+/// Measures [child] and applies only the latest usable size.
+///
+/// Layout changes share one post-frame callback. After view style returns,
+/// a layout size that is no longer the size that callback captured drops
+/// that fit and does not refresh the pointer.
+class RaatikViewStyleUpdater extends StatefulWidget {
+  const RaatikViewStyleUpdater({
+    Key? key,
+    required this.child,
+    required this.updateImageWidgetSize,
+    required this.updateViewportSize,
+    required this.updateViewStyle,
+    required this.refresh,
+    this.measuredViewport,
+    this.fitCommittedFor,
+    this.dropSupersededFit,
+    this.onDispose,
+    this.onChangeResolution,
+    this.onChangeQuality,
+  }) : super(key: key);
+
+  final Widget child;
+  final void Function(Size size) updateImageWidgetSize;
+  final void Function(Size size) updateViewportSize;
+  final Future<void> Function() updateViewStyle;
+  final VoidCallback refresh;
+  final Size? Function()? measuredViewport;
+  final Size? Function()? fitCommittedFor;
+  final void Function(RaatikSupersededFitDrop drop)? dropSupersededFit;
+  final VoidCallback? onDispose;
+  final VoidCallback? onChangeResolution;
+  final VoidCallback? onChangeQuality;
+
+  @override
+  State<RaatikViewStyleUpdater> createState() => _RaatikViewStyleUpdaterState();
+}
+
+class _RaatikViewStyleUpdaterState extends State<RaatikViewStyleUpdater> {
+  Size? _lastSize;
+  bool _callbackScheduled = false;
+
+  @override
+  void dispose() {
+    widget.onDispose?.call();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final newSize = Size(constraints.maxWidth, constraints.maxHeight);
+        if (!isUsableViewportSize(newSize)) {
+          return widget.child;
+        }
+        if (_lastSize != newSize) {
+          _lastSize = newSize;
+          if (!_callbackScheduled) {
+            _callbackScheduled = true;
+            SchedulerBinding.instance.addPostFrameCallback((_) async {
+              _callbackScheduled = false;
+              final currentSize = _lastSize;
+              if (!mounted || currentSize == null) return;
+              await applyMeasuredViewportSize(
+                size: currentSize,
+                updateImageWidgetSize: widget.updateImageWidgetSize,
+                updateViewportSize: widget.updateViewportSize,
+                updateViewStyle: widget.updateViewStyle,
+                stillMounted: () => mounted,
+                latestSize: () => _lastSize,
+                measuredViewport: widget.measuredViewport,
+                fitCommittedFor: widget.fitCommittedFor,
+                dropSupersededFit: widget.dropSupersededFit,
+                refresh: widget.refresh,
+                onChangeResolution: widget.onChangeResolution,
+                onChangeQuality: widget.onChangeQuality,
+              );
+            });
+          }
+        }
+        return widget.child;
+      },
+    );
+  }
 }
