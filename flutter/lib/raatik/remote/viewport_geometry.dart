@@ -821,6 +821,41 @@ RaatikSupersededFitDecision decideSupersededMeasuredFit({
   );
 }
 
+/// Style, size, and remote display recorded for one window rebuild.
+class RaatikRecordedViewStyle {
+  const RaatikRecordedViewStyle({
+    required this.style,
+    required this.width,
+    required this.height,
+    required this.displayWidth,
+    required this.displayHeight,
+  });
+
+  final String style;
+  final double width;
+  final double height;
+  final int displayWidth;
+  final int displayHeight;
+}
+
+/// Four fields written after a superseded window rebuild.
+///
+/// [width] and [height] are [window], not a measurement the drop replaced.
+RaatikRecordedViewStyle recordedWindowViewStyle({
+  required String style,
+  required Size window,
+  required int displayWidth,
+  required int displayHeight,
+}) {
+  return RaatikRecordedViewStyle(
+    style: style,
+    width: window.width,
+    height: window.height,
+    displayWidth: displayWidth,
+    displayHeight: displayHeight,
+  );
+}
+
 /// Applies [drop] to a stored viewport and its commit.
 RaatikMeasuredFitFields applySupersededMeasuredFitDrop({
   required Size? viewport,

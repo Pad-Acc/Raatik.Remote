@@ -2317,7 +2317,8 @@ class CanvasModel with ChangeNotifier {
 
   /// Drops a fit that still names a size a newer measurement replaced.
   /// A newer stored viewport is left in place. Clearing both on desktop
-  /// restores the window fallback before returning.
+  /// restores the window fallback, then records that window view style,
+  /// before returning.
   void dropSupersededMeasuredFit(RaatikSupersededFitDrop drop) {
     final next = applySupersededMeasuredFitDrop(
       viewport: _measuredViewport,
@@ -2358,6 +2359,19 @@ class CanvasModel with ChangeNotifier {
       }
       _resetCanvasOffset(displayWidth, displayHeight);
     }
+    final recorded = recordedWindowViewStyle(
+      style: style,
+      window: size,
+      displayWidth: displayWidth,
+      displayHeight: displayHeight,
+    );
+    _lastViewStyle = ViewStyle(
+      style: recorded.style,
+      width: recorded.width,
+      height: recorded.height,
+      displayWidth: recorded.displayWidth,
+      displayHeight: recorded.displayHeight,
+    );
     final overflow = _x < 0 || y < 0;
     if (_imageOverflow.value != overflow) {
       _imageOverflow.value = overflow;

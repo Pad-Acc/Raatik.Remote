@@ -1287,4 +1287,91 @@ void main() {
     expect(custom.offset.dy, closeTo((600 - 1080 * 1) / 2, 1e-9));
     expect(custom.offset.dx < 0 || custom.offset.dy < 0, isTrue);
   });
+
+  test('superseded window rebuild records the window view style', () {
+    const window = Size(1000, 600);
+    const measured = Size(640, 900);
+    final adaptive = recordedWindowViewStyle(
+      style: 'adaptive',
+      window: window,
+      displayWidth: 1920,
+      displayHeight: 1080,
+    );
+    expect(adaptive.style, 'adaptive');
+    expect(adaptive.width, window.width);
+    expect(adaptive.height, window.height);
+    expect(adaptive.width, isNot(measured.width));
+    expect(adaptive.height, isNot(measured.height));
+    expect(adaptive.displayWidth, 1920);
+    expect(adaptive.displayHeight, 1080);
+
+    final sameWidth = recordedWindowViewStyle(
+      style: 'original',
+      window: window,
+      displayWidth: 1280,
+      displayHeight: 720,
+    );
+    expect(sameWidth.style, 'original');
+    expect(sameWidth.width, window.width);
+    expect(sameWidth.height, window.height);
+    expect(sameWidth.height, isNot(672));
+    expect(sameWidth.displayWidth, 1280);
+    expect(sameWidth.displayHeight, 720);
+
+    final noMeasured = recordedWindowViewStyle(
+      style: 'custom',
+      window: window,
+      displayWidth: 1920,
+      displayHeight: 1080,
+    );
+    expect(noMeasured.style, 'custom');
+    expect(noMeasured.width, window.width);
+    expect(noMeasured.height, window.height);
+
+    final file = File('lib/models/model.dart');
+    expect(file.existsSync(), isTrue, reason: 'run from flutter/ directory');
+    final src = file.readAsStringSync().replaceAll('\r\n', '\n');
+    final start = src.indexOf('void dropSupersededMeasuredFit(');
+    final end = src.indexOf('\n  Size getSize()');
+    expect(start, greaterThanOrEqualTo(0));
+    expect(end, greaterThan(start));
+    final body = src.substring(start, end);
+    final earlyReturn = body.indexOf('return;');
+    final fitted = body.indexOf('if (fitted != null)');
+    final fallback = body.indexOf('_resetCanvasOffset(displayWidth, displayHeight)');
+    final record = body.indexOf('recordedWindowViewStyle(');
+    final assign = body.indexOf('_lastViewStyle = ViewStyle(');
+    expect(earlyReturn, greaterThanOrEqualTo(0));
+    expect(fitted, greaterThan(earlyReturn));
+    expect(fallback, greaterThan(fitted));
+    expect(record, greaterThan(fallback));
+    expect(assign, greaterThan(record));
+    expect(body.indexOf('recordedWindowViewStyle('), record);
+    expect(body.indexOf('recordedWindowViewStyle(', record + 1), -1);
+    expect(body.contains('window: size,'), isTrue);
+    expect(body.contains('measured:'), isFalse);
+    expect(body.contains('style: recorded.style,'), isTrue);
+    expect(body.contains('width: recorded.width,'), isTrue);
+    expect(body.contains('height: recorded.height,'), isTrue);
+    expect(body.contains('displayWidth: recorded.displayWidth,'), isTrue);
+    expect(body.contains('displayHeight: recorded.displayHeight,'), isTrue);
+    expect(body.contains('_commitMeasuredFit'), isFalse);
+    expect(body.contains('refreshMousePos'), isFalse);
+    expect(body.contains('_measuredFitCommittedFor ='), isTrue);
+
+    final updateStart = src.indexOf('updateViewStyle({');
+    final updateEnd = src.indexOf('void _commitMeasuredFit(');
+    expect(updateStart, greaterThanOrEqualTo(0));
+    expect(updateEnd, greaterThan(updateStart));
+    final update = src.substring(updateStart, updateEnd);
+    expect(
+      update.contains(
+        'if (_lastViewStyle == viewStyle && style != kRemoteViewStyleCustom) {\n'
+        '      _commitMeasuredFit(pendingViewport);\n'
+        '      return;\n'
+        '    }',
+      ),
+      isTrue,
+    );
+  });
 }
