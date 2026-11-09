@@ -680,6 +680,21 @@ bool measuredInputReady({
   return storedViewport != null && storedViewport == fitCommittedFor;
 }
 
+/// Desktop and web-desktop absolute samples wait while a viewport is stored
+/// and its fit is not committed for that same size. No stored viewport keeps
+/// the window-minus-chrome path. Mobile does not hold.
+bool holdAbsoluteInputUntilFitCommit({
+  required bool desktopOrWebDesktop,
+  Size? storedViewport,
+  Size? fitCommittedFor,
+}) {
+  if (!desktopOrWebDesktop || storedViewport == null) return false;
+  return !measuredInputReady(
+    storedViewport: storedViewport,
+    fitCommittedFor: fitCommittedFor,
+  );
+}
+
 /// Coordinates passed to pointer exit.
 ///
 /// [point] is the sample stored for the move. [viewportLocal] is true only

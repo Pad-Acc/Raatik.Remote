@@ -2324,6 +2324,15 @@ class InputModel {
       }
     }
 
+    // Retarget already returned. Hold until this window's fit is committed.
+    if (holdAbsoluteInputUntilFitCommit(
+      desktopOrWebDesktop: isDesktop || isWebDesktop,
+      storedViewport: parent.target!.canvasModel.measuredViewport,
+      fitCommittedFor: parent.target!.canvasModel.measuredFitCommittedFor,
+    )) {
+      return null;
+    }
+
     if (!viewportLocal) {
       y -= CanvasModel.topToEdge;
       x -= CanvasModel.leftToEdge;

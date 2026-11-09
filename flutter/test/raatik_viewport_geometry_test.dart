@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -904,6 +905,76 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test('absolute input holds until the stored fit is committed', () {
+    const stored = Size(640, 672);
+    const other = Size(800, 600);
+
+    expect(
+      holdAbsoluteInputUntilFitCommit(
+        desktopOrWebDesktop: true,
+        storedViewport: null,
+        fitCommittedFor: null,
+      ),
+      isFalse,
+    );
+    expect(
+      holdAbsoluteInputUntilFitCommit(
+        desktopOrWebDesktop: true,
+        storedViewport: stored,
+        fitCommittedFor: null,
+      ),
+      isTrue,
+    );
+    expect(
+      holdAbsoluteInputUntilFitCommit(
+        desktopOrWebDesktop: true,
+        storedViewport: stored,
+        fitCommittedFor: other,
+      ),
+      isTrue,
+    );
+    expect(
+      holdAbsoluteInputUntilFitCommit(
+        desktopOrWebDesktop: true,
+        storedViewport: stored,
+        fitCommittedFor: stored,
+      ),
+      isFalse,
+    );
+    expect(
+      holdAbsoluteInputUntilFitCommit(
+        desktopOrWebDesktop: false,
+        storedViewport: stored,
+        fitCommittedFor: null,
+      ),
+      isFalse,
+    );
+  });
+
+  test('handlePointerDevicePos returns null before chrome subtraction', () {
+    final file = File('lib/models/input_model.dart');
+    expect(file.existsSync(), isTrue, reason: 'run from flutter/ directory');
+    final src = file.readAsStringSync();
+    final start = src.indexOf('Point? handlePointerDevicePos(');
+    final end = src.indexOf('Point? _handlePointerDevicePos(');
+    expect(start, greaterThanOrEqualTo(0));
+    expect(end, greaterThan(start));
+    final body = src.substring(start, end).replaceAll('\r\n', '\n');
+    final retarget = body.indexOf('decision.retarget != null');
+    final hold = body.indexOf('holdAbsoluteInputUntilFitCommit(');
+    final chrome = body.indexOf('y -= CanvasModel.topToEdge');
+    expect(retarget, greaterThanOrEqualTo(0));
+    expect(hold, greaterThan(retarget));
+    expect(chrome, greaterThan(hold));
+    final held = body.indexOf('return null;', hold);
+    expect(held, greaterThan(hold));
+    expect(held, lessThan(chrome));
+    expect(body.contains('desktopOrWebDesktop: isDesktop || isWebDesktop'), isTrue);
+    expect(body.contains('canvasModel.measuredViewport'), isTrue);
+    expect(body.contains('canvasModel.measuredFitCommittedFor'), isTrue);
+    expect(body.contains('y -= CanvasModel.topToEdge;\n      x -= CanvasModel.leftToEdge;'), isTrue);
   });
 
   test('unmounted view style skips refresh', () async {
