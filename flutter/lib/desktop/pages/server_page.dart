@@ -350,26 +350,57 @@ class ConnectionManagerState extends State<ConnectionManager>
 
 Widget buildConnectionCard(Client client) {
   return Consumer<ServerModel>(
-    builder: (context, value, child) => Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      key: ValueKey(client.id),
-      children: [
-        _CmHeader(client: client),
-        client.type_() == ClientType.file ||
-                client.type_() == ClientType.portForward ||
-                client.type_() == ClientType.terminal ||
-                client.disconnected
-            ? Offstage()
-            : _PrivilegeBoard(client: client),
-        Expanded(
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: _CmControlPanel(client: client),
-          ),
-        )
-      ],
-    ).paddingSymmetric(vertical: 4.0, horizontal: 8.0),
+    builder: (context, value, child) {
+      final hideBoard = client.type_() == ClientType.file ||
+          client.type_() == ClientType.portForward ||
+          client.type_() == ClientType.terminal ||
+          client.disconnected;
+      final panel = Expanded(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: _CmControlPanel(client: client),
+        ),
+      );
+      final header = _CmHeader(client: client);
+      final approving = !client.authorized;
+      final column = Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        key: ValueKey(client.id),
+        children: approving
+            ? [
+                header,
+                Expanded(
+                  child: RaatikModalScope(
+                    role: RaatikModalRole.approval,
+                    onAccept: () {
+                      Provider.of<ServerModel>(context, listen: false)
+                          .sendLoginResponse(client, true);
+                      windowManager.minimize();
+                    },
+                    onReject: () =>
+                        bind.cmCloseConnection(connId: client.id),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        hideBoard
+                            ? Offstage()
+                            : _PrivilegeBoard(client: client),
+                        panel,
+                      ],
+                    ),
+                  ),
+                ),
+              ]
+            : [
+                header,
+                hideBoard ? Offstage() : _PrivilegeBoard(client: client),
+                panel,
+              ],
+      );
+      return column.paddingSymmetric(vertical: 4.0, horizontal: 8.0);
+    },
   );
 }
 
@@ -1063,16 +1094,9 @@ class _CmControlPanel extends StatelessWidget {
         model.showElevation &&
         client.type_() == ClientType.remote;
     final showAccept = model.approveMode != 'password';
-    return RaatikModalScope(
-      role: RaatikModalRole.approval,
-      onAccept: () {
-        handleAccept(context);
-        windowManager.minimize();
-      },
-      onReject: handleDisconnect,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
           Offstage(
             offstage: !showElevation || !showAccept,
             child: buildButton(context, color: Colors.green[700], onClick: () {
@@ -1125,7 +1149,6 @@ class _CmControlPanel extends StatelessWidget {
             ],
           ),
         ],
-      ),
     ).marginOnly(bottom: buttonBottomMargin);
   }
 

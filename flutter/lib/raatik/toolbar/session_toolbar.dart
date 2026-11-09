@@ -108,6 +108,68 @@ RaatikToolbarPartition raatikPartitionToolbar({
   return RaatikToolbarPartition(primary: primary, overflow: overflow);
 }
 
+/// Ancestor of an open labelled-overflow menu.
+///
+/// Menu-bar tools read this so they can offer a focusable entry while the
+/// menu is open. A closed [MenuBar] keeps its own button out of focus.
+class RaatikOverflowScope extends InheritedWidget {
+  const RaatikOverflowScope({super.key, required super.child});
+
+  static bool contains(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<RaatikOverflowScope>() !=
+        null;
+  }
+
+  @override
+  bool updateShouldNotify(RaatikOverflowScope oldWidget) => false;
+}
+
+/// One overflow row. The focusable control is this entry.
+///
+/// [child] may be a closed menu bar, which excludes its own button. Enter and
+/// a pointer on this entry call [onPressed].
+class RaatikOverflowEntry extends StatefulWidget {
+  const RaatikOverflowEntry({
+    super.key,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final VoidCallback onPressed;
+  final Widget child;
+
+  @override
+  State<RaatikOverflowEntry> createState() => _RaatikOverflowEntryState();
+}
+
+class _RaatikOverflowEntryState extends State<RaatikOverflowEntry> {
+  final FocusNode _node = FocusNode(debugLabel: 'raatik-overflow-entry');
+
+  @override
+  void dispose() {
+    _node.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      focusNode: _node,
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        alignment: AlignmentDirectional.centerStart,
+      ),
+      onPressed: widget.onPressed,
+      child: ExcludeFocus(
+        excluding: true,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 /// Overflow control that always exposes [label], including on a narrow bar.
 class RaatikLabelledOverflow extends StatefulWidget {
   const RaatikLabelledOverflow({
@@ -224,13 +286,57 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
       });
       return;
     }
-    final node = ReadingOrderTraversalPolicy()
-        .findFirstFocus(_menuScope, ignoreCurrentFocus: true);
+    final node = _firstOrderedFocus() ??
+        ReadingOrderTraversalPolicy()
+            .findFirstFocus(_menuScope, ignoreCurrentFocus: true);
     if (node != null && node != _menuScope && node.canRequestFocus) {
       node.requestFocus();
       return;
     }
     _menuScope.requestFocus();
+  }
+
+  /// First traversable control in menu order. A closed menu bar contributes
+  /// none, so the entry wrapped around it is the one that runs.
+  FocusNode? _firstOrderedFocus() {
+    final root = _menuScope.context;
+    if (root is! Element) return null;
+    Element? column;
+    void findColumn(Element element) {
+      if (column != null) return;
+      if (element.widget is Column) {
+        column = element;
+        return;
+      }
+      element.visitChildren(findColumn);
+    }
+
+    findColumn(root);
+    final host = column;
+    if (host == null) return null;
+    FocusNode? found;
+    void consider(FocusNode? node) {
+      if (found != null || node == null) return;
+      if (!node.canRequestFocus || node.skipTraversal) return;
+      found = node;
+    }
+
+    void scan(Element element) {
+      if (found != null) return;
+      final widget = element.widget;
+      if (widget is TextButton) {
+        consider(widget.focusNode);
+      } else if (widget is Focus) {
+        consider(widget.focusNode);
+      }
+      element.visitChildren(scan);
+    }
+
+    host.visitChildren((child) {
+      if (found != null) return;
+      scan(child);
+    });
+    return found;
   }
 
   void _toggle() {
@@ -261,12 +367,14 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
               borderRadius: BorderRadius.circular(RaatikTokens.radiusSm),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: widget.children.isEmpty
-                      ? [Text(widget.label)]
-                      : widget.children,
+                child: RaatikOverflowScope(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: widget.children.isEmpty
+                        ? [Text(widget.label)]
+                        : widget.children,
+                  ),
                 ),
               ),
             ),

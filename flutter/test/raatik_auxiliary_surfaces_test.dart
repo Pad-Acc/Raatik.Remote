@@ -213,6 +213,59 @@ void main() {
   });
 
   testWidgets(
+      'approval scope keeps the permission control with reject',
+      (tester) async {
+    final permission = FocusNode(debugLabel: 'approval-permission');
+    final reject = FocusNode(debugLabel: 'approval-reject');
+    addTearDown(permission.dispose);
+    addTearDown(reject.dispose);
+    var rejects = 0;
+    await _pump(
+      tester,
+      RaatikModalScope(
+        role: RaatikModalRole.approval,
+        onAccept: () {},
+        onReject: () => rejects++,
+        child: Column(
+          children: [
+            TextButton(
+              key: const Key('approval-perm-keyboard'),
+              focusNode: permission,
+              onPressed: () {},
+              child: const Text('Keyboard'),
+            ),
+            RaatikModalAction(
+              focus: RaatikModalFocus.reject,
+              autofocus: true,
+              focusNode: reject,
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(reject.hasPrimaryFocus, isTrue);
+    expect(permission.hasFocus, isFalse);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(permission.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(rejects, 1);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+    await tester.pump();
+    expect(reject.hasPrimaryFocus, isTrue);
+    expect(rejects, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
       'Escape cancels credentials without connecting and a long error wraps without the password',
       (tester) async {
     final calls = <String>[];

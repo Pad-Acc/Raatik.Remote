@@ -3070,6 +3070,12 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
       message: translate(widget.tooltip),
       child: button,
     );
+    if (RaatikOverflowScope.contains(context) && widget.onPressed != null) {
+      return RaatikOverflowEntry(
+        onPressed: widget.onPressed!,
+        child: button,
+      );
+    }
     if (widget.topLevel) {
       return MenuBar(children: [button]);
     } else {
@@ -3108,6 +3114,12 @@ class _IconSubmenuButton extends StatefulWidget {
 
 class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
   bool hover = false;
+  final MenuController _menuController = MenuController();
+
+  void _runEntry() {
+    if (_menuController.isOpen) return;
+    _menuController.open();
+  }
 
   @override // discard @protected
   void setState(VoidCallback fn) {
@@ -3131,6 +3143,7 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
           label: translate(widget.tooltip),
           button: true,
           child: SubmenuButton(
+            controller: _menuController,
             menuStyle:
                 widget.menuStyle ?? _ToolbarTheme.defaultMenuStyle(context),
             style: _ToolbarTheme.defaultMenuButtonStyle,
@@ -3167,11 +3180,16 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
           ),
         ),
     );
-    return MenuBar(children: [
-      button.marginSymmetric(
-          horizontal: _ToolbarTheme.buttonHMargin,
-          vertical: _ToolbarTheme.buttonVMargin)
-    ]);
+    final placed = button.marginSymmetric(
+        horizontal: _ToolbarTheme.buttonHMargin,
+        vertical: _ToolbarTheme.buttonVMargin);
+    if (RaatikOverflowScope.contains(context)) {
+      return RaatikOverflowEntry(
+        onPressed: _runEntry,
+        child: placed,
+      );
+    }
+    return MenuBar(children: [placed]);
   }
 }
 

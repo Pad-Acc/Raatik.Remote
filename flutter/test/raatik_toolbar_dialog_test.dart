@@ -636,4 +636,68 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  testWidgets(
+      'closed menu entry takes overflow focus ahead of a later button',
+      (tester) async {
+    var first = 0;
+    var inner = 0;
+    var later = 0;
+    const size = Size(480, 680);
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(testApp(
+      Align(
+        alignment: Alignment.topCenter,
+        child: RaatikLabelledOverflow(
+          label: 'More',
+          children: [
+            RaatikOverflowEntry(
+              key: const Key('overflow-first'),
+              onPressed: () => first++,
+              child: MenuBar(
+                children: [
+                  SubmenuButton(
+                    menuChildren: [
+                      MenuItemButton(
+                        onPressed: () => inner++,
+                        child: const Text('Display item'),
+                      ),
+                    ],
+                    child: const Text('Display'),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => later++,
+              child: const Text('Record'),
+            ),
+          ],
+        ),
+      ),
+      size: size,
+      locale: const Locale('en'),
+      textScaler: const TextScaler.linear(1),
+    ));
+    await tester.pump();
+    await tester.tap(find.byKey(RaatikLabelledOverflow.buttonKey));
+    await tester.pumpAndSettle();
+
+    expect(
+      FocusManager.instance.primaryFocus?.debugLabel,
+      'raatik-overflow-entry',
+    );
+    final displayFocus = Focus.of(tester.element(find.text('Display')));
+    expect(displayFocus.canRequestFocus, isFalse);
+    expect(displayFocus.hasPrimaryFocus, isFalse);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(first, 1);
+    expect(inner, 0);
+    expect(later, 0);
+    expect(find.text('Record'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
