@@ -1607,6 +1607,22 @@ class RustdeskImpl {
     return false;
   }
 
+  Future<String> raatikHistoryQuery({required String queryJson, dynamic hint}) {
+    throw 'history_unavailable';
+  }
+
+  Future<String> raatikHistoryGet({required String recordId, dynamic hint}) {
+    throw 'history_unavailable';
+  }
+
+  Future<String> raatikHistorySaveNote(
+      {required String recordId,
+      required int expectedRevision,
+      required String note,
+      dynamic hint}) {
+    throw 'history_unavailable';
+  }
+
   bool isCustomClient({dynamic hint}) {
     // is_custom_client() checks if app name is not "RustDesk"
     return mainGetAppNameSync(hint: hint) != "RustDesk";

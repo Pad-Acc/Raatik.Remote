@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
 enum HistoryDateFilter { all, today, yesterday, lastSevenDays }
@@ -239,10 +240,17 @@ bool historyClockChanged({required int startedAtUtcMs, int? endedAtUtcMs}) {
   return ended < startedAtUtcMs;
 }
 
-/// Rejects notes the store would refuse. Counts Unicode scalar values.
+/// Folds CR and CRLF to LF. Whitespace-only notes stay unchanged here; the store
+/// turns those into an empty note.
+String foldHistoryNewlines(String note) {
+  return note.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+}
+
+/// Rejects notes the store would refuse. Counts Unicode scalar values after newline folding.
 String? validateHistoryNote(String note) {
-  if (note.runes.length > 2000) return 'invalid_note';
-  for (final rune in note.runes) {
+  final normalized = foldHistoryNewlines(note);
+  if (normalized.runes.length > 2000) return 'invalid_note';
+  for (final rune in normalized.runes) {
     if (rune == 0x09 || rune == 0x0A) continue;
     if (rune < 0x20 || (rune >= 0x7F && rune <= 0x9F)) return 'invalid_note';
   }
@@ -529,6 +537,27 @@ class HistoryCopy {
 /// Same outgoing-UI gate as the home connect panel: hidden for incoming-only.
 bool raatikHistoryEnabled({required bool incomingOnly}) => !incomingOnly;
 
+const _historyCodes = <String>{
+  'invalid_query',
+  'invalid_note',
+  'not_found',
+  'note_conflict',
+  'history_busy',
+  'history_io',
+  'future_schema',
+  'history_unavailable',
+};
+
+String? _bridgeCode(Object error) {
+  if (error is String && _historyCodes.contains(error)) return error;
+  if (error is FfiException) {
+    final message = error.message.split(RegExp(r'\r?\n')).first.trim();
+    if (_historyCodes.contains(message)) return message;
+    if (_historyCodes.contains(error.code)) return error.code;
+  }
+  return null;
+}
+
 Future<T> _decode<T>(Future<String> Function() read, T Function(Map<String, dynamic>) parse) async {
   try {
     final raw = await read();
@@ -537,7 +566,9 @@ Future<T> _decode<T>(Future<String> Function() read, T Function(Map<String, dyna
     return parse(Map<String, dynamic>.from(decoded));
   } on HistoryFailure {
     rethrow;
-  } catch (_) {
+  } catch (error) {
+    final code = _bridgeCode(error);
+    if (code != null) throw HistoryFailure(code);
     throw const HistoryFailure('history_io');
   }
 }

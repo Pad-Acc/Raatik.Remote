@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hbb/raatik/history/history_page.dart';
 import 'package:flutter_hbb/raatik/history/history_repository.dart';
@@ -82,6 +83,22 @@ class RecordingHistoryRepository implements HistoryRepository {
     if (handler != null) return handler(recordId, expectedRevision, note);
     throw const HistoryFailure('history_io');
   }
+}
+
+class ThrowingBridge implements HistoryRawBridge {
+  ThrowingBridge(this.error);
+
+  final Object error;
+
+  @override
+  Future<String> query(String queryJson) async => throw error;
+
+  @override
+  Future<String> getRecord(String recordId) async => throw error;
+
+  @override
+  Future<String> saveNote(String recordId, int expectedRevision, String note) async =>
+      throw error;
 }
 
 class ScriptedBridge implements HistoryRawBridge {
@@ -202,6 +219,31 @@ void main() {
         isA<HistoryFailure>().having((error) => error.code, 'code', 'history_unavailable'),
       ),
     );
+  });
+
+  test('known bridge error strings survive when they are not HistoryFailure', () async {
+    for (final code in ['note_conflict', 'invalid_note', 'not_found', 'history_busy']) {
+      final fromString = FfiHistoryRepository(bridge: ThrowingBridge(code));
+      expect(
+        () => fromString.saveNote(_completedId, 0, 'x'),
+        throwsA(isA<HistoryFailure>().having((error) => error.code, 'code', code)),
+      );
+      final fromBridge = FfiHistoryRepository(
+        bridge: ThrowingBridge(FfiException('RESULT_ERROR', code)),
+      );
+      expect(
+        () => fromBridge.get(_completedId),
+        throwsA(isA<HistoryFailure>().having((error) => error.code, 'code', code)),
+      );
+    }
+  });
+
+  test('Windows newline folds before the 2000-scalar note check', () {
+    expect(validateHistoryNote('a\r\nb'), isNull);
+    expect(validateHistoryNote('a\rb'), isNull);
+    expect(validateHistoryNote('${'😀' * 1999}\r\n'), isNull);
+    expect(validateHistoryNote('${'😀' * 2000}\r\n'), 'invalid_note');
+    expect(validateHistoryNote('ok\r\u0001'), 'invalid_note');
   });
 
   testWidgets('persian digit search stays raw, limit is 20, and newest is first', (tester) async {
@@ -515,6 +557,25 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(saved, isTrue);
     expect(repo.saves.single.note.runes.length, 2000);
+    expect(find.byKey(historyNoteDialogKey), findsNothing);
+  });
+
+  testWidgets('a pasted Windows newline reaches the store as LF', (tester) async {
+    final repo = RecordingHistoryRepository();
+    repo.page = pageOf([sample()]);
+    repo.onSave = (id, revision, note) async => sample(note: note, revision: revision + 1);
+    await pumpPage(tester, RaatikHistoryPage(repository: repo));
+    await openNote(tester, _completedId);
+    final editable = tester.widget<EditableText>(find.descendant(
+      of: find.byKey(historyNoteFieldKey),
+      matching: find.byType(EditableText),
+    ));
+    editable.controller.text = 'خط اول\r\nخط دوم';
+    await tester.pump();
+    await tester.tap(find.byKey(historyNoteSaveKey));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('یادداشت باید حداکثر ۲۰۰۰ نویسه و متن ساده باشد.'), findsNothing);
+    expect(repo.saves.single.note, 'خط اول\nخط دوم');
     expect(find.byKey(historyNoteDialogKey), findsNothing);
   });
 

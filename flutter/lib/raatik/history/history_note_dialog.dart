@@ -45,7 +45,7 @@ class _HistoryNoteDialogState extends State<HistoryNoteDialog> {
   }
 
   Future<void> _save({int? revision}) async {
-    final note = _text.text;
+    final note = foldHistoryNewlines(_text.text);
     final problem = validateHistoryNote(note);
     if (problem != null) {
       setState(() => _errorCode = problem);
@@ -187,7 +187,7 @@ class _HistoryNoteDialogState extends State<HistoryNoteDialog> {
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: Text(
-                  '${_text.text.runes.length} / 2000',
+                  '${foldHistoryNewlines(_text.text).runes.length} / 2000',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),

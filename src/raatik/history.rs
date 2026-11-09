@@ -9,6 +9,7 @@ use std::{
 };
 use uuid::Uuid;
 
+#[path = "history_wire.rs"]
 pub(crate) mod history_wire;
 
 pub(crate) const MAX_RECORD_BYTES: usize = 32_768;
