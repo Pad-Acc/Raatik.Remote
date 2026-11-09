@@ -700,4 +700,126 @@ void main() {
     expect(find.text('Record'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('opened overflow submenu keeps More up until an item is chosen',
+      (tester) async {
+    var itemCalls = 0;
+    var leafCalls = 0;
+    const size = Size(480, 680);
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(testApp(
+      Align(
+        alignment: Alignment.topCenter,
+        child: RaatikLabelledOverflow(
+          label: 'More',
+          children: [
+            SubmenuButton(
+              menuChildren: [
+                MenuItemButton(
+                  onPressed: () => itemCalls++,
+                  child: const Text('Display item'),
+                ),
+              ],
+              child: const Text('Display'),
+            ),
+            TextButton(
+              onPressed: () => leafCalls++,
+              child: const Text('Record'),
+            ),
+          ],
+        ),
+      ),
+      size: size,
+      locale: const Locale('en'),
+      textScaler: const TextScaler.linear(1),
+    ));
+    await tester.pump();
+    await tester.tap(find.byKey(RaatikLabelledOverflow.buttonKey));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Record'), findsOneWidget);
+    expect(find.text('Display item'), findsNothing);
+    final displayFocus = Focus.of(tester.element(find.text('Display')));
+    expect(displayFocus.canRequestFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(itemCalls, 0);
+    expect(leafCalls, 0);
+    expect(find.text('Record'), findsOneWidget);
+    final item = find.text('Display item');
+    expect(item, findsOneWidget);
+    final itemFocus = Focus.of(tester.element(item));
+    expect(itemFocus.canRequestFocus, isTrue);
+    expect(itemFocus.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(itemCalls, 1);
+    expect(leafCalls, 0);
+
+    if (find.text('Record').evaluate().isEmpty) {
+      await tester.tap(find.byKey(RaatikLabelledOverflow.buttonKey));
+      await tester.pumpAndSettle();
+    }
+    final record = find.text('Record');
+    expect(record, findsOneWidget);
+    Focus.of(tester.element(record)).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(leafCalls, 1);
+    expect(itemCalls, 1);
+    expect(find.text('Record'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('escape closes an open overflow submenu before More',
+      (tester) async {
+    var itemCalls = 0;
+    const size = Size(480, 680);
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(testApp(
+      Align(
+        alignment: Alignment.topCenter,
+        child: RaatikLabelledOverflow(
+          label: 'More',
+          children: [
+            SubmenuButton(
+              menuChildren: [
+                MenuItemButton(
+                  onPressed: () => itemCalls++,
+                  child: const Text('Display item'),
+                ),
+              ],
+              child: const Text('Display'),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: const Text('Record'),
+            ),
+          ],
+        ),
+      ),
+      size: size,
+      locale: const Locale('en'),
+      textScaler: const TextScaler.linear(1),
+    ));
+    await tester.pump();
+    await tester.tap(find.byKey(RaatikLabelledOverflow.buttonKey));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('Display item'), findsOneWidget);
+    expect(find.text('Record'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(itemCalls, 0);
+    expect(find.text('Display item'), findsNothing);
+    expect(find.text('Record'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

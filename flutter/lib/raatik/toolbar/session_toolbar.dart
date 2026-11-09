@@ -126,8 +126,10 @@ class RaatikOverflowScope extends InheritedWidget {
 
 /// One overflow row. The focusable control is this entry.
 ///
-/// [child] may be a closed menu bar, which excludes its own button. Enter and
-/// a pointer on this entry call [onPressed].
+/// [child] may be a closed menu bar, which keeps its own button out of focus.
+/// Enter and a pointer on this entry call [onPressed]. A [SubmenuButton] or
+/// [MenuAnchor] used as [child] opens from this entry, and the opened menu
+/// stays outside an [ExcludeFocus] so it can take focus.
 class RaatikOverflowEntry extends StatefulWidget {
   const RaatikOverflowEntry({
     super.key,
@@ -151,6 +153,35 @@ class _RaatikOverflowEntryState extends State<RaatikOverflowEntry> {
     super.dispose();
   }
 
+  void _activate() {
+    final child = widget.child;
+    if (child is SubmenuButton || child is MenuAnchor) {
+      _activateNestedButton();
+      return;
+    }
+    widget.onPressed();
+  }
+
+  /// Opens a submenu by invoking its anchor button, which is not the row.
+  void _activateNestedButton() {
+    final host = context as Element;
+    ButtonStyleButton? nested;
+    void visit(Element element) {
+      if (nested != null) return;
+      final candidate = element.widget;
+      if (candidate is ButtonStyleButton &&
+          candidate.onPressed != null &&
+          candidate.focusNode != _node) {
+        nested = candidate;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    host.visitChildren(visit);
+    nested?.onPressed?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return TextButton(
@@ -161,11 +192,8 @@ class _RaatikOverflowEntryState extends State<RaatikOverflowEntry> {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         alignment: AlignmentDirectional.centerStart,
       ),
-      onPressed: widget.onPressed,
-      child: ExcludeFocus(
-        excluding: true,
-        child: widget.child,
-      ),
+      onPressed: _activate,
+      child: widget.child,
     );
   }
 }
@@ -195,12 +223,14 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
   OverlayEntry? _entry;
   final FocusScopeNode _menuScope =
       FocusScopeNode(debugLabel: 'raatik-overflow-menu');
+  FocusNode? _openMenuScope;
   bool _listening = false;
   late final KeyEventCallback _keyHandler = _onHardwareKey;
   late final PointerRoute _pointerRoute = _onPointer;
 
   @override
   void dispose() {
+    _clearOpenMenu();
     _stopListening();
     _entry?.remove();
     _entry = null;
@@ -223,23 +253,44 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
   }
 
   void _remove() {
+    _clearOpenMenu();
     final entry = _entry;
     _entry = null;
     entry?.remove();
     _stopListening();
   }
 
+  void _clearOpenMenu() {
+    _openMenuScope?.removeListener(_onOpenMenuScope);
+    _openMenuScope = null;
+  }
+
   bool _onHardwareKey(KeyEvent event) {
-    if (event is KeyDownEvent &&
-        (event.logicalKey == LogicalKeyboardKey.enter ||
-            event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
-      _scheduleLeafClose();
+    if (event is! KeyDownEvent) return false;
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      // Let the open submenu handle Escape first. More closes only after
+      // that scope is gone, so the choice is not removed underneath it.
+      if (_openMenuScope != null) _closeAfterSubmenuIfGone();
+      return false;
     }
+    if (event.logicalKey != LogicalKeyboardKey.enter &&
+        event.logicalKey != LogicalKeyboardKey.numpadEnter) {
+      return false;
+    }
+    _dropDetachedMenu();
+    if (_focusInsideOpenMenu()) {
+      _closeAfterSubmenuIfGone();
+      return false;
+    }
+    _afterActivate();
     return false;
   }
 
   void _onPointer(PointerEvent event) {
-    if (event is PointerUpEvent) _scheduleLeafClose();
+    if (event is! PointerUpEvent) return;
+    _dropDetachedMenu();
+    if (_openMenuScope != null) return;
+    _afterActivate();
   }
 
   void _scheduleClose() {
@@ -248,34 +299,146 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
     });
   }
 
-  void _scheduleLeafClose() {
-    final before = _menuPanelCount();
+  /// Leaf activation closes More. An opened submenu keeps More up and takes
+  /// focus; More closes when that submenu's scope goes away.
+  void _afterActivate() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _entry == null) return;
-      if (_menuPanelCount() > before) return;
-      _remove();
+      _dropDetachedMenu();
+      if (_openMenuScope != null) {
+        if (!_focusInsideOpenMenu()) _remove();
+        return;
+      }
+      final scope = _openedMenuScope();
+      if (scope == null) {
+        _remove();
+        return;
+      }
+      _watchOpenMenu(scope);
+      _focusOpenedMenu(scope);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _entry == null || _openMenuScope != scope) return;
+        if (_menuAttached(scope) && !scope.hasFocus) _focusOpenedMenu(scope);
+      });
     });
   }
 
-  int _menuPanelCount() {
-    final root = WidgetsBinding.instance.rootElement;
-    if (root == null) return 0;
-    var count = 0;
+  void _watchOpenMenu(FocusNode scope) {
+    if (_openMenuScope == scope) return;
+    _clearOpenMenu();
+    _openMenuScope = scope;
+    scope.addListener(_onOpenMenuScope);
+  }
+
+  void _dropDetachedMenu() {
+    final scope = _openMenuScope;
+    if (scope != null && !_menuAttached(scope)) _clearOpenMenu();
+  }
+
+  bool _menuAttached(FocusNode scope) {
+    if (scope.parent == null) return false;
+    final context = scope.context;
+    return context is Element && context.mounted;
+  }
+
+  bool _focusInsideOpenMenu() {
+    final scope = _openMenuScope;
+    if (scope == null || !_menuAttached(scope)) return false;
+    final primary = FocusManager.instance.primaryFocus;
+    if (primary == null) return false;
+    return primary == scope || primary.ancestors.contains(scope);
+  }
+
+  /// The menu item's callback is posted for this frame. Remove More on the
+  /// following frame so that callback still runs.
+  void _closeAfterSubmenuIfGone() {
+    final scope = _openMenuScope;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _entry == null || scope == null) return;
+      if (_openMenuScope != scope || _menuAttached(scope)) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _entry != null) _remove();
+      });
+    });
+  }
+
+  void _onOpenMenuScope() {
+    _closeAfterSubmenuIfGone();
+  }
+
+  /// Deepest focusable [FocusScope] opened under More, excluding More itself.
+  FocusNode? _openedMenuScope() {
+    final root = _menuScope.context;
+    if (root is! Element) return null;
+    FocusNode? found;
     void visit(Element element) {
-      if (element.widget.runtimeType.toString() == '_MenuPanel') count++;
+      final widget = element.widget;
+      if (widget is FocusScope) {
+        final node = widget.focusNode;
+        if (node != null && node != _menuScope && node.canRequestFocus) {
+          found = node;
+        }
+      }
       element.visitChildren(visit);
     }
+
     visit(root);
-    return count;
+    return found;
+  }
+
+  void _focusOpenedMenu(FocusNode scope) {
+    final scopeContext = scope.context;
+    if (scopeContext == null) return;
+    final policy = FocusTraversalGroup.maybeOf(scopeContext) ??
+        ReadingOrderTraversalPolicy();
+    final node = policy.findFirstFocus(scope, ignoreCurrentFocus: true);
+    if (node != null && node != scope && node.canRequestFocus) {
+      node.requestFocus();
+      return;
+    }
+    if (scope.canRequestFocus) scope.requestFocus();
+  }
+
+  BuildContext? _submenuDismissContext(FocusNode scope) {
+    final root = scope.context;
+    if (root is! Element) return null;
+    Element? shortcuts;
+    void visit(Element element) {
+      if (shortcuts != null) return;
+      if (element.widget is Shortcuts) {
+        shortcuts = element;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    visit(root);
+    return shortcuts;
   }
 
   KeyEventResult _onMenuKey(FocusNode node, KeyEvent event) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
-      _scheduleClose();
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.escape) {
+      return KeyEventResult.ignored;
+    }
+    final menu = _openMenuScope;
+    if (menu != null && menu.context != null) {
+      final dismiss = _submenuDismissContext(menu);
+      if (dismiss != null &&
+          Actions.maybeFind<DismissIntent>(dismiss) != null) {
+        Actions.invoke<DismissIntent>(dismiss, const DismissIntent());
+      }
       return KeyEventResult.handled;
     }
-    return KeyEventResult.ignored;
+    _scheduleClose();
+    return KeyEventResult.handled;
+  }
+
+  Widget _overflowRow(Widget child) {
+    if (child is SubmenuButton || child is MenuAnchor) {
+      return RaatikOverflowEntry(onPressed: () {}, child: child);
+    }
+    return child;
   }
 
   void _focusFirstItem() {
@@ -373,7 +536,7 @@ class _RaatikLabelledOverflowState extends State<RaatikLabelledOverflow> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: widget.children.isEmpty
                         ? [Text(widget.label)]
-                        : widget.children,
+                        : [for (final child in widget.children) _overflowRow(child)],
                   ),
                 ),
               ),
