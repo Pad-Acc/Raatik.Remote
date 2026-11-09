@@ -11,17 +11,11 @@ Recorded before product source edits.
 - Pinned Flutter 3.24.5 is installed at `D:\Toolchains\Flutter\3.24.5` (Dart 3.5.4). Windows precache completed. Use it for the IN-1 release-SDK pass, not for day-to-day tests.
 - Default Rust remains stable 1.97.1. `cargo +1.75.0` is available (`rustc 1.75.0`). The default toolchain was not switched.
 - `cargo-expand` and `flutter_rust_bridge_codegen` were not on PATH at baseline.
-- Existing widget-test baseline: not run yet, because the pinned Flutter SDK was absent. The first UI task records that run here before product assertions are treated as regressions.
+- Existing widget-test baseline: not run yet, because the pinned Flutter SDK was absent.
 
-## UI-1 pre-edit widget baseline
+## Flutter 3.22.3 transcript
 
-Command (cwd `flutter/`, before any UI-1 production edit):
-
-```text
-rtk proxy D:\Toolchains\Flutter\3.22.3\bin\flutter.bat test test/raatik_home_layout_test.dart test/raatik_responsive_matrix_test.dart test/raatik_rtl_home_test.dart test/raatik_identifier_widgets_test.dart test/raatik_service_gate_test.dart
-```
-
-Result: **PASS** (exit 0). `00:13 +223: All tests passed!` Flutter 3.22.3, Dart 3.4.4. First invocation printed the Flutter analytics welcome banner, then the suite. No RenderFlex overflow and no failed test.
+No pre-edit Flutter log is in this package. The first captured Flutter 3.22.3 transcript is `logs/flutter-3.22.3-raatik-tests.log` (440 passed, 1 settings-icon failure). That transcript is the IN-1 acceptance run. It is not a pre-edit regression baseline.
 
 ## IN-1 acceptance run
 
