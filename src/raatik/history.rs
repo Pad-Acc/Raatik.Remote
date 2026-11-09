@@ -394,26 +394,31 @@ fn retry_existing(interval: &HistoryInterval) -> Result<(), HistoryError> {
 }
 
 pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
-    let pendings = pending_for_session(session_key);
-    if !pendings.is_empty() {
-        // Every outstanding id for this session. A later forward does not replace an earlier one.
-        let mut failure = None;
-        for pending in pendings {
-            if let Err(err) = retry_one_pending(pending) {
-                if failure.is_none() {
-                    failure = Some(err);
-                }
+    // Pre-park ids first. A sibling that already has an interval is not pending,
+    // so this press also retries every uninserted row and every failed finish.
+    // A healthy open interval stays unfinished.
+    let mut failure = None;
+    for pending in pending_for_session(session_key) {
+        if let Err(err) = retry_one_pending(pending) {
+            if failure.is_none() {
+                failure = Some(err);
             }
         }
-        return match failure {
-            Some(err) => Err(err),
-            None => Ok(()),
-        };
     }
-    if let Some(interval) = find_interval(session_key) {
-        return retry_existing(&interval);
+    for interval in intervals_for_session(session_key) {
+        if !save_still_open(&interval) {
+            continue;
+        }
+        if let Err(err) = retry_existing(&interval) {
+            if failure.is_none() {
+                failure = Some(err);
+            }
+        }
     }
-    Ok(())
+    match failure {
+        Some(err) => Err(err),
+        None => Ok(()),
+    }
 }
 
 fn retry_one_pending(pending: PendingBegin) -> Result<(), HistoryError> {
@@ -1102,8 +1107,11 @@ impl IntervalInner {
         if self.close_requested.load(Ordering::SeqCst) && !self.finished.load(Ordering::SeqCst) {
             return;
         }
-        // A sibling that has not parked yet still needs the session warning.
-        if session_has_other_pending(&self.session_key, &self.park_key) {
+        // Keep the warning until every sibling is inserted and any requested
+        // finish has returned Ok. A healthy open sibling does not count.
+        if session_has_other_pending(&self.session_key, &self.park_key)
+            || session_has_unresolved_sibling(&self.session_key, &self.record_id)
+        {
             return;
         }
         clear_failure(&self.session_key);
@@ -1281,6 +1289,76 @@ fn interval_for_park(park_id: &str) -> Option<HistoryInterval> {
         let inner = item.interval.upgrade()?;
         (inner.park_key == park_id).then_some(HistoryInterval { inner })
     })
+}
+
+fn save_still_open(interval: &HistoryInterval) -> bool {
+    !interval.inner.inserted.load(Ordering::SeqCst)
+        || (interval.inner.close_requested.load(Ordering::SeqCst)
+            && !interval.inner.finished.load(Ordering::SeqCst))
+}
+
+fn session_has_unresolved_sibling(session_key: &str, except_record_id: &str) -> bool {
+    if session_key.is_empty() {
+        return false;
+    }
+    intervals_for_session(session_key)
+        .into_iter()
+        .any(|interval| interval.record_id() != except_record_id && save_still_open(&interval))
+}
+
+fn intervals_for_session(session_key: &str) -> Vec<HistoryInterval> {
+    if session_key.is_empty() {
+        return Vec::new();
+    }
+    let mut found = Vec::new();
+    let mut push = |interval: &HistoryInterval| {
+        if interval.inner.session_key != session_key {
+            return;
+        }
+        if found
+            .iter()
+            .any(|item: &HistoryInterval| item.record_id() == interval.record_id())
+        {
+            return;
+        }
+        found.push(interval.clone());
+    };
+    {
+        let active = active_intervals()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        for interval in active.values() {
+            push(interval);
+        }
+    }
+    {
+        let parked = unadopted_intervals()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        for interval in parked.values() {
+            push(interval);
+        }
+    }
+    {
+        let mut live = LIVE_INTERVALS.lock().unwrap_or_else(|err| err.into_inner());
+        live.retain(|item| item.interval.strong_count() > 0);
+        for item in live.iter() {
+            if item.session_key != session_key {
+                continue;
+            }
+            if let Some(inner) = item.interval.upgrade() {
+                let interval = HistoryInterval { inner };
+                push(&interval);
+            }
+        }
+    }
+    found.sort_by(|left, right| {
+        left.inner
+            .park_key
+            .cmp(&right.inner.park_key)
+            .then(left.inner.record_id.cmp(&right.inner.record_id))
+    });
+    found
 }
 
 fn find_interval(session_key: &str) -> Option<HistoryInterval> {

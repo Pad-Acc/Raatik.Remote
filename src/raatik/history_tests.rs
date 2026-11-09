@@ -2081,3 +2081,224 @@ fn successful_sibling_keeps_failed_forward_pending() {
     super::history::reset_history_sessions();
     drop(root);
 }
+
+fn open_ready(
+    store: Arc<HistoryStore>,
+) -> Arc<dyn Fn() -> Result<Arc<HistoryStore>, HistoryError> + Send + Sync> {
+    Arc::new(move || Ok(store.clone()))
+}
+
+#[test]
+fn sibling_insert_failure_keeps_warning_until_retry() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let session = "flutter-sibling-insert";
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let open = open_ready(store.clone());
+    let park_a = super::history::new_forward_park_id();
+    let park_b = super::history::new_forward_park_id();
+    assert_ne!(park_a, park_b);
+    let interval_a = {
+        let _fault = FaultGuard::arm(HistoryFault::CreateTemp);
+        let started = super::history::begin_for_park(
+            session,
+            &park_a,
+            "410001".to_owned(),
+            "A".to_owned(),
+            "port_forward".to_owned(),
+            test_owner(),
+            open.clone(),
+            None,
+        )
+        .expect("Io keeps A's interval")
+        .expect("A exists without a row");
+        assert!(matches!(
+            store.get(started.record_id()),
+            Err(HistoryError::NotFound)
+        ));
+        started
+    };
+    let id_a = interval_a.record_id().to_owned();
+    assert!(history_save_warning(session).is_some());
+    let interval_b = super::history::begin_for_park(
+        session,
+        &park_b,
+        "410002".to_owned(),
+        "B".to_owned(),
+        "rdp".to_owned(),
+        test_owner(),
+        open,
+        None,
+    )
+    .expect("B inserts")
+    .expect("B interval");
+    let id_b = interval_b.record_id().to_owned();
+    let alloc_b = super::history::interval_allocation(&interval_b);
+    assert_ne!(id_a, id_b);
+    let warning = history_save_warning(session)
+        .expect("A is not inserted, so the session warning stays after B's insert");
+    assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
+    assert_eq!(warning.action, HISTORY_SAVE_WARNING_ACTION);
+    assert!(matches!(store.get(&id_a), Err(HistoryError::NotFound)));
+    let before_b = store.get(&id_b).unwrap();
+    assert_eq!(before_b.status, "active");
+    assert!(before_b.ended_at_utc_ms.is_none());
+    assert_eq!(page_records(&store).len(), 1);
+
+    retry_history_save(session).expect("one retry inserts A's same record");
+    let stored_a = store.get(&id_a).expect("retry inserts A's original UUID");
+    assert_eq!(stored_a.record_id, id_a);
+    assert_eq!(stored_a.peer_id, "410001");
+    assert_eq!(stored_a.connection_type, "port_forward");
+    assert_eq!(stored_a.status, "active");
+    assert!(stored_a.ended_at_utc_ms.is_none());
+    assert_eq!(interval_a.record_id(), id_a);
+    let after_b = store.get(&id_b).unwrap();
+    assert_eq!(
+        after_b, before_b,
+        "retry must not finish or rewrite healthy B"
+    );
+    assert_eq!(after_b.status, "active");
+    assert!(after_b.ended_at_utc_ms.is_none());
+    assert_eq!(super::history::interval_allocation(&interval_b), alloc_b);
+    assert_eq!(page_records(&store).len(), 2);
+    assert!(history_save_warning(session).is_none());
+
+    // B is first in this session, so one press must still reach A's failed insert.
+    let later = "flutter-sibling-insert-next";
+    let open_later = open_ready(store.clone());
+    let later_b = super::history::begin_for_park(
+        later,
+        &super::history::new_forward_park_id(),
+        "410012".to_owned(),
+        "B".to_owned(),
+        "rdp".to_owned(),
+        test_owner(),
+        open_later.clone(),
+        None,
+    )
+    .expect("later B starts")
+    .expect("later B interval");
+    let later_id_b = later_b.record_id().to_owned();
+    let later_a = {
+        let _fault = FaultGuard::arm(HistoryFault::CreateTemp);
+        super::history::begin_for_park(
+            later,
+            &super::history::new_forward_park_id(),
+            "410011".to_owned(),
+            "A".to_owned(),
+            "port_forward".to_owned(),
+            test_owner(),
+            open_later,
+            None,
+        )
+        .expect("Io keeps the later interval")
+        .expect("later A exists without a row")
+    };
+    let later_id_a = later_a.record_id().to_owned();
+    later_b.checkpoint().expect("later B write");
+    assert!(
+        history_save_warning(later).is_some(),
+        "a non-first failed insert keeps the warning"
+    );
+    let later_before_b = store.get(&later_id_b).unwrap();
+    retry_history_save(later).expect("one retry inserts the non-first interval");
+    let later_stored = store
+        .get(&later_id_a)
+        .expect("same UUID for the non-first interval");
+    assert_eq!(later_stored.record_id, later_id_a);
+    assert_eq!(later_stored.status, "active");
+    assert!(later_stored.ended_at_utc_ms.is_none());
+    assert_eq!(store.get(&later_id_b).unwrap(), later_before_b);
+    assert_eq!(store.get(&later_id_b).unwrap().status, "active");
+    assert!(history_save_warning(session).is_none());
+    assert!(history_save_warning(later).is_none());
+    drop(later_a);
+    drop(later_b);
+    drop(interval_a);
+    drop(interval_b);
+    super::history::reset_history_sessions();
+    drop(root);
+}
+
+#[test]
+fn sibling_finish_failure_keeps_warning_until_retry() {
+    let _guard = lock_tests();
+    clear_history_warning();
+    let session = "flutter-sibling-finish";
+    let root = TempRoot::new();
+    let store = Arc::new(open_store(root.path()));
+    let open = open_ready(store.clone());
+    // B is the first live interval, so find_interval returns the healthy connection.
+    let interval_b = super::history::begin_for_park(
+        session,
+        &super::history::new_forward_park_id(),
+        "420002".to_owned(),
+        "B".to_owned(),
+        "rdp".to_owned(),
+        test_owner(),
+        open.clone(),
+        None,
+    )
+    .expect("B starts")
+    .expect("B interval");
+    let id_b = interval_b.record_id().to_owned();
+    let alloc_b = super::history::interval_allocation(&interval_b);
+    let interval_a = super::history::begin_for_park(
+        session,
+        &super::history::new_forward_park_id(),
+        "420001".to_owned(),
+        "A".to_owned(),
+        "port_forward".to_owned(),
+        test_owner(),
+        open,
+        None,
+    )
+    .expect("A starts")
+    .expect("A interval");
+    let id_a = interval_a.record_id().to_owned();
+    let start_a = store.get(&id_a).unwrap().started_at_utc_ms;
+    assert_eq!(store.get(&id_a).unwrap().status, "active");
+    assert_ne!(id_a, id_b);
+    {
+        let _fault = FaultGuard::arm(HistoryFault::Replace);
+        let err = interval_a.finish();
+        assert!(err.is_err(), "A's finish stays retryable");
+    }
+    let unfinished = store.get(&id_a).unwrap();
+    assert_eq!(unfinished.record_id, id_a);
+    assert_eq!(unfinished.status, "active");
+    assert!(unfinished.ended_at_utc_ms.is_none());
+    assert_eq!(unfinished.started_at_utc_ms, start_a);
+    // B's later successful write must not hide A's failed finish.
+    interval_b.checkpoint().expect("B checkpoint");
+    let warning = history_save_warning(session).expect(
+        "A's finish is still failed, so the session warning stays after B's successful write",
+    );
+    assert_eq!(warning.text, HISTORY_SAVE_WARNING_TEXT);
+    assert_eq!(warning.action, HISTORY_SAVE_WARNING_ACTION);
+    let before_b = store.get(&id_b).unwrap();
+    assert_eq!(before_b.status, "active");
+    assert!(before_b.ended_at_utc_ms.is_none());
+
+    retry_history_save(session).expect("one retry finishes A");
+    let done_a = store.get(&id_a).unwrap();
+    assert_eq!(done_a.record_id, id_a);
+    assert_eq!(done_a.started_at_utc_ms, start_a);
+    assert_eq!(done_a.status, "completed");
+    assert!(done_a.ended_at_utc_ms.is_some());
+    assert_eq!(done_a.peer_id, "420001");
+    assert_eq!(done_a.connection_type, "port_forward");
+    let after_b = store.get(&id_b).unwrap();
+    assert_eq!(after_b, before_b, "retry must not finish healthy B");
+    assert_eq!(after_b.status, "active");
+    assert!(after_b.ended_at_utc_ms.is_none());
+    assert_eq!(super::history::interval_allocation(&interval_b), alloc_b);
+    assert_eq!(page_records(&store).len(), 2);
+    assert!(history_save_warning(session).is_none());
+    drop(interval_a);
+    drop(interval_b);
+    super::history::reset_history_sessions();
+    drop(root);
+}
