@@ -342,6 +342,7 @@ struct LiveRef {
 }
 
 struct PendingBegin {
+    session_key: String,
     park_id: String,
     peer_id: String,
     peer_name: String,
@@ -356,6 +357,7 @@ struct PendingBegin {
 impl Clone for PendingBegin {
     fn clone(&self) -> Self {
         Self {
+            session_key: self.session_key.clone(),
             park_id: self.park_id.clone(),
             peer_id: self.peer_id.clone(),
             peer_name: self.peer_name.clone(),
@@ -392,41 +394,58 @@ fn retry_existing(interval: &HistoryInterval) -> Result<(), HistoryError> {
 }
 
 pub fn retry_history_save(session_key: &str) -> Result<(), HistoryError> {
-    if let Some(pending) = peek_pending(session_key) {
-        let park_id = pending.park_id.clone();
-        if let Some(interval) = interval_for_park(&park_id) {
-            return retry_existing(&interval);
-        }
-        let mut owner = pending.owner;
-        if let Some(refresh) = pending.refresh_owner {
-            if let Some(next) = refresh() {
-                owner = next;
+    let pendings = pending_for_session(session_key);
+    if !pendings.is_empty() {
+        // Every outstanding id for this session. A later forward does not replace an earlier one.
+        let mut failure = None;
+        for pending in pendings {
+            if let Err(err) = retry_one_pending(pending) {
+                if failure.is_none() {
+                    failure = Some(err);
+                }
             }
         }
-        return match begin_for_park(
-            session_key,
-            &park_id,
-            pending.peer_id,
-            pending.peer_name,
-            pending.connection_type,
-            owner,
-            pending.open,
-            pending.refresh_owner,
-        ) {
-            Ok(Some(interval)) => {
-                // Park under this connection's id. A sibling id stays where it is.
-                let park_id = interval.inner.park_key.clone();
-                park_unadopted(&park_id, interval);
-                Ok(())
-            }
-            Ok(None) => Ok(()),
-            Err(err) => Err(err),
+        return match failure {
+            Some(err) => Err(err),
+            None => Ok(()),
         };
     }
     if let Some(interval) = find_interval(session_key) {
         return retry_existing(&interval);
     }
     Ok(())
+}
+
+fn retry_one_pending(pending: PendingBegin) -> Result<(), HistoryError> {
+    let park_id = pending.park_id.clone();
+    if let Some(interval) = interval_for_park(&park_id) {
+        return retry_existing(&interval);
+    }
+    let mut owner = pending.owner;
+    if let Some(refresh) = pending.refresh_owner {
+        if let Some(next) = refresh() {
+            owner = next;
+        }
+    }
+    match begin_for_park(
+        &pending.session_key,
+        &park_id,
+        pending.peer_id,
+        pending.peer_name,
+        pending.connection_type,
+        owner,
+        pending.open,
+        pending.refresh_owner,
+    ) {
+        Ok(Some(interval)) => {
+            // Park under this connection's id. A sibling id stays where it is.
+            let park_id = interval.inner.park_key.clone();
+            park_unadopted(&park_id, interval);
+            Ok(())
+        }
+        Ok(None) => Ok(()),
+        Err(err) => Err(err),
+    }
 }
 
 /// Open the store before publishing it. A failed open leaves the cell empty.
@@ -495,18 +514,16 @@ pub(crate) fn begin_for_park(
     } else {
         park_id
     };
-    remember_pending(
-        session_key,
-        PendingBegin {
-            park_id: park_id.to_owned(),
-            peer_id: peer_id.clone(),
-            peer_name: peer_name.clone(),
-            connection_type: connection_type.clone(),
-            owner,
-            open: Arc::clone(&open),
-            refresh_owner,
-        },
-    );
+    remember_pending(PendingBegin {
+        session_key: session_key.to_owned(),
+        park_id: park_id.to_owned(),
+        peer_id: peer_id.clone(),
+        peer_name: peer_name.clone(),
+        connection_type: connection_type.clone(),
+        owner,
+        open: Arc::clone(&open),
+        refresh_owner,
+    });
     if owner.started_at == 0 {
         report_failure(session_key, "", HistoryError::Io);
         return Err(HistoryError::Io);
@@ -533,7 +550,7 @@ pub(crate) fn begin_for_park(
         owner,
     ) {
         Ok(interval) => {
-            forget_pending(session_key);
+            forget_pending(park_id);
             Ok(Some(interval))
         }
         Err(err) => Err(err),
@@ -1069,7 +1086,7 @@ impl IntervalInner {
         match self.store.finish(&self.record_id, elapsed, wall) {
             Ok(()) => {
                 self.finished.store(true, Ordering::SeqCst);
-                clear_failure(&self.session_key);
+                self.note_write_ok();
                 forget_active(&self.session_key);
                 forget_unadopted(&self.park_key);
                 Ok(())
@@ -1083,6 +1100,10 @@ impl IntervalInner {
 
     fn note_write_ok(&self) {
         if self.close_requested.load(Ordering::SeqCst) && !self.finished.load(Ordering::SeqCst) {
+            return;
+        }
+        // A sibling that has not parked yet still needs the session warning.
+        if session_has_other_pending(&self.session_key, &self.park_key) {
             return;
         }
         clear_failure(&self.session_key);
@@ -1324,26 +1345,42 @@ fn forget_active(session_key: &str) {
         .remove(session_key);
 }
 
-fn remember_pending(session_key: &str, pending: PendingBegin) {
+fn remember_pending(pending: PendingBegin) {
+    let park_id = pending.park_id.clone();
     pending_begins()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
-        .insert(session_key.to_owned(), pending);
+        .insert(park_id, pending);
 }
 
-fn forget_pending(session_key: &str) {
+fn forget_pending(park_id: &str) {
     pending_begins()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
-        .remove(session_key);
+        .remove(park_id);
 }
 
-fn peek_pending(session_key: &str) -> Option<PendingBegin> {
-    pending_begins()
+fn pending_for_session(session_key: &str) -> Vec<PendingBegin> {
+    let mut pending: Vec<PendingBegin> = pending_begins()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
-        .get(session_key)
+        .values()
+        .filter(|item| item.session_key == session_key)
         .cloned()
+        .collect();
+    pending.sort_by(|left, right| left.park_id.cmp(&right.park_id));
+    pending
+}
+
+fn session_has_other_pending(session_key: &str, park_id: &str) -> bool {
+    if session_key.is_empty() {
+        return false;
+    }
+    pending_begins()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .values()
+        .any(|item| item.session_key == session_key && item.park_id != park_id)
 }
 
 fn report_failure(session_key: &str, record_id: &str, err: HistoryError) {
