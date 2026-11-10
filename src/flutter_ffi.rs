@@ -2487,14 +2487,17 @@ pub fn is_outgoing_only() -> SyncReturn<bool> {
 }
 
 /// Disk work runs on FRB's async worker. Do not wrap these in `SyncReturn`.
+///
+/// flutter_rust_bridge 1.80.1 rejects `Result<String, String>`. The wire code
+/// stays the anyhow message so the Dart side can still read it.
 #[frb]
-pub fn raatik_history_query(query_json: String) -> Result<String, String> {
-    crate::raatik::query_history_for_ui(query_json)
+pub fn raatik_history_query(query_json: String) -> hbb_common::anyhow::Result<String> {
+    history_ui_result(crate::raatik::query_history_for_ui(query_json))
 }
 
 #[frb]
-pub fn raatik_history_get(record_id: String) -> Result<String, String> {
-    crate::raatik::get_history_for_ui(record_id)
+pub fn raatik_history_get(record_id: String) -> hbb_common::anyhow::Result<String> {
+    history_ui_result(crate::raatik::get_history_for_ui(record_id))
 }
 
 #[frb]
@@ -2502,8 +2505,16 @@ pub fn raatik_history_save_note(
     record_id: String,
     expected_revision: u64,
     note: String,
-) -> Result<String, String> {
-    crate::raatik::save_history_note_for_ui(record_id, expected_revision, note)
+) -> hbb_common::anyhow::Result<String> {
+    history_ui_result(crate::raatik::save_history_note_for_ui(
+        record_id,
+        expected_revision,
+        note,
+    ))
+}
+
+fn history_ui_result(result: Result<String, String>) -> hbb_common::anyhow::Result<String> {
+    result.map_err(hbb_common::anyhow::Error::msg)
 }
 
 pub fn is_custom_client() -> SyncReturn<bool> {
